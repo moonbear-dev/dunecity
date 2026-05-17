@@ -198,6 +198,7 @@ target_sources(dunecity
         Menu/CampaignStatsMenu.cpp
         Menu/ModMenu.cpp
         Menu/ModEditorMenu.cpp
+        Menu/HowToPlayMenu.cpp
 
         # Network
         Network/LANGameFinderAndAnnouncer.cpp

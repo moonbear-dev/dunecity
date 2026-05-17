@@ -50,7 +50,14 @@ private:
     void onMods() const;
     void onOptions();
     void onAbout() const;
+    void onHowToPlay() const;
     void onQuit();
+
+    /// Show the one-time "Enable Dune City mod?" prompt the first time
+    /// the user lands on the main menu and the city-sim mod isn't
+    /// already active. Tracked via a marker file in the user config
+    /// directory so it only appears once per install.
+    void showFirstLaunchCityPromptIfNeeded();
 
     /// Refresh the bottom-left mod/version watermark from the current
     /// active mod. Cheap; no-op when the displayed mod hasn't changed.
@@ -64,6 +71,7 @@ private:
     TextButton      mapEditorButton;
     TextButton      modsButton;
     TextButton      optionsButton;
+    TextButton      howToPlayButton;
     TextButton      aboutButton;
     TextButton      quitButton;
 
@@ -80,6 +88,10 @@ private:
     bool bUpdateDialogShown = false;
     std::string latestVersion;
     std::string downloadURL;
+
+    // First-launch "Enable city-sim mod?" prompt state.
+    bool bFirstLaunchPromptChecked = false; ///< Have we evaluated whether to show the prompt this session?
+    bool bFirstLaunchPromptOpen    = false; ///< Is the prompt QstBox currently open (so we can route its result)?
 };
 
 #endif // MAINMENU_H

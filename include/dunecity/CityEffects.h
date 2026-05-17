@@ -65,10 +65,15 @@ constexpr int kParkBonusRadius   = 3;  // Park / Wall / Turret land-value reach
 // tier 2 (value ≥ 80) and a zone with sand on two-plus sides reaches tier 3
 // (value ≥ 150) when reasonably close to the city centre.
 constexpr int kSandBonusRadius   = 5;
-// Supply visibility is intentionally generous: in a cramped Dune base the
-// player can't always cluster R/C/I tightly, so let zones a couple of road
-// segments away still see each other and grow.
-constexpr int kSupplyRadius      = 8;
+// Supply visibility radius. SimCity Classic does NOT use a Chebyshev
+// supply check — it does a road-network drive of up to
+// MAX_TRAFFIC_DISTANCE = 30 tiles (see SC traffic.cpp). We use a much
+// simpler straight-line lookup, but bump the radius to 16 so the reach
+// is in the same ballpark as a typical SC drive (allowing for some
+// road-detour overhead). Smaller values caused commercial zones to
+// permanently stall at level 1 when industrial sat in a separate
+// cluster — commercial growth gates on local industrial supply.
+constexpr int kSupplyRadius      = 16;
 
 // --- Effect strengths --------------------------------------------------------
 

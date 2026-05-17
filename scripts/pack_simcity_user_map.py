@@ -247,18 +247,22 @@ def pack_city(rock_cells, structure_emitter, road_emitter):
     bbox_w = mx - bx + 1
     bbox_h = my - by + 1
 
-    # Industrial cluster goes on the OUTWARD-facing edge of the city —
-    # the side furthest from the map centre. Pollution then radiates
-    # into open desert instead of into the residential core. Commercial
-    # sits on the inward-facing side (toward the map centre / the trade
-    # route to the other player).
+    # Zone layout along the OUTWARD axis (away from map centre):
     #
-    # We do percentile-based assignment along the outward axis so the
-    # ratios stay 25% industrial / 20% commercial / 55% residential
-    # regardless of the rock's actual shape. This guarantees a real
-    # residential majority — the failure mode of fixed-distance
-    # thresholds was a 12-tile-wide residential strip lost between two
-    # huge C/I bands.
+    #   Outer-most │ ████ Industrial (main, 25%)
+    #              │ ████ Residential (55%)
+    #              │ ████ Commercial  (15%)
+    #   Inner-most │ ████ Industrial (spur, 5%)
+    #
+    # Two industrial clusters by design:
+    #   - Main outer cluster: pollution radiates into open desert.
+    #   - Small inner spur: sits next to the commercial strip so each
+    #     commercial zone has industrial neighbours within kSupplyRadius
+    #     (16 tiles). Without this, commercial stalls at level 1 forever
+    #     because growth gates on local industrial supply.
+    #
+    # Percentile-based assignment along the projection axis keeps the
+    # ratios stable regardless of the rock's actual shape.
     rcx = sum(p[0] for p in rock_cells) // len(rock_cells)
     rcy = sum(p[1] for p in rock_cells) // len(rock_cells)
     map_cx = MAP_SIZE // 2
@@ -285,14 +289,17 @@ def pack_city(rock_cells, structure_emitter, road_emitter):
     # highest = outermost industrial side).
     candidate_lots.sort(key=lambda p: projection(p[0], p[1]))
     n_lots = len(candidate_lots)
-    n_commercial = int(n_lots * 0.20)
-    n_industrial = int(n_lots * 0.25)
-    n_residential = n_lots - n_commercial - n_industrial
+    n_inner_industrial = int(n_lots * 0.05)
+    n_commercial       = int(n_lots * 0.15)
+    n_outer_industrial = int(n_lots * 0.25)
+    n_residential      = n_lots - n_inner_industrial - n_commercial - n_outer_industrial
     lot_type_map = {}
     for idx, lot in enumerate(candidate_lots):
-        if idx < n_commercial:
+        if idx < n_inner_industrial:
+            lot_type_map[lot] = "Industrial Zone"
+        elif idx < n_inner_industrial + n_commercial:
             lot_type_map[lot] = "Commercial Zone"
-        elif idx < n_commercial + n_residential:
+        elif idx < n_inner_industrial + n_commercial + n_residential:
             lot_type_map[lot] = "Residential Zone"
         else:
             lot_type_map[lot] = "Industrial Zone"

@@ -3,6 +3,7 @@ name: Build Dune Legacy
 on:
   push:
     branches: [ main, release-* ]
+    tags:     [ 'v*' ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -112,4 +113,67 @@ jobs:
             build/*.deb
             build/*.rpm
             build/*.tar.gz
+
+  # Auto-publish a GitHub Release on every v* tag push. Pulls down the
+  # three platform artifacts from this run and attaches them. The
+  # in-game VersionChecker hits the GitHub Releases /latest endpoint,
+  # so creating a release here automatically flips every existing
+  # install's "update available" flag the next time they launch.
+  release:
+    needs: [build-windows, build-macos, build-linux]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: DuneCity-Windows-Installer
+          path: dist/windows
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: DuneCity-macOS-DMG
+          path: dist/macos
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: DuneCity-Linux-Packages
+          path: dist/linux
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          NOTES_FILE="$(mktemp)"
+          {
+            echo "Dune City ${TAG}"
+            echo
+            echo "Auto-built from tag ${TAG}. See the [CHANGELOG](https://github.com/${GITHUB_REPOSITORY}/commits/${TAG}) for what's in this release."
+            echo
+            echo "**Downloads** (attached below):"
+            echo "- Windows: \`DuneCity-*.zip\`"
+            echo "- macOS: \`DuneCity-*.dmg\`"
+            echo "- Linux: \`.deb\` / \`.rpm\` / \`.tar.gz\`"
+            echo
+            echo "Upgrading from a previous Dune City install? Your built-in mod INI files are reseeded automatically on first launch."
+          } > "$NOTES_FILE"
+
+          # If a release for this tag already exists (e.g. it was hand-
+          # made first), upload the artifacts onto it; otherwise create
+          # a fresh release.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/*/* --clobber
+            gh release edit "$TAG" --notes-file "$NOTES_FILE"
+          else
+            gh release create "$TAG" dist/*/* \
+              --title "Dune City ${TAG}" \
+              --notes-file "$NOTES_FILE"
+          fi
 

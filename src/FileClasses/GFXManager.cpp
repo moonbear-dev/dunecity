@@ -553,9 +553,16 @@ GFXManager::GFXManager() {
                                 const bool isPeachCurb = (cr == 204 && cg == 127 && cb == 102);
                                 const bool isGrass     = (cr == 0 && cg == 230 && cb == 0);
                                 const bool isLightMark = (cr == 191 && cg == 191 && cb == 191);
-                                if (isPeachCurb || isGrass) {
+                                const bool isBlack     = (cr == 0 && cg == 0 && cb == 0);
+                                const bool isBlueCond  = (cr == 102 && cg == 102 && cb == 230);
+                                const bool isBluePure  = (cr == 0 && cg == 0 && cb == 230);
+                                const bool isGray      = (cr == 127 && cg == 127 && cb == 127);
+                                const bool isRed       = (cr == 255 && cg == 0 && cb == 0);
+                                if (isPeachCurb || isGrass || isBlueCond || isBluePure || isGray || isRed) {
                                     *px = SDL_MapRGBA(rgba->format, 63, 63, 63, 255);
                                 } else if (isLightMark) {
+                                    *px = SDL_MapRGBA(rgba->format, 255, 255, 255, 255);
+                                } else if (isBlack) {
                                     *px = SDL_MapRGBA(rgba->format, 255, 255, 255, 255);
                                 }
                             }
@@ -586,8 +593,36 @@ GFXManager::GFXManager() {
             SDL_Log("Loaded %d/16 city-road tiles from Micropolis road set", roadsLoaded);
 
             objPic[ObjPic_CityRoad][HOUSE_HARKONNEN][0] = std::move(atlas);
-            objPic[ObjPic_CityRoad][HOUSE_HARKONNEN][1] = scaleRGBASurface(objPic[ObjPic_CityRoad][HOUSE_HARKONNEN][0].get(), 2);
-            objPic[ObjPic_CityRoad][HOUSE_HARKONNEN][2] = scaleRGBASurface(objPic[ObjPic_CityRoad][HOUSE_HARKONNEN][0].get(), 3);
+            // Nearest-neighbor scale road atlas to avoid bilinear blur on pixel art.
+            auto scaleRGBA_NN = [](SDL_Surface* src, int factor) -> sdl2::surface_ptr {
+                sdl2::surface_ptr dst{ SDL_CreateRGBSurface(0,
+                    src->w * factor, src->h * factor,
+                    src->format->BitsPerPixel,
+                    src->format->Rmask, src->format->Gmask,
+                    src->format->Bmask, src->format->Amask) };
+                if (!dst) return dst;
+                SDL_LockSurface(src);
+                SDL_LockSurface(dst.get());
+                const int bpp = src->format->BytesPerPixel;
+                for (int y = 0; y < src->h; ++y) {
+                    const Uint8* srcRow = static_cast<const Uint8*>(src->pixels) + y * src->pitch;
+                    for (int x = 0; x < src->w; ++x) {
+                        Uint32 pixel;
+                        memcpy(&pixel, srcRow + x * bpp, bpp);
+                        for (int dy = 0; dy < factor; ++dy) {
+                            Uint8* dstRow = static_cast<Uint8*>(dst->pixels) + (y * factor + dy) * dst->pitch;
+                            for (int dx = 0; dx < factor; ++dx) {
+                                memcpy(dstRow + (x * factor + dx) * bpp, &pixel, bpp);
+                            }
+                        }
+                    }
+                }
+                SDL_UnlockSurface(dst.get());
+                SDL_UnlockSurface(src);
+                return dst;
+            };
+            objPic[ObjPic_CityRoad][HOUSE_HARKONNEN][1] = scaleRGBA_NN(objPic[ObjPic_CityRoad][HOUSE_HARKONNEN][0].get(), 2);
+            objPic[ObjPic_CityRoad][HOUSE_HARKONNEN][2] = scaleRGBA_NN(objPic[ObjPic_CityRoad][HOUSE_HARKONNEN][0].get(), 3);
 
             for (int h = 1; h < NUM_HOUSES; h++) {
                 for (int z = 0; z < NUM_ZOOMLEVEL; z++) {

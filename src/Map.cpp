@@ -289,6 +289,12 @@ void Map::damage(Uint32 damagerID, House* damagerOwner, const Coord& realPos, Ui
                     pTile->addDamage(Tile::Terrain_SandDamage, damage_tile, realPos);
                 }
             }
+
+            // Roads are tile flags, not structures — destroy them on sufficient impact.
+            if (pTile && pTile->isRoad() && damage >= 10) {
+                pTile->setRoad(false);
+                pTile->setDestroyedStructureTile(Destroyed1x1Structure);
+            }
         }
     }
 

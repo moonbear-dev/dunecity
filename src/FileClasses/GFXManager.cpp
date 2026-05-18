@@ -693,6 +693,35 @@ GFXManager::GFXManager() {
                 }
             } else {
                 SDL_Log("Nuclear plant sprite not found; NuclearPlant will fall back to HighTechFactory art");
+                SDL_Surface* fallback = objPic[ObjPic_HighTechFactory][HOUSE_HARKONNEN][0].get();
+                if (atlas && fallback) {
+                    const int fallbackFrames = objPicTiles[ObjPic_HighTechFactory].x;
+                    const int fallbackFrameW = fallback->w / fallbackFrames;
+                    const int fallbackFrameH = fallback->h / objPicTiles[ObjPic_HighTechFactory].y;
+
+                    SDL_SetSurfaceBlendMode(fallback, SDL_BLENDMODE_NONE);
+                    for (int f = 0; f < numFrames; ++f) {
+                        const int sourceFrame = f % fallbackFrames;
+                        SDL_Rect src{ sourceFrame * fallbackFrameW, 0, fallbackFrameW, fallbackFrameH };
+                        SDL_Rect dst{ f * frameW, 0, frameW, frameH };
+                        SDL_BlitScaled(fallback, &src, atlas.get(), &dst);
+                    }
+
+                    objPic[ObjPic_NuclearPlant][HOUSE_HARKONNEN][0] = std::move(atlas);
+                    objPic[ObjPic_NuclearPlant][HOUSE_HARKONNEN][1] = scaleRGBASurface(objPic[ObjPic_NuclearPlant][HOUSE_HARKONNEN][0].get(), 2);
+                    objPic[ObjPic_NuclearPlant][HOUSE_HARKONNEN][2] = scaleRGBASurface(objPic[ObjPic_NuclearPlant][HOUSE_HARKONNEN][0].get(), 3);
+
+                    for (int h = 1; h < NUM_HOUSES; h++) {
+                        for (int z = 0; z < NUM_ZOOMLEVEL; z++) {
+                            if (objPic[ObjPic_NuclearPlant][HOUSE_HARKONNEN][z]) {
+                                objPic[ObjPic_NuclearPlant][h][z] = sdl2::surface_ptr{
+                                    SDL_ConvertSurface(objPic[ObjPic_NuclearPlant][HOUSE_HARKONNEN][z].get(),
+                                                       objPic[ObjPic_NuclearPlant][HOUSE_HARKONNEN][z]->format, 0)
+                                };
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -1599,7 +1628,8 @@ SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned in
         // pixels appear as solid black.
         if(id == ObjPic_ZoneResidential || id == ObjPic_ZoneCommercial
            || id == ObjPic_ZoneIndustrial || id == ObjPic_CityRoad
-           || id == ObjPic_NuclearPlant || id == ObjPic_Star) {
+           || id == ObjPic_NuclearPlant || id == ObjPic_PoliceStation
+           || id == ObjPic_Star) {
             if(objPicTex[id][house][z]) {
                 SDL_SetTextureBlendMode(objPicTex[id][house][z].get(), SDL_BLENDMODE_BLEND);
             }

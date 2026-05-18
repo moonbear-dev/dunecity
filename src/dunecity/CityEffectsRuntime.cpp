@@ -96,6 +96,19 @@ void stampFalloff(DuneCity::CityMapLayer<uint8_t>& dst,
 
 namespace DuneCity {
 
+int32_t CitySimulation::getTotalFunds() const {
+    return pLocalHouse ? static_cast<int32_t>(pLocalHouse->getCredits()) : totalFunds_;
+}
+
+bool CitySimulation::spendCityFunds(int32_t amount) {
+    if (!pLocalHouse) return false;
+    if (pLocalHouse->getCredits() >= amount) {
+        pLocalHouse->takeCredits(FixPoint(amount));
+        return true;
+    }
+    return false;
+}
+
 void CitySimulation::runEffectsScans() {
     if (!currentGameMap) return;
 
@@ -753,9 +766,10 @@ void CitySimulation::runAnnualBudget() {
     // Update local-player UI state from the local house's slice of the
     // budget. If the local house has zero city structures (e.g. pre-
     // development phase) we leave totals untouched.
+    // NOTE: totalFunds_ is NOT updated here — pLocalHouse->getCredits()
+    // is the single source of truth. The house->returnCredits/takeCredits
+    // calls above already adjusted the real credit pool.
     if (localTouched) {
-        totalFunds_       += localRevenue;
-        totalFunds_       -= localPaid;
         lastPoliceExpense_ = localPaid;
         budget_.setLastTaxRevenue(localRevenue);
     }

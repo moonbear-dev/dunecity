@@ -37,7 +37,7 @@ public:
     int16_t getComValve() const { return comValve_; }
     int16_t getIndValve() const { return indValve_; }
 
-    int32_t getTotalFunds() const { return totalFunds_; }
+    int32_t getTotalFunds() const;
     void setTotalFunds(int32_t v) { totalFunds_ = v; }
     int16_t getCityTax() const { return cityTax_; }
     /// Set the tax rate (percentage of population paid annually). Clamped
@@ -108,6 +108,9 @@ public:
     // Phase/milestone methods used by Game.cpp
     int getPhaseCycle() const { return 9; } // Always return 9 so milestone check runs
     void checkAndTriggerMilestones(int32_t totalPop, int32_t totalFunds, int32_t resPop, int32_t comPop, int32_t indPop, bool hasRoads);
+    /// Deduct from the player's credit pool. Returns false (no deduction)
+    /// if insufficient funds. Implemented in CityEffectsRuntime.cpp so it
+    /// can access pLocalHouse directly.
     bool spendCityFunds(int32_t amount);
 
 private:

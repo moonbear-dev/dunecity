@@ -377,6 +377,7 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Source Files" FILES ${sour
 
 # Include directories
 target_include_directories(dunecity PRIVATE
+    ${CMAKE_BINARY_DIR}/include   # generated config.h (has correct PROJECT_VERSION)
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/src
 )

@@ -224,7 +224,7 @@ Prerequisite = Windtrap, Refinery
 Enabled = true
 HitPoints = 1000
 Price = 999
-Power = 80
+Power = 100
 ViewRange = 5
 BuildTime = 130
 InfSpawnProp = 50
@@ -436,6 +436,35 @@ InfSpawnProp = 0
 Builder = Construction Yard
 TechLevel = 1
 Prerequisite = Windtrap
+
+[Stadium]
+# DuneCity civic building. 3x3 footprint. Provides a large land-value
+# and quality-of-life boost to surrounding residential/commercial areas.
+# Does not count as R/C/I — it's a civic amenity.
+Enabled = true
+HitPoints = 500
+Price = 3000
+Power = 30
+ViewRange = 3
+BuildTime = 120
+InfSpawnProp = 0
+Builder = Construction Yard
+TechLevel = 4
+Prerequisite = Windtrap, Radar
+
+[Airport]
+# DuneCity economic building. 3x3 footprint. Provides commercial/transport
+# boost to nearby areas — equivalent to SimCity Classic's airport zone.
+Enabled = true
+HitPoints = 500
+Price = 5000
+Power = 40
+ViewRange = 4
+BuildTime = 144
+InfSpawnProp = 0
+Builder = Construction Yard
+TechLevel = 6
+Prerequisite = Windtrap, Starport
 
 [WOR]
 Enabled = true
@@ -721,3 +750,21 @@ MaxSpeed = 1.9200
 BuildTime = 56
 InfSpawnProp = 0
 Builder = WOR
+
+[Ambient Airplane]
+Enabled = true
+HitPoints = 100
+Price = 0
+ViewRange = 3
+MaxSpeed = 12.8
+TurnSpeed = 0.099
+InfSpawnProp = 0
+
+[Ambient Helicopter]
+Enabled = true
+HitPoints = 100
+Price = 0
+ViewRange = 3
+MaxSpeed = 9.6
+TurnSpeed = 0.099
+InfSpawnProp = 0

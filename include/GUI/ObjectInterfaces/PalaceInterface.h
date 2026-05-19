@@ -23,9 +23,12 @@
 #include <FileClasses/FontManager.h>
 #include <FileClasses/TextManager.h>
 
+#include <GUI/Label.h>
 #include <GUI/ProgressBar.h>
+#include <GUI/VBox.h>
 
 #include <structures/Palace.h>
+#include <dunecity/CityEffects.h>
 
 class PalaceInterface : public DefaultStructureInterface {
 public:
@@ -37,7 +40,9 @@ public:
 
 protected:
     explicit PalaceInterface(int objectID) : DefaultStructureInterface(objectID) {
-        mainHBox.addWidget(&weaponBox);
+        mainHBox.addWidget(&palaceVBox);
+
+        palaceVBox.addWidget(&weaponBox);
 
         SDL_Texture* pTexture = pGFXManager->getSmallDetailPic(Picture_DeathHand);
         weaponBox.addWidget(&weaponProgressBar, Point((SIDEBARWIDTH - 25 - getWidth(pTexture))/2,5), getTextureSize(pTexture));
@@ -56,6 +61,13 @@ protected:
         weaponSelectButton.setVisible(false);
 
         weaponSelectButton.setOnClick(std::bind(&PalaceInterface::onSpecial, this));
+
+        Uint32 color = SDL2RGB(palette[houseToPaletteIndex[pLocalHouse->getHouseID()]+3]);
+        populationLabel.setTextFontSize(12);
+        populationLabel.setTextColor(color);
+        palaceVBox.addWidget(&populationLabel, 0.005);
+
+        palaceVBox.addWidget(Spacer::create(), 0.99);
     }
 
     /**
@@ -99,6 +111,11 @@ protected:
             weaponProgressBar.setProgress(pPalace->getPercentComplete());
 
             weaponSelectButton.setVisible(pPalace->isSpecialWeaponReady());
+
+            int level = static_cast<int>(pPalace->getCityOccupancy());
+            if (level < 1) level = 1;
+            int pop = DuneCity::getZonePopulation(Structure_Palace, level);
+            populationLabel.setText(" " + _("People") + ": " + std::to_string(pop));
         }
 
         return DefaultStructureInterface::update();
@@ -121,9 +138,11 @@ private:
         }
     };
 
+    VBox                palaceVBox;
     StaticContainer     weaponBox;
     PictureProgressBar  weaponProgressBar;
     PictureButton       weaponSelectButton;
+    Label               populationLabel;
 };
 
 #endif // PALACEINTERFACE_H

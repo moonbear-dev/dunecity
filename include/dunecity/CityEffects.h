@@ -39,8 +39,10 @@ namespace DuneCity {
 //   Radar              -> Commercial medium
 //   HighTech Factory   -> Commercial high
 //   House IX           -> Commercial high
-//   Starport           -> Airport (no pollution)
-//   Palace             -> Stadium
+//   Starport           -> Shipyard / Industrial high (jobs, economic role)
+//   Palace             -> Super Residential (3x pop, slow growth)
+//   Stadium            -> Civic amenity (large land-value boost)
+//   Airport            -> Commercial high (transport/trade boost)
 //   Barracks           -> Police Station
 //   WOR                -> Police Station (HQ)
 //   Gun/Rocket Turret  -> Park bonus + 1/4 Police
@@ -78,6 +80,7 @@ constexpr int kSupplyRadius      = 16;
 // --- Effect strengths --------------------------------------------------------
 
 constexpr int kParkLandValueBonus       = 15;  // SC Classic Park land-value lift
+constexpr int kStadiumLandValueBonus   = 40;  // Stadium provides a much larger boost
 constexpr int kSandLandValueBonus       = 8;   // Per-tile direct stampFalloff
 /// Per-tile contribution to the block-smoothed terrain feature map. Box-
 /// smoothed twice and added to the SC-style land-value base, this is the
@@ -117,21 +120,27 @@ enum class CityRole {
 };
 
 /// What SC-Classic role this Dune structure plays in the city sim, if any.
+/// Palace → super residential (high-capacity, caps at 1000 people, slow growth).
+/// StarPort → shipyard / industrial high (jobs + economic role).
+/// Airport → commercial high (transport/trade boost).
 inline CityRole getStructureCityRole(int itemID) {
     switch (itemID) {
         case Structure_ZoneResidential:
+        case Structure_Palace:
             return CityRole::Residential;
         case Structure_ZoneCommercial:
         case Structure_Silo:
         case Structure_Radar:
         case Structure_HighTechFactory:
         case Structure_IX:
+        case Structure_Airport:
             return CityRole::Commercial;
         case Structure_ZoneIndustrial:
         case Structure_LightFactory:
         case Structure_HeavyFactory:
         case Structure_RepairYard:
         case Structure_Refinery:
+        case Structure_StarPort:
             return CityRole::Industrial;
         default:
             return CityRole::None;
@@ -146,6 +155,7 @@ inline int getStructureMaxLevel(int itemID) {
         case Structure_ZoneResidential:
         case Structure_ZoneCommercial:
         case Structure_ZoneIndustrial:
+        case Structure_Palace:          // super residential — caps at 1000 people, grows slowly
             return 3;
         case Structure_Silo:
         case Structure_Refinery:
@@ -157,6 +167,8 @@ inline int getStructureMaxLevel(int itemID) {
         case Structure_IX:
         case Structure_HeavyFactory:
         case Structure_RepairYard:
+        case Structure_StarPort:        // shipyard — industrial high
+        case Structure_Airport:         // transport hub — commercial high
             return 3;  // high
         default:
             return 0;
@@ -259,6 +271,8 @@ inline int getParkLandValueBonus(int itemID) {
         case Structure_Wall:            return kParkLandValueBonus;
         case Structure_GunTurret:       return kParkLandValueBonus;
         case Structure_RocketTurret:    return kParkLandValueBonus;
+        case Structure_Stadium:         return kStadiumLandValueBonus;
+        case Structure_Palace:          return kParkLandValueBonus;
         default:                        return 0;
     }
 }
@@ -358,6 +372,30 @@ inline int computeZoneSpriteFrame(int density, int valueTier,
     return density + valueTier * numDensity;
 }
 
+// --- Pollution growth suppression --------------------------------------------
+//
+// High pollution suppresses residential and commercial growth. Industrial
+// zones tolerate pollution (they produce it). This is the threshold above
+// which the growth stochastic roll is halved.
+
+constexpr int kPollutionGrowthThreshold = 80;  // pollution > this slows R/C growth
+constexpr int kPollutionGrowthBlock     = 160; // pollution > this blocks R/C growth entirely
+
+/// Returns true if pollution at this block is too high for the given role
+/// to grow to the requested level.
+inline bool isPollutionBlockingGrowth(int pollution, CityRole role, int /*targetLevel*/) {
+    if (role == CityRole::Industrial) return false;  // industry tolerates pollution
+    if (role == CityRole::None)       return false;
+    return pollution >= kPollutionGrowthBlock;
+}
+
+/// Returns true if pollution should halve the growth probability for R/C.
+inline bool isPollutionSlowingGrowth(int pollution, CityRole role) {
+    if (role == CityRole::Industrial) return false;
+    if (role == CityRole::None)       return false;
+    return pollution >= kPollutionGrowthThreshold;
+}
+
 // --- Demand model for zone growth --------------------------------------------
 
 /// Minimum residential supply (population) required for an Industrial or
@@ -419,6 +457,13 @@ inline int getZoneValueTier(int landValue, int numTiers) {
 inline int getZonePopulation(int itemID, int level) {
     if (level <= 0) return 0;
     if (level > 3) level = 3;
+
+    // Palace is a super residential — high-capacity civic residence that
+    // grows slowly via the same occupancy path. Caps at 1000 people.
+    if (itemID == Structure_Palace) {
+        static constexpr int kPalace[3] = { 250, 500, 1000 };
+        return kPalace[level - 1];
+    }
 
     // Residential is people; Commercial/Industrial are jobs. R skews higher
     // so a city feels inhabited before it feels saturated with jobs.

@@ -9,6 +9,7 @@
 #include <data.h>
 #include <dunecity/CityConstants.h>
 #include <Command.h>
+#include <Definitions.h>
 
 // =============================================================================
 // CityToolType Constants
@@ -176,4 +177,12 @@ TEST_CASE("CityRoad: Road placement on valid tile follows correct sequence", "[r
 
 TEST_CASE("CityRoad: CityTool_Road value matches QuantBot's toolType=1", "[road][integration]") {
     REQUIRE(static_cast<uint32_t>(DuneCity::CityTool_Road) == 1u);
+}
+
+// =============================================================================
+// Road Speed Multiplier
+// =============================================================================
+
+TEST_CASE("CityRoad: ROADSPEEDMULTIPLIER is 4x", "[road][speed]") {
+    REQUIRE(ROADSPEEDMULTIPLIER == 4);
 }

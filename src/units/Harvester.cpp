@@ -607,8 +607,8 @@ void Harvester::setSpeeds()
     speed = speed * (1 - MAXIMUMHARVESTERSLOWDOWN*percentFull);
 
     if(currentGameMap->getTile(location)->isRoad()) {
-        // Roads double ground-unit travel speed (city-sim feature).
-        speed *= 2;
+        // Roads boost ground-unit travel speed (city-sim feature).
+        speed *= ROADSPEEDMULTIPLIER;
     }
 
     switch(drawnAngle){

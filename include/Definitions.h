@@ -85,6 +85,7 @@
 #define BADLYDAMAGEDRATIO (0.5_fix)                //if health/getMaxHealth() < this, damage will become bad - smoke and shit
 #define HEAVILYDAMAGEDRATIO (025_fix)             //if health/getMaxHealth() < this, damage will become heavy damage - red color
 #define HEAVILYDAMAGEDSPEEDMULTIPLIER (0.75_fix)
+#define ROADSPEEDMULTIPLIER          (4)          //how much faster ground units move on road tiles
 #define NUMSELECTEDLISTS 9
 #define NUM_INFANTRY_PER_TILE 5                 //how many infantry can fit on a tile
 

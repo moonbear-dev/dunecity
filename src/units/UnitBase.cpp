@@ -1277,8 +1277,8 @@ void UnitBase::setSpeeds() {
         const Tile* pTile = currentGameMap->getTile(location);
         speed += speed*(1 - getTerrainDifficulty((TERRAINTYPE) pTile->getType()));
         if(pTile->isRoad()) {
-            // Roads double ground-unit travel speed (city-sim feature).
-            speed *= 2;
+            // Roads boost ground-unit travel speed (city-sim feature).
+            speed *= ROADSPEEDMULTIPLIER;
         }
         if(isBadlyDamaged()) {
             speed *= HEAVILYDAMAGEDSPEEDMULTIPLIER;

@@ -65,6 +65,22 @@ Tests:
 - `tests/`
 - `tests/CMakeLists.txt`
 
+## Versioning
+
+The canonical app version lives in three source-controlled files, kept in sync by `scripts/bump-version.sh`:
+
+```bash
+scripts/bump-version.sh 1.0.8          # set version
+scripts/bump-version.sh --check        # verify all files agree
+scripts/bump-version.sh 1.0.8 --dry-run  # preview changes
+```
+
+Tag releases use `vX.Y.Z` (e.g. `v1.0.8`). The CI workflow calls the script automatically on tag builds.
+
+Do not hand-edit `CMakeLists.txt` project VERSION, `include/config.h` VERSION, or `vcpkg.json` version separately. Use the script.
+
+Generated build outputs (`build/include/config.h`, app bundle `Info.plist`) are not source of truth -- they are derived at configure/build time from `CMakeLists.txt`.
+
 ## Build/test commands
 
 Use targeted verification. Start with:

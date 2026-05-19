@@ -2095,6 +2095,32 @@ void QuantBot::build(int militaryValue) {
 
 								logDebug("***CampAI Build A new Rocket turret increasing count to: %d", itemCount[Structure_RocketTurret]);
 							}
+							// City zone structures for campaign AI
+							else if (currentGame && currentGame->isCitySimEnabled()
+								&& money > 200
+								&& pBuilder->getProductionQueueSize() == 0
+								&& itemCount[Structure_WindTrap] > 0) {
+								int resCount = itemCount[Structure_ZoneResidential];
+								int comCount = itemCount[Structure_ZoneCommercial];
+								int indCount = itemCount[Structure_ZoneIndustrial];
+								int totalZones = resCount + comCount + indCount;
+
+								Uint32 zoneID = Structure_ZoneResidential;
+								if (totalZones > 0) {
+									if (comCount * 5 < totalZones)
+										zoneID = Structure_ZoneCommercial;
+									else if (indCount * 5 < totalZones)
+										zoneID = Structure_ZoneIndustrial;
+								}
+
+								if (pBuilder->isAvailableToBuild(zoneID)
+									&& findPlaceLocation(zoneID).isValid()) {
+									produceItemWithLogging(zoneID);
+									itemCount[zoneID]++;
+									logDebug("***CampAI CITY-ZONE: Building %s (R:%d C:%d I:%d)",
+										getItemNameByID(zoneID).c_str(), resCount, comCount, indCount);
+								}
+							}
 
 							// MULTIPLAYER FIX: Use deterministic timer instead of random
 							buildTimer = 5 + (getHouse()->getHouseID() % 10);  // 5-14 cycles
@@ -2504,6 +2530,35 @@ void QuantBot::build(int militaryValue) {
 									&& itemCount[Structure_LightFactory] > 0) {
 								itemID = Structure_Palace;
 							}
+				// 18. City zone structures (when city sim is active)
+				// Zones are 2x2 structures built via the CY; runZoneGrowth()
+				// requires an actual structure object, so tile-flag placement
+				// (CMD_CITY_PLACE_ZONE without a structure) does not work.
+				// Target ratio: ~3 R : 1 C : 1 I.
+				if (itemID == NONE_ID && !skipRemainingStructureLogic
+					&& currentGame && currentGame->isCitySimEnabled()
+					&& money > 200
+					&& itemCount[Structure_WindTrap] > 0) {
+					int resCount = itemCount[Structure_ZoneResidential];
+					int comCount = itemCount[Structure_ZoneCommercial];
+					int indCount = itemCount[Structure_ZoneIndustrial];
+					int totalZones = resCount + comCount + indCount;
+
+					Uint32 zoneID = Structure_ZoneResidential;
+					if (totalZones > 0) {
+						if (comCount * 5 < totalZones)
+							zoneID = Structure_ZoneCommercial;
+						else if (indCount * 5 < totalZones)
+							zoneID = Structure_ZoneIndustrial;
+					}
+
+					if (pBuilder->isAvailableToBuild(zoneID)
+						&& findPlaceLocation(zoneID).isValid()) {
+						itemID = zoneID;
+						logDebug("CITY-ZONE: Building %s (R:%d C:%d I:%d total:%d)",
+							getItemNameByID(zoneID).c_str(), resCount, comCount, indCount, totalZones);
+					}
+				}
 
 			if (pBuilder->isAvailableToBuild(itemID) && findPlaceLocation(itemID).isValid() && itemID != NONE_ID) {
 				// Pre-lay concrete only for specific structures that need max health:
@@ -3720,67 +3775,21 @@ void QuantBot::manageCityBuilding() {
     Coord baseCenter = findBaseCentre(getHouse()->getHouseID());
     if (!baseCenter.isValid()) return;
 
-    int houseID = getHouse()->getHouseID();
-    int zonesPlaced = 0;
+    // Zone structures are now built through the Construction Yard build
+    // order (see the Structure_ConstructionYard case in build()).  The old
+    // tile-flag approach (CMD_CITY_PLACE_ZONE without a backing structure)
+    // created phantom zones that runZoneGrowth() ignored (it requires an
+    // actual structure object) and that blocked real zone placement.
+    //
+    // Road placement remains here: roads are tile-level and don't need the
+    // Construction Yard pipeline.
+
     int roadsPlaced = 0;
-    constexpr int MAX_ZONES_PER_ROUND = 4;
     constexpr int MAX_ROADS_PER_ROUND = 6;
     constexpr int CITY_RADIUS = 15;
 
     static constexpr int dx4[] = { 0, 1, 0, -1 };
     static constexpr int dy4[] = { -1, 0, 1, 0 };
-
-    for (int r = 2; r <= CITY_RADIUS && zonesPlaced < MAX_ZONES_PER_ROUND; r++) {
-        for (int angle = 0; angle < r * 8 && zonesPlaced < MAX_ZONES_PER_ROUND; angle++) {
-            int ox, oy;
-            int side = angle / (r * 2);
-            int pos = angle % (r * 2);
-            switch (side) {
-                case 0: ox = -r + pos; oy = -r; break;
-                case 1: ox = r; oy = -r + pos; break;
-                case 2: ox = r - pos; oy = r; break;
-                default: ox = -r; oy = r - pos; break;
-            }
-
-            int tx = baseCenter.x + ox;
-            int ty = baseCenter.y + oy;
-
-            if (tx < 0 || tx >= currentGameMap->getSizeX() || ty < 0 || ty >= currentGameMap->getSizeY()) continue;
-            if (!currentGameMap->tileExists(tx, ty)) continue;
-
-            Tile* tile = currentGameMap->getTile(tx, ty);
-            if (tile->hasCityZone() || tile->isRoad()) continue;
-            if (tile->hasAStructure() || tile->hasAnObject()) continue;
-
-            if (tile->getType() != Terrain_Rock && tile->getType() != Terrain_Sand) continue;
-
-            bool nearRoad = false;
-            for (int d = 0; d < 4; d++) {
-                int nx = tx + dx4[d];
-                int ny = ty + dy4[d];
-                if (nx >= 0 && nx < currentGameMap->getSizeX() && ny >= 0 && ny < currentGameMap->getSizeY()) {
-                    if (currentGameMap->tileExists(nx, ny) && currentGameMap->getTile(nx, ny)->isRoad()) {
-                        nearRoad = true;
-                        break;
-                    }
-                }
-            }
-
-            if (nearRoad || r <= 3) {
-                DuneCity::ZoneType zoneType;
-                int choice = (tx + ty + houseID) % 5;
-                if (choice < 3) zoneType = DuneCity::ZoneType::Residential;
-                else if (choice < 4) zoneType = DuneCity::ZoneType::Commercial;
-                else zoneType = DuneCity::ZoneType::Industrial;
-
-                currentGame->getCommandManager().addCommand(
-                    Command(getPlayerID(), CMD_CITY_PLACE_ZONE,
-                            static_cast<Uint32>(tx), static_cast<Uint32>(ty),
-                            static_cast<Uint32>(zoneType)));
-                zonesPlaced++;
-            }
-        }
-    }
 
     for (int r = 1; r <= CITY_RADIUS && roadsPlaced < MAX_ROADS_PER_ROUND; r++) {
         for (int angle = 0; angle < r * 8 && roadsPlaced < MAX_ROADS_PER_ROUND; angle++) {

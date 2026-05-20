@@ -76,6 +76,8 @@ public:
 
     /**
         Saves all stored data out into a binary stream.
+        For SAVEGAMEVERSION >= 9811, writes an item count before the table
+        so future item additions are self-describing.
         \param stream   the stream to save to
         \see load
     */
@@ -83,10 +85,15 @@ public:
 
     /**
         Loads all stored data from a stream.
-        \param stream   the stream to load from
+        \param stream       the stream to load from
+        \param savedItemCount  number of ItemID rows stored in the save.
+                               For SAVEGAMEVERSION >= 9811 this is read from
+                               the stream (pass 0 to auto-read).
+                               For older saves, caller must supply the correct
+                               count (e.g. LEGACY_NUM_ITEM_ID_9810 for v1.0.7).
         \see save
     */
-    void load(InputStream& stream);
+    void load(InputStream& stream, int savedItemCount = 0);
 
     /**
         Logs all loaded object data to SDL log for debugging.

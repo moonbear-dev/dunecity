@@ -50,7 +50,7 @@ public:
     }
 
     size_t getDataLength() const {
-        return (bReadOnly == true) ? bufferSize : currentPos;
+        return currentPos;
     }
 
     void flush() override

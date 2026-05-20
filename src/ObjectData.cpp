@@ -290,6 +290,9 @@ void ObjectData::loadFromINIFile(const std::string& filename)
 
 void ObjectData::save(OutputStream& stream) const
 {
+    // SAVEGAMEVERSION >= 9811: write item count so the loader is self-describing.
+    stream.writeUint32(static_cast<Uint32>(Num_ItemID));
+
     for(int i=0;i<Num_ItemID;i++) {
         for(int h=0;h<NUM_HOUSES;h++) {
             stream.writeBool(data[i][h].enabled);
@@ -311,7 +314,7 @@ void ObjectData::save(OutputStream& stream) const
             stream.writeSint8(data[i][h].upgradeLevel);
         }
     }
-    
+
     // Save map settings
     stream.writeSint32(harvesterLimitSmallMap);
     stream.writeSint32(harvesterLimitMediumMap);
@@ -323,9 +326,19 @@ void ObjectData::save(OutputStream& stream) const
     stream.writeSint32(unitLimitHugeMap);
 }
 
-void ObjectData::load(InputStream& stream)
+void ObjectData::load(InputStream& stream, int savedItemCount)
 {
-    for(int i=0;i<Num_ItemID;i++) {
+    // For SAVEGAMEVERSION >= 9811, savedItemCount should be 0 (auto-read).
+    if(savedItemCount == 0) {
+        savedItemCount = static_cast<int>(stream.readUint32());
+    }
+
+    // Clamp to current Num_ItemID — if a future build added more items
+    // and we're loading that save in an older build, skip the extras.
+    int itemsToLoad = (savedItemCount <= Num_ItemID) ? savedItemCount : Num_ItemID;
+    int itemsToSkip = (savedItemCount > Num_ItemID) ? (savedItemCount - Num_ItemID) : 0;
+
+    for(int i=0;i<itemsToLoad;i++) {
         for(int h=0;h<NUM_HOUSES;h++) {
             data[i][h].enabled = stream.readBool();
             data[i][h].hitpoints = stream.readSint32();
@@ -346,7 +359,22 @@ void ObjectData::load(InputStream& stream)
             data[i][h].upgradeLevel = stream.readSint8();
         }
     }
-    
+
+    // Items beyond itemsToLoad but within Num_ItemID keep constructor defaults (zeroed/disabled).
+    // Items beyond Num_ItemID in the stream must be consumed to keep alignment.
+    for(int i=0;i<itemsToSkip;i++) {
+        for(int h=0;h<NUM_HOUSES;h++) {
+            stream.readBool();
+            stream.readSint32(); stream.readSint32(); stream.readSint32();
+            stream.readSint32(); stream.readSint32(); stream.readSint32();
+            stream.readSint32(); stream.readSint32();
+            stream.readFixPoint(); stream.readFixPoint();
+            stream.readSint32(); stream.readSint32(); stream.readSint32();
+            stream.readUint32();
+            stream.readSint8(); stream.readSint8();
+        }
+    }
+
     // Load map settings
     harvesterLimitSmallMap = stream.readSint32();
     harvesterLimitMediumMap = stream.readSint32();

@@ -35,6 +35,7 @@
 // v1.0.0–v1.0.7 shipped SAVEGAMEVERSION 9810 with Num_ItemID=48.
 // v1.0.8–v1.0.10 also used 9810 but with Num_ItemID=52 (4 items added
 // without bumping the version — the bug this fixes).
+#define LEGACY_NUM_ITEM_ID_DUNELEGACY  41   // Original Dune Legacy 0.99.x: Structure_LastID=19, Unit_Troopers=40
 #define LEGACY_NUM_ITEM_ID_9810  48
 
 #define MAX_PLAYERNAMELENGHT    24

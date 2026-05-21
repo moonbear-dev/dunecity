@@ -47,6 +47,7 @@ std::mutex Game::performanceLogMutex;
 #include <misc/format.h>
 #include <misc/SDL2pp.h>
 #include <misc/DiscordManager.h>
+#include <misc/SaveCompat.h>
 
 #include <players/HumanPlayer.h>
 
@@ -3185,27 +3186,12 @@ bool Game::loadSaveGame(InputStream& stream) {
 
     // read in the unit/structure data
     // SAVEGAMEVERSION 9811+ stores an item count in the stream (pass 0 to auto-read).
-    // Version 9810 predates the count field.  v1.0.0–v1.0.7 saved 48 items;
-    // v1.0.8–v1.0.10 saved 52.  The duneVersion string distinguishes them.
-    int savedItemCount = 0;  // 0 = read from stream (9811+)
-    if(savegameVersion <= 9810) {
-        // All releases that shipped 9810 used PACKAGE "dunecity" with
-        // version strings like "dunecity1.0.7".  Parse the minor version
-        // to decide the item count.  Versions < 1.0.8 had Num_ItemID=48;
-        // 1.0.8+ had 52.
-        savedItemCount = LEGACY_NUM_ITEM_ID_9810;  // 48 — safe default
-        // duneVersion format: "dunecity<MAJOR>.<MINOR>.<PATCH>"
-        auto pos = duneVersion.find("dunecity");
-        if(pos != std::string::npos) {
-            std::string verPart = duneVersion.substr(pos + 8);  // skip "dunecity"
-            int major = 0, minor = 0, patch = 0;
-            if(sscanf(verPart.c_str(), "%d.%d.%d", &major, &minor, &patch) >= 2) {
-                // v1.0.8+ added 4 extra items (Stadium, Airport, AmbientAirplane, AmbientHelicopter)
-                if(major > 1 || (major == 1 && minor > 0) || (major == 1 && minor == 0 && patch >= 8)) {
-                    savedItemCount = 52;
-                }
-            }
-        }
+    // Pre-9811 saves lack the count field; we infer it from duneVersion:
+    //   "dunelegacy*"               → 41 items (original Dune Legacy 0.99.x)
+    //   "dunecity1.0.0"–"1.0.7"    → 48 items
+    //   "dunecity1.0.8"–"1.0.10"   → 52 items
+    int savedItemCount = determineLegacySavedItemCount(savegameVersion, duneVersion);
+    if(savedItemCount != 0) {
         SDL_Log("Game::loadSaveGame(): legacy save v%d (%s) — loading %d items (current: %d)",
                 savegameVersion, duneVersion.c_str(), savedItemCount, Num_ItemID);
     }

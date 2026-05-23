@@ -209,6 +209,7 @@ void CitySimulation::executeCityCommand(int /*playerID*/, int commandID,
                     }
 
                     tile->setRoad(placementState.hasRoad);
+                    tile->setDestroyedStructureTile(DestroyedStructure_None);
                     SDL_Log("CityTool: Road placed at (%d, %d)", x, y);
                 } break;
 

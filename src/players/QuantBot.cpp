@@ -3972,7 +3972,9 @@ void QuantBot::manageCityBuilding() {
             Tile* tile = currentGameMap->getTile(tx, ty);
             // Skip tiles that already have road, zone, structure, or aren't buildable
             if (tile->isRoad() || tile->hasCityZone() || tile->hasAStructure()) continue;
-            if (!tile->isRock() || tile->isMountain() || tile->hasAGroundObject()) continue;
+            if (!tile->isRock() || tile->isMountain()) continue;
+            // Allow rubble tiles (destroyed structures) — road clears the rubble
+            if (tile->hasAGroundObject() && tile->getDestroyedStructureTile() == DestroyedStructure_None) continue;
 
             bool nearStructure = false;
             bool nearRoadOrStructure = false;

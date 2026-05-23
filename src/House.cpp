@@ -712,6 +712,7 @@ StructureBase* House::placeStructure(Uint32 builderID, int itemID, int xPos, int
             // and as a visual road overlay.
             Tile* pTile = currentGameMap->getTile(xPos, yPos);
             pTile->setRoad(true);
+            pTile->setDestroyedStructureTile(DestroyedStructure_None);
             pTile->setOwner(getHouseID());
             currentGameMap->viewMap(getHouseID(), xPos, yPos, currentGame->objectData.data[Structure_Road][houseID].viewrange);
 

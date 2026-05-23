@@ -2530,15 +2530,18 @@ void QuantBot::build(int militaryValue) {
 				// requires an actual structure object, so tile-flag placement
 				// (CMD_CITY_PLACE_ZONE without a structure) does not work.
 				// Target ratio: ~3 R : 1 C : 1 I.
-				// Only start zoning after a reasonably built base:
-				// starport + heavy factory (+ refinery as baseline).
+				// Prerequisites scale with tech level:
+				//   Tech 1-3: windtrap + refinery + light factory
+				//   Tech 4-5: + heavy factory
+				//   Tech 6+:  + starport
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
 					&& currentGame && currentGame->isCitySimEnabled()
 					&& money > 200
 					&& itemCount[Structure_WindTrap] > 0
 					&& itemCount[Structure_Refinery] > 0
-					&& itemCount[Structure_HeavyFactory] > 0
-					&& itemCount[Structure_StarPort] > 0) {
+					&& itemCount[Structure_LightFactory] > 0
+					&& (currentGame->techLevel < 4 || itemCount[Structure_HeavyFactory] > 0)
+					&& (currentGame->techLevel < 6 || itemCount[Structure_StarPort] > 0)) {
 					// Zones consume power as they grow. Before placing one,
 					// ensure we have surplus power. If not, build a nuclear
 					// plant (or windtrap fallback) first.

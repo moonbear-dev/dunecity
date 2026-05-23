@@ -2179,14 +2179,19 @@ void QuantBot::build(int militaryValue) {
 								logDebug("PRODUCTION: Upgrading CY to level %d, credits: %d", pBuilder->getCurrentUpgradeLevel() + 1, money);
 							}
 							else if ((getHouse()->getProducedPower() < getHouse()->getPowerRequirement())
-								&& pBuilder->isAvailableToBuild(Structure_WindTrap)
-								&& findPlaceLocation(Structure_WindTrap).isValid()
 								&& pBuilder->getProductionQueueSize() == 0) {
-
-								produceItemWithLogging(Structure_WindTrap);
-								itemCount[Structure_WindTrap]++;
-
-								logDebug("***CampAI Build windtrap: power %d/%d", getHouse()->getProducedPower(), getHouse()->getPowerRequirement());
+								// Prefer nuclear plant over windtrap
+								if (pBuilder->isAvailableToBuild(Structure_NuclearPlant)
+									&& findPlaceLocation(Structure_NuclearPlant).isValid()) {
+									produceItemWithLogging(Structure_NuclearPlant);
+									itemCount[Structure_NuclearPlant]++;
+									logDebug("***CampAI Build Nuclear Plant: power %d/%d", getHouse()->getProducedPower(), getHouse()->getPowerRequirement());
+								} else if (pBuilder->isAvailableToBuild(Structure_WindTrap)
+									&& findPlaceLocation(Structure_WindTrap).isValid()) {
+									produceItemWithLogging(Structure_WindTrap);
+									itemCount[Structure_WindTrap]++;
+									logDebug("***CampAI Build windtrap: power %d/%d", getHouse()->getProducedPower(), getHouse()->getPowerRequirement());
+								}
 							}
 							else if ((getHouse()->getStoredCredits() > getHouse()->getCapacity() * 0.90_fix)  // Only build when 90% full
 								&& pBuilder->isAvailableToBuild(Structure_Silo)
@@ -2300,12 +2305,17 @@ void QuantBot::build(int militaryValue) {
 									} else if (!hasRadar && pBuilder->isAvailableToBuild(Structure_Radar) && getHouse()->hasPower()) {
 						itemID = Structure_Radar;
 										logDebug("COUNTER-ORNITHOPTER: Building radar prerequisite (enemy ornis: %d)", maxEnemyOrnithopters);
-									} else if (!hasPowerBufferForTurret()
-										&& pBuilder->isAvailableToBuild(Structure_WindTrap)
-										&& findPlaceLocation(Structure_WindTrap).isValid()) {
-										itemID = Structure_WindTrap;
+									} else if (!hasPowerBufferForTurret()) {
 										int powerExcess = getHouse()->getProducedPower() - getHouse()->getPowerRequirement();
-										logDebug("COUNTER-ORNITHOPTER: Adding windtrap for turret power buffer (excess: %d, need: 225)", powerExcess);
+										if (pBuilder->isAvailableToBuild(Structure_NuclearPlant)
+											&& findPlaceLocation(Structure_NuclearPlant).isValid()) {
+											itemID = Structure_NuclearPlant;
+											logDebug("COUNTER-ORNITHOPTER: Nuclear Plant for turret power (excess: %d)", powerExcess);
+										} else if (pBuilder->isAvailableToBuild(Structure_WindTrap)
+											&& findPlaceLocation(Structure_WindTrap).isValid()) {
+											itemID = Structure_WindTrap;
+											logDebug("COUNTER-ORNITHOPTER: Windtrap for turret power (excess: %d)", powerExcess);
+										}
 									} else if (pBuilder->isAvailableToBuild(Structure_RocketTurret)
 							&& findTurretPlaceLocation(Structure_RocketTurret).isValid()
 										&& hasPowerBufferForTurret()) {
@@ -2334,15 +2344,19 @@ void QuantBot::build(int militaryValue) {
 					&& pBuilder->isAvailableToBuild(Structure_WindTrap)) {
 						itemID = Structure_WindTrap;
 					}
-				// 1b. Power Deficit Recovery - build windtraps when power production is below requirement
-				// This ensures the AI catches up on power even without turret prerequisites being met
+				// 1b. Power Deficit Recovery - prefer nuclear plant, fall back to windtrap
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
-					&& getHouse()->getProducedPower() < getHouse()->getPowerRequirement()
-					&& pBuilder->isAvailableToBuild(Structure_WindTrap)
-					&& findPlaceLocation(Structure_WindTrap).isValid()) {
-					itemID = Structure_WindTrap;
+					&& getHouse()->getProducedPower() < getHouse()->getPowerRequirement()) {
 					int powerDeficit = getHouse()->getPowerRequirement() - getHouse()->getProducedPower();
-					logDebug("POWER-RECOVERY: Building windtrap to recover from power deficit (%d)", powerDeficit);
+					if (pBuilder->isAvailableToBuild(Structure_NuclearPlant)
+						&& findPlaceLocation(Structure_NuclearPlant).isValid()) {
+						itemID = Structure_NuclearPlant;
+						logDebug("POWER-RECOVERY: Building Nuclear Plant for power deficit (%d)", powerDeficit);
+					} else if (pBuilder->isAvailableToBuild(Structure_WindTrap)
+						&& findPlaceLocation(Structure_WindTrap).isValid()) {
+						itemID = Structure_WindTrap;
+						logDebug("POWER-RECOVERY: Building windtrap for power deficit (%d)", powerDeficit);
+					}
 				}
 				// 1c. City-mode proportional power buffer.
 				//
@@ -2487,19 +2501,24 @@ void QuantBot::build(int militaryValue) {
 					repairDamagedWindtraps();
 				}
 				
-				// 8b-pre. Build windtraps for power buffer before turrets
+				// 8b-pre. Build power for turret buffer — prefer nuclear, fall back to windtrap
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
 					&& getGameInitSettings().getGameOptions().rocketTurretsNeedPower
 					&& itemCount[Structure_RepairYard] > 0
 					&& (itemCount[Structure_StarPort] > 0 || itemCount[Structure_HeavyFactory] > 0)
 					&& pBuilder->getCurrentUpgradeLevel() >= 2
 					&& pBuilder->isAvailableToBuild(Structure_RocketTurret)
-					&& !hasPowerBufferForTurret()
-					&& pBuilder->isAvailableToBuild(Structure_WindTrap)
-					&& findPlaceLocation(Structure_WindTrap).isValid()) {
-					itemID = Structure_WindTrap;
+					&& !hasPowerBufferForTurret()) {
 					int powerExcess = getHouse()->getProducedPower() - getHouse()->getPowerRequirement();
-					logDebug("TURRET-POWER: Building windtrap for turret power buffer (excess: %d, need: 225)", powerExcess);
+					if (pBuilder->isAvailableToBuild(Structure_NuclearPlant)
+						&& findPlaceLocation(Structure_NuclearPlant).isValid()) {
+						itemID = Structure_NuclearPlant;
+						logDebug("TURRET-POWER: Nuclear Plant for turret buffer (excess: %d, need: 225)", powerExcess);
+					} else if (pBuilder->isAvailableToBuild(Structure_WindTrap)
+						&& findPlaceLocation(Structure_WindTrap).isValid()) {
+						itemID = Structure_WindTrap;
+						logDebug("TURRET-POWER: Windtrap for turret buffer (excess: %d, need: 225)", powerExcess);
+					}
 				}
 				// 8b. Two baseline rocket turrets after repair yard (requires CY level 2)
 				if (itemID == NONE_ID && !skipRemainingStructureLogic

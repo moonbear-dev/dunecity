@@ -2454,49 +2454,6 @@ void QuantBot::build(int militaryValue) {
 						itemCount[Unit_Harvester]++;
 					}
 				}
-				// 4b. Early R/I/C zones when spice is scarce
-				//     On no/low-spice maps, zones are the primary income source.
-				//     Promote zone building above military so the bot invests in
-				//     tax-generating infrastructure early.
-				if (itemID == NONE_ID && !skipRemainingStructureLogic
-					&& lowSpiceEconomy
-					&& currentGame && currentGame->isCitySimEnabled()
-					&& itemCount[Structure_WindTrap] > 0
-					&& itemCount[Structure_Refinery] > 0) {
-					constexpr int kZonePowerHeadroom = 24;
-					const int powerSurplus = getHouse()->getProducedPower() - getHouse()->getPowerRequirement();
-					if (powerSurplus < kZonePowerHeadroom) {
-						if (pBuilder->isAvailableToBuild(Structure_NuclearPlant)
-							&& findPlaceLocation(Structure_NuclearPlant).isValid()) {
-							itemID = Structure_NuclearPlant;
-							logDebug("LOW-SPICE-ZONE-POWER: Building Nuclear Plant (surplus=%d)", powerSurplus);
-						} else if (pBuilder->isAvailableToBuild(Structure_WindTrap)
-							&& findPlaceLocation(Structure_WindTrap).isValid()) {
-							itemID = Structure_WindTrap;
-							logDebug("LOW-SPICE-ZONE-POWER: Building Windtrap (surplus=%d)", powerSurplus);
-						}
-					} else {
-						int resCount = itemCount[Structure_ZoneResidential];
-						int comCount = itemCount[Structure_ZoneCommercial];
-						int indCount = itemCount[Structure_ZoneIndustrial];
-						int totalZones = resCount + comCount + indCount;
-
-						Uint32 zoneID = Structure_ZoneResidential;
-						if (totalZones > 0) {
-							if (comCount * 5 < totalZones)
-								zoneID = Structure_ZoneCommercial;
-							else if (indCount * 5 < totalZones)
-								zoneID = Structure_ZoneIndustrial;
-						}
-
-						if (pBuilder->isAvailableToBuild(zoneID)
-							&& findPlaceLocation(zoneID).isValid()) {
-							itemID = zoneID;
-							logDebug("LOW-SPICE-ZONE: Building %s (R:%d C:%d I:%d spice:%d)",
-								getItemNameByID(zoneID).c_str(), resCount, comCount, indCount, lastCalculatedSpice);
-						}
-					}
-				}
 				// 5. StarPort (skip if nothing available/enabled in CHOAM and no heavy factory)
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
 					&& itemCount[Structure_StarPort] == 0 
@@ -2672,7 +2629,7 @@ void QuantBot::build(int militaryValue) {
 						// Tech 7+: Require Repair Yard + IX
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
 								&& money > 3000 && pBuilder->isAvailableToBuild(Structure_HeavyFactory)
-								&& (activeHeavyFactoryCount >= itemCount[Structure_HeavyFactory] || itemCount[Structure_HeavyFactory] < money / 5000)) {
+								&& (activeHeavyFactoryCount >= itemCount[Structure_HeavyFactory] || itemCount[Structure_HeavyFactory] < 1 + money / 4000)) {
 								
 								int techLevel = currentGame ? currentGame->techLevel : 8;
 								bool prerequisitesMet = false;
@@ -2693,7 +2650,7 @@ void QuantBot::build(int militaryValue) {
 								if (prerequisitesMet) {
 									itemID = Structure_HeavyFactory;
 									logDebug("PRIORITY Heavy Factory - active: %d  total: %d  money: %d  capacity_limit: %d  tech: %d",
-										activeHeavyFactoryCount, getHouse()->getNumItems(Structure_HeavyFactory), money, money / 5000, techLevel);
+										activeHeavyFactoryCount, getHouse()->getNumItems(Structure_HeavyFactory), money, 1 + money / 4000, techLevel);
 								}
 							}
 				// 13. Refineries for harvester ratio — skip when no spice

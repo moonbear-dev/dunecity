@@ -1192,6 +1192,36 @@ Coord QuantBot::findPlaceLocation(Uint32 itemID) {
 					else if (closestIndDist <= 16) {
 						locationScore += 20;
 					}
+
+					// Actual pollution density penalty (uses city sim layer)
+					auto* citySim = currentGame ? currentGame->getCitySimulation() : nullptr;
+					if (citySim) {
+						const auto& polMap = citySim->getPollutionDensityMap();
+						// Sample pollution across the structure footprint
+						int totalPollution = 0;
+						for (int px = placeLocationX; px < placeLocationEndX; px++) {
+							for (int py = placeLocationY; py < placeLocationEndY; py++) {
+								totalPollution += polMap.worldGet(px, py);
+							}
+						}
+						// Scale penalty: -1 per 10 pollution (uint8 range 0-255)
+						locationScore -= totalPollution / 10;
+					}
+
+					// Sand adjacency bonus — higher land value near sand/desert
+					Coord zoneSize = getStructureSize(itemID);
+					int sandBonus = 0;
+					for (int adjX = placeLocationX - 1; adjX <= placeLocationX + zoneSize.x; adjX++) {
+						for (int adjY = placeLocationY - 1; adjY <= placeLocationY + zoneSize.y; adjY++) {
+							if (adjX >= placeLocationX && adjX < placeLocationX + zoneSize.x &&
+								adjY >= placeLocationY && adjY < placeLocationY + zoneSize.y)
+								continue;
+							if (getMap().tileExists(adjX, adjY) && getMap().getTile(adjX, adjY)->isSand())
+								sandBonus += 5;
+						}
+					}
+					locationScore += sandBonus;
+
 					// R ↔ C synergy
 					if (isResidential && nearbyCom > 0) locationScore += 15;
 					if (isCommercial && nearbyRes > 0)  locationScore += 15;
@@ -2397,8 +2427,12 @@ void QuantBot::build(int militaryValue) {
 						itemCount[Unit_Harvester]++;
 					}
 				}
-				// 3. Refinery (ratio: 1 refinery per 3 harvesters)
+				// Low-spice economy: skip additional refineries, pivot to R/I/C zones
+				const bool lowSpiceEconomy = (lastCalculatedSpice < 500);
+
+				// 3. Refinery (ratio: 1 refinery per 3 harvesters) — skip when no spice
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
+					&& !lowSpiceEconomy
 					&& itemCount[Structure_Refinery] < itemCount[Unit_Harvester] / 3
 			&& pBuilder->isAvailableToBuild(Structure_Refinery)
 			&& !(gameMode == GameMode::Campaign && itemCount[Structure_Refinery] >= 2 && itemCount[Structure_RepairYard] == 0 && currentGame && currentGame->techLevel >= 5)) {
@@ -2408,14 +2442,59 @@ void QuantBot::build(int militaryValue) {
 						}
 					}
 				// 4. Refinery (< 4, money < 2000) - get free harvester when low on credits
+				//    Skip when spice is scarce — refineries won't help, build zones instead
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
+				&& !lowSpiceEconomy
 				&& gameMode != GameMode::Campaign
-				&& itemCount[Structure_Refinery] < 4 
-				&& pBuilder->isAvailableToBuild(Structure_Refinery) 
+				&& itemCount[Structure_Refinery] < 4
+				&& pBuilder->isAvailableToBuild(Structure_Refinery)
 					&& money < 2000) {
 					itemID = Structure_Refinery;
 					if (itemCount[Unit_Harvester] < harvesterLimit) {
 						itemCount[Unit_Harvester]++;
+					}
+				}
+				// 4b. Early R/I/C zones when spice is scarce (promoted from rule 18)
+				//     On low/no-spice maps, zones are the primary income source via tax.
+				//     Only requires windtrap + refinery (relaxed from full military prereqs).
+				if (itemID == NONE_ID && !skipRemainingStructureLogic
+					&& lowSpiceEconomy
+					&& currentGame && currentGame->isCitySimEnabled()
+					&& money > 200
+					&& itemCount[Structure_WindTrap] > 0
+					&& itemCount[Structure_Refinery] > 0) {
+					constexpr int kZonePowerHeadroom = 24;
+					const int powerSurplus = getHouse()->getProducedPower() - getHouse()->getPowerRequirement();
+					if (powerSurplus < kZonePowerHeadroom) {
+						if (pBuilder->isAvailableToBuild(Structure_NuclearPlant)
+							&& findPlaceLocation(Structure_NuclearPlant).isValid()) {
+							itemID = Structure_NuclearPlant;
+							logDebug("LOW-SPICE-ZONE-POWER: Building Nuclear Plant (surplus=%d)", powerSurplus);
+						} else if (pBuilder->isAvailableToBuild(Structure_WindTrap)
+							&& findPlaceLocation(Structure_WindTrap).isValid()) {
+							itemID = Structure_WindTrap;
+							logDebug("LOW-SPICE-ZONE-POWER: Building Windtrap (surplus=%d)", powerSurplus);
+						}
+					} else {
+						int resCount = itemCount[Structure_ZoneResidential];
+						int comCount = itemCount[Structure_ZoneCommercial];
+						int indCount = itemCount[Structure_ZoneIndustrial];
+						int totalZones = resCount + comCount + indCount;
+
+						Uint32 zoneID = Structure_ZoneResidential;
+						if (totalZones > 0) {
+							if (comCount * 5 < totalZones)
+								zoneID = Structure_ZoneCommercial;
+							else if (indCount * 5 < totalZones)
+								zoneID = Structure_ZoneIndustrial;
+						}
+
+						if (pBuilder->isAvailableToBuild(zoneID)
+							&& findPlaceLocation(zoneID).isValid()) {
+							itemID = zoneID;
+							logDebug("LOW-SPICE-ZONE: Building %s (R:%d C:%d I:%d spice:%d)",
+								getItemNameByID(zoneID).c_str(), resCount, comCount, indCount, lastCalculatedSpice);
+						}
 					}
 				}
 				// 5. StarPort (skip if nothing available/enabled in CHOAM and no heavy factory)
@@ -2617,8 +2696,9 @@ void QuantBot::build(int militaryValue) {
 										activeHeavyFactoryCount, getHouse()->getNumItems(Structure_HeavyFactory), money, money / 4000, techLevel);
 								}
 							}
-				// 13. Refineries for harvester ratio
+				// 13. Refineries for harvester ratio — skip when no spice
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
+						&& !lowSpiceEconomy
 						&& ((itemCount[Structure_Refinery] * 3.5_fix < itemCount[Unit_Harvester])
 					|| (currentGame && currentGame->techLevel < 4))
 						&& pBuilder->isAvailableToBuild(Structure_Refinery)

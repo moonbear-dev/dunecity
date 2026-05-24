@@ -2454,13 +2454,14 @@ void QuantBot::build(int militaryValue) {
 						itemCount[Unit_Harvester]++;
 					}
 				}
-				// 4b. Early R/I/C zones when spice is scarce (promoted from rule 18)
-				//     On low/no-spice maps, zones are the primary income source via tax.
-				//     Only requires windtrap + refinery (relaxed from full military prereqs).
+				// 4b. Early R/I/C zones when spice is scarce AND money is low
+				//     Only promotes zones above military when the bot actually needs
+				//     income. With money available, rules 5-17 build military first
+				//     and zones fire at normal priority (rule 18, relaxed for low spice).
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
 					&& lowSpiceEconomy
+					&& money < 1000
 					&& currentGame && currentGame->isCitySimEnabled()
-					&& money > 200
 					&& itemCount[Structure_WindTrap] > 0
 					&& itemCount[Structure_Refinery] > 0) {
 					constexpr int kZonePowerHeadroom = 24;
@@ -2753,9 +2754,9 @@ void QuantBot::build(int militaryValue) {
 					&& money > 200
 					&& itemCount[Structure_WindTrap] > 0
 					&& itemCount[Structure_Refinery] > 0
-					&& itemCount[Structure_LightFactory] > 0
-					&& (currentGame->techLevel < 4 || itemCount[Structure_HeavyFactory] > 0)
-					&& (currentGame->techLevel < 6 || itemCount[Structure_StarPort] > 0)) {
+					&& (lowSpiceEconomy || itemCount[Structure_LightFactory] > 0)
+					&& (lowSpiceEconomy || currentGame->techLevel < 4 || itemCount[Structure_HeavyFactory] > 0)
+					&& (lowSpiceEconomy || currentGame->techLevel < 6 || itemCount[Structure_StarPort] > 0)) {
 					// Zones consume power as they grow. Before placing one,
 					// ensure we have surplus power. If not, build a nuclear
 					// plant (or windtrap fallback) first.

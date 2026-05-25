@@ -851,10 +851,11 @@ constexpr uint32_t kCyclesPerBudgetTick = 62;
 constexpr int      kBudgetTicksPerYear  = 50;
 
 /// Compute annual tax revenue (in credits) for a city of `totalPopulation`
-/// at the given tax rate (0-100, but realistically 1-20 in-game).
+/// (in raw SC units) at the given tax rate (0-100). Revenue is scaled by
+/// kPopDisplayMultiplier so credits match the displayed population scale.
 inline int32_t computeAnnualTaxRevenue(int totalPopulation, int taxRatePct) {
     if (totalPopulation <= 0 || taxRatePct <= 0) return 0;
-    return (totalPopulation * taxRatePct) / 100;
+    return (totalPopulation * 20 * taxRatePct) / 100;
 }
 
 } // namespace DuneCity

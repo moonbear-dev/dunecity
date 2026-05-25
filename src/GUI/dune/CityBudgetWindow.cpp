@@ -240,12 +240,10 @@ void CityBudgetWindow::updateDisplay() {
     yearLabel.setText(fmt::sprintf("Year: %d", citySim->getCityYear()));
     treasuryLabel.setText(fmt::sprintf("Credits: %d", citySim->getTotalFunds()));
 
-    // Annual revenue = current pop * selected tax rate / 100. We project,
-    // rather than show the most recent collection — projection is what the
-    // player needs to plan, including pending slider changes.
+    // Projected annual revenue using the pending tax slider.
     const int totalPop  = citySim->getTotalPop();
     const int taxRate   = pendingTaxRate;
-    const int projected = (totalPop * taxRate) / 100;
+    const int projected = DuneCity::computeAnnualTaxRevenue(totalPop, taxRate);
     incomeLabel.setText(fmt::sprintf("Tax Revenue: +%d/yr (proj.)", projected));
 
     // Police: nominal cost is full-funded; actual paid is scaled by the
@@ -264,8 +262,8 @@ void CityBudgetWindow::updateDisplay() {
     // subsequent +/- clicks edit the pending copy without being clobbered.
     updateAllocationLabels();
 
-    resPopLabel.setText(fmt::sprintf("Residential: %d", citySim->getResPop()));
-    comPopLabel.setText(fmt::sprintf("Commercial: %d", citySim->getComPop()));
-    indPopLabel.setText(fmt::sprintf("Industrial: %d", citySim->getIndPop()));
-    totalPopLabel.setText(fmt::sprintf("Total Population: %d", citySim->getTotalPop()));
+    resPopLabel.setText(fmt::sprintf("Residential: %d", citySim->getDisplayResPop()));
+    comPopLabel.setText(fmt::sprintf("Commercial: %d", citySim->getDisplayComPop()));
+    indPopLabel.setText(fmt::sprintf("Industrial: %d", citySim->getDisplayIndPop()));
+    totalPopLabel.setText(fmt::sprintf("Total Population: %d", citySim->getDisplayTotalPop()));
 }

@@ -192,10 +192,10 @@ void GameInterface::draw(Point position) {
     {
         auto* citySim = currentGame ? currentGame->getCitySimulation() : nullptr;
         if (citySim && citySim->isInitialized()) {
-            const int totalPop = citySim->getTotalPop();
-            if (totalPop != lastShownPopulation) {
-                populationLabel.setText(fmt::sprintf("Pop: %d", totalPop));
-                lastShownPopulation = totalPop;
+            const int displayPop = citySim->getDisplayTotalPop();
+            if (displayPop != lastShownPopulation) {
+                populationLabel.setText(fmt::sprintf("Pop: %d", displayPop));
+                lastShownPopulation = displayPop;
             }
             populationLabel.setVisible(true);
 
@@ -445,19 +445,19 @@ void GameInterface::drawCityStatsOverlay() {
     drawText("=== CITY STATS ===", 12);
     textY += 4;
 
-    int resPop = citySim->getResPop();
-    int comPop = citySim->getComPop();
-    int indPop = citySim->getIndPop();
-    int totalPop = citySim->getTotalPop();
-    
+    int resPop = citySim->getDisplayResPop();
+    int comPop = citySim->getDisplayComPop();
+    int indPop = citySim->getDisplayIndPop();
+    int totalPop = citySim->getDisplayTotalPop();
+
     int16_t resValve = citySim->getResValve();
     int16_t comValve = citySim->getComValve();
     int16_t indValve = citySim->getIndValve();
-    
+
     const char* resArrow = resValve > 100 ? " ↑" : (resValve < -100 ? " ↓" : "");
     const char* comArrow = comValve > 100 ? " ↑" : (comValve < -100 ? " ↓" : "");
     const char* indArrow = indValve > 100 ? " ↑" : (indValve < -100 ? " ↓" : "");
-    
+
     drawText(fmt::sprintf("Population: %d", totalPop), 12);
     drawText(fmt::sprintf("  R: %d%s  C: %d%s  I: %d%s", resPop, resArrow, comPop, comArrow, indPop, indArrow), 10);
     

@@ -2811,7 +2811,7 @@ void QuantBot::build(int militaryValue) {
 					int turretFloor = keyBuildings;
 					int popBonus = 0;
 					if (auto* citySim = currentGame->getCitySimulation()) {
-						popBonus = citySim->getTotalPop() / 5000;
+						popBonus = citySim->getTotalPop() / 100;
 					}
 					int desiredTurrets = turretFloor + popBonus;
 					if (itemCount[Structure_RocketTurret] < desiredTurrets) {
@@ -2832,7 +2832,7 @@ void QuantBot::build(int militaryValue) {
 					if (auto* citySim = currentGame->getCitySimulation()) {
 						cityPop = citySim->getTotalPop();
 					}
-					palaceAllowed = (itemCount[Structure_Palace] < 1 + cityPop / 500);
+					palaceAllowed = (itemCount[Structure_Palace] < 1 + cityPop / 25);
 				} else {
 					palaceAllowed = (itemCount[Structure_Palace] == 0 || !getGameInitSettings().getGameOptions().onlyOnePalace);
 				}

@@ -28,10 +28,18 @@ public:
 
     void registerPowerSource(int x, int y, int power);
 
+    // Raw internal population (SC units — drives demand formula)
     int getResPop() const { return resPop_; }
     int getComPop() const { return comPop_; }
     int getIndPop() const { return indPop_; }
     int getTotalPop() const { return resPop_ + comPop_ + indPop_; }
+
+    // Display population (SC multiplied for UI — what players see)
+    static constexpr int kPopDisplayMultiplier = 20;
+    int getDisplayResPop() const { return resPop_ * kPopDisplayMultiplier; }
+    int getDisplayComPop() const { return comPop_ * kPopDisplayMultiplier; }
+    int getDisplayIndPop() const { return indPop_ * kPopDisplayMultiplier; }
+    int getDisplayTotalPop() const { return getTotalPop() * kPopDisplayMultiplier; }
 
     int16_t getResValve() const { return resValve_; }
     int16_t getComValve() const { return comValve_; }

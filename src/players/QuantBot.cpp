@@ -2823,7 +2823,7 @@ void QuantBot::build(int militaryValue) {
 								}
 				// 17. City protection turrets (city sim only) — before Palace
 				//     Floor: 1 turret per CY + nuclear + heavy factory
-				//     Scaling: +1 per 5000 population
+				//     Beyond floor: only build if city has crime (avg crime > 0)
 				//     Uses findCityTurretPlaceLocation which prioritises high
 				//     crime areas and proximity to builder buildings + nuclear.
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
@@ -2835,17 +2835,33 @@ void QuantBot::build(int militaryValue) {
 						+ itemCount[Structure_NuclearPlant]
 						+ itemCount[Structure_HeavyFactory];
 					int turretFloor = keyBuildings;
-					int popBonus = 0;
-					if (auto* citySim = currentGame->getCitySimulation()) {
-						popBonus = citySim->getTotalPop() / 100;
+					int currentTurrets = itemCount[Structure_RocketTurret];
+					bool shouldBuild = false;
+
+					if (currentTurrets < turretFloor) {
+						// Below minimum — always build
+						shouldBuild = true;
+					} else if (auto* citySim = currentGame->getCitySimulation()) {
+						// Above minimum — only build if there's crime to suppress
+						const auto& crimeMap = citySim->getCrimeRateMap();
+						int maxCrime = 0;
+						for (int cx = 0; cx < citySim->getMapWidth(); cx++) {
+							for (int cy = 0; cy < citySim->getMapHeight(); cy++) {
+								int c = crimeMap.worldGet(cx, cy);
+								if (c > maxCrime) maxCrime = c;
+							}
+						}
+						// Only add turrets if there's meaningful crime (>30 on 0-255 scale)
+						shouldBuild = (maxCrime > 30);
 					}
-					int desiredTurrets = turretFloor + popBonus;
-					if (itemCount[Structure_RocketTurret] < desiredTurrets) {
+
+					if (shouldBuild) {
 						Coord loc = findCityTurretPlaceLocation(Structure_RocketTurret);
 						if (loc.isValid()) {
 							itemID = Structure_RocketTurret;
-							logDebug("CITY-TURRET: Building rocket turret %d/%d (floor=%d pop_bonus=%d)",
-								itemCount[Structure_RocketTurret] + 1, desiredTurrets, turretFloor, popBonus);
+							logDebug("CITY-TURRET: Building rocket turret %d (floor=%d, crime-driven=%s)",
+								currentTurrets + 1, turretFloor,
+								currentTurrets >= turretFloor ? "yes" : "no");
 						}
 					}
 				}

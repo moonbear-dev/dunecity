@@ -2119,7 +2119,7 @@ void QuantBot::build(int militaryValue) {
 						else if (gameMode == GameMode::Custom
 							&& pBuilder->isAvailableToBuild(Unit_MCV)
 							&& !getHouse()->isGroundUnitLimitReached()) {
-							// City sim: 1 CY base + 1 per 100 credits/second income
+							// City sim: 1 CY base + 1 per 150 credits/second income
 							// Non-city: scales with money (1 per 4000 credits)
 							int currentCYs = itemCount[Structure_ConstructionYard] + itemCount[Unit_MCV];
 							int desiredCYs = 1;
@@ -2131,7 +2131,7 @@ void QuantBot::build(int militaryValue) {
 									int avgLV = citySim->getAvgLandValue();
 									int32_t annual = DuneCity::computeAnnualTaxRevenue(totalPop, tax, avgLV);
 									int creditsPerSec = annual / 60;
-									desiredCYs = 1 + creditsPerSec / 100;
+									desiredCYs = 1 + creditsPerSec / 150;
 								}
 							} else {
 								desiredCYs = money / 4000;
@@ -2419,7 +2419,11 @@ void QuantBot::build(int militaryValue) {
 								else if (iValve > rValve && iValve > cValve)
 									zoneID = Structure_ZoneIndustrial;
 
-								if (pBuilder->isAvailableToBuild(zoneID)
+								// Residential zones require heavy factory economy (money > 500)
+								if (zoneID == Structure_ZoneResidential && money <= 500)
+									zoneID = NONE_ID;
+
+								if (zoneID != NONE_ID && pBuilder->isAvailableToBuild(zoneID)
 									&& findPlaceLocation(zoneID).isValid()) {
 									produceItemWithLogging(zoneID);
 									itemCount[zoneID]++;
@@ -2991,11 +2995,15 @@ void QuantBot::build(int militaryValue) {
 							zoneID = Structure_ZoneIndustrial;
 						}
 
+						// Residential zones require heavy factory economy (money > 500)
+						if (zoneID == Structure_ZoneResidential && money <= 500)
+							zoneID = NONE_ID;
+
 						int resCount = itemCount[Structure_ZoneResidential];
 						int comCount = itemCount[Structure_ZoneCommercial];
 						int indCount = itemCount[Structure_ZoneIndustrial];
 
-						if (pBuilder->isAvailableToBuild(zoneID)
+						if (zoneID != NONE_ID && pBuilder->isAvailableToBuild(zoneID)
 							&& findPlaceLocation(zoneID).isValid()) {
 							itemID = zoneID;
 							logDebug("CITY-ZONE: Building %s (R:%d C:%d I:%d valves=R%+d C%+d I%+d surplus=%d)",

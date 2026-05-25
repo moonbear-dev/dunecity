@@ -2601,15 +2601,18 @@ void QuantBot::build(int militaryValue) {
 					itemID = Structure_RepairYard;
 					logDebug("Build Repair Yard... money: %d", money);
 				}
-				// 8a. Upgrade CY to level 2 for turrets (if repair yard and starport/heavy factory exist)
-								if (itemID == NONE_ID && !skipRemainingStructureLogic
-									&& itemCount[Structure_RepairYard] > 0
-									&& (itemCount[Structure_StarPort] > 0 || itemCount[Structure_HeavyFactory] > 0)
-									&& itemCount[Structure_RocketTurret] < 2
-						&& pBuilder->getCurrentUpgradeLevel() < 2 
-									&& !pBuilder->isUpgrading()) {
-						if (pBuilder->getHealth() < pBuilder->getMaxHealth() && !pBuilder->isRepairing()) {
-							doRepair(pBuilder);
+				// 8a. Upgrade CY to level 2 for rocket turrets
+				//     City sim: upgrade early (no repair yard needed) so turrets protect the colony
+				//     Non-city: requires repair yard + starport/heavy factory
+				if (itemID == NONE_ID && !skipRemainingStructureLogic
+					&& pBuilder->getCurrentUpgradeLevel() < 2
+					&& !pBuilder->isUpgrading()
+					&& ((currentGame && currentGame->isCitySimEnabled() && money > 500)
+						|| (itemCount[Structure_RepairYard] > 0
+							&& (itemCount[Structure_StarPort] > 0 || itemCount[Structure_HeavyFactory] > 0)
+							&& itemCount[Structure_RocketTurret] < 2))) {
+					if (pBuilder->getHealth() < pBuilder->getMaxHealth() && !pBuilder->isRepairing()) {
+						doRepair(pBuilder);
 						logDebug("TURRET-PREP: Repairing CY before upgrade (level %d)", pBuilder->getCurrentUpgradeLevel());
 					} else if (pBuilder->getHealth() >= pBuilder->getMaxHealth()) {
 						doUpgrade(pBuilder);
@@ -2793,21 +2796,12 @@ void QuantBot::build(int militaryValue) {
 									itemID = Structure_Silo;
 					logDebug("Build Silo - storage at %d/%d", getHouse()->getStoredCredits().lround(), getHouse()->getCapacity());
 								}
-				// 17. Palace (after military infrastructure)
-				if (itemID == NONE_ID && !skipRemainingStructureLogic
-									&& money > 5000
-									&& pBuilder->isAvailableToBuild(Structure_Palace)
-									&& (itemCount[Structure_Palace] == 0 || !getGameInitSettings().getGameOptions().onlyOnePalace)
-									&& itemCount[Structure_HeavyFactory] > 0
-									&& itemCount[Structure_LightFactory] > 0) {
-								itemID = Structure_Palace;
-							}
-				// 17b. City protection turrets (city sim only)
-				//      Floor: 1 turret per CY + nuclear + heavy factory
-				//      Scaling: +1 per 5000 population
-				//      Uses findCityTurretPlaceLocation which prioritises near
-				//      key buildings (CY, nuclear, heavy factory) and spreads
-				//      turrets in pairs across the city including near R/C zones.
+				// 17. City protection turrets (city sim only) — before Palace
+				//     Floor: 1 turret per CY + nuclear + heavy factory
+				//     Scaling: +1 per 5000 population
+				//     Uses findCityTurretPlaceLocation which prioritises near
+				//     key buildings (CY, nuclear, heavy factory) and spreads
+				//     turrets in pairs across the city including near R/C zones.
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
 					&& currentGame && currentGame->isCitySimEnabled()
 					&& money > 500
@@ -2831,6 +2825,15 @@ void QuantBot::build(int militaryValue) {
 						}
 					}
 				}
+				// 17b. Palace (after military infrastructure)
+				if (itemID == NONE_ID && !skipRemainingStructureLogic
+									&& money > 5000
+									&& pBuilder->isAvailableToBuild(Structure_Palace)
+									&& (itemCount[Structure_Palace] == 0 || !getGameInitSettings().getGameOptions().onlyOnePalace)
+									&& itemCount[Structure_HeavyFactory] > 0
+									&& itemCount[Structure_LightFactory] > 0) {
+								itemID = Structure_Palace;
+							}
 				// 18. City zone structures (when city sim is active)
 				// Zones are 2x2 structures built via the CY; runZoneGrowth()
 				// requires an actual structure object, so tile-flag placement

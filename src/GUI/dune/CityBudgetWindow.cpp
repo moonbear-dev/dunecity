@@ -149,12 +149,12 @@ CityBudgetWindow::CityBudgetWindow()
     mainVBox.addWidget(&unemploymentLabel);
     mainVBox.addWidget(VSpacer::create(4));
 
-    hospitalLabel.setText("Hospitals needed: 0");
+    hospitalLabel.setText("Hospitals: 0");
     hospitalLabel.setTextColor(COLOR_WHITE);
     mainVBox.addWidget(&hospitalLabel);
     mainVBox.addWidget(VSpacer::create(4));
 
-    churchLabel.setText("Churches needed: 0");
+    churchLabel.setText("Churches: 0");
     churchLabel.setTextColor(COLOR_WHITE);
     mainVBox.addWidget(&churchLabel);
     mainVBox.addWidget(VSpacer::create(15));
@@ -288,18 +288,7 @@ void CityBudgetWindow::updateDisplay() {
     unemploymentLabel.setText(fmt::sprintf("Unemployment: %d%%", unemp));
     unemploymentLabel.setTextColor(unemp > 20 ? COLOR_RGB(255,80,80) : COLOR_WHITE);
 
-    // Hospital/church need (positive = need more buildings)
-    const int hospNeed = citySim->getHospitalNeed();
-    if (hospNeed > 0)
-        hospitalLabel.setText(fmt::sprintf("Hospitals needed: %d", hospNeed));
-    else
-        hospitalLabel.setText("Hospitals: OK");
-    hospitalLabel.setTextColor(hospNeed > 0 ? COLOR_RGB(255,200,80) : COLOR_WHITE);
-
-    const int churchNeed = citySim->getChurchNeed();
-    if (churchNeed > 0)
-        churchLabel.setText(fmt::sprintf("Churches needed: %d", churchNeed));
-    else
-        churchLabel.setText("Churches: OK");
-    churchLabel.setTextColor(churchNeed > 0 ? COLOR_RGB(255,200,80) : COLOR_WHITE);
+    // Hospital/church count (auto-created by game on residential zones)
+    hospitalLabel.setText(fmt::sprintf("Hospitals: %d", citySim->getHospitalCount()));
+    churchLabel.setText(fmt::sprintf("Churches: %d", citySim->getChurchCount()));
 }

@@ -280,8 +280,8 @@ inline int getPoliceAnnualCost(int itemID) {
 inline int getParkLandValueBonus(int itemID) {
     switch (itemID) {
         case Structure_Wall:            return kParkLandValueBonus;
-        case Structure_GunTurret:       return kParkLandValueBonus * 2;  // turrets raise land value
-        case Structure_RocketTurret:    return kParkLandValueBonus * 2;  // turrets raise land value
+        case Structure_GunTurret:       return 20;  // turrets raise land value
+        case Structure_RocketTurret:    return 20;  // turrets raise land value
         case Structure_Stadium:         return kStadiumLandValueBonus;
         case Structure_Palace:          return kStadiumLandValueBonus;   // civic building — large boost
         default:                        return 0;
@@ -888,29 +888,25 @@ inline int32_t computeAnnualTaxRevenue(int totalPopulation, int taxRatePct,
     return base;
 }
 
-// --- Hospital and Church demand (SC Classic census) -------------------------
+// --- Hospital and Church census (SC Classic) --------------------------------
 //
-// SC Classic tracks hospital and church need based on residential population:
-//   needHospital = (resPop >> 8) - hospitalPop   (1 hospital per 256 res)
-//   needChurch   = (resPop >> 8) - churchPop     (1 church per 256 res)
-// Positive = need more; negative = too many; zero = balanced.
-// DuneCity tracks the NEED so the player knows when to build civic buildings.
+// SC Classic auto-creates hospitals and churches on residential zones —
+// the game decides, not the player. 1 per 256 residential population.
+// DuneCity tracks the auto-count for display in the budget window.
 
-/// Residential population per hospital needed (SC: resPop >> 8 = resPop / 256).
+/// Residential population per hospital (SC: resPop >> 8 = resPop / 256).
 constexpr int kResPopPerHospital = 256;
-/// Residential population per church needed.
+/// Residential population per church.
 constexpr int kResPopPerChurch   = 256;
 
-/// Compute how many hospitals are needed for the given residential population.
-inline int computeHospitalNeed(int resPop, int hospitalCount) {
-    const int needed = resPop / kResPopPerHospital;
-    return needed - hospitalCount;  // positive = need more
+/// Auto-count of hospitals created by the game on residential zones.
+inline int computeHospitalCount(int resPop) {
+    return resPop / kResPopPerHospital;
 }
 
-/// Compute how many churches are needed.
-inline int computeChurchNeed(int resPop, int churchCount) {
-    const int needed = resPop / kResPopPerChurch;
-    return needed - churchCount;
+/// Auto-count of churches created by the game on residential zones.
+inline int computeChurchCount(int resPop) {
+    return resPop / kResPopPerChurch;
 }
 
 // --- Unemployment -----------------------------------------------------------

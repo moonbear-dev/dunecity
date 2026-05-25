@@ -205,8 +205,8 @@ TEST_CASE("Police annual cost mirrors coverage; PoliceStation costs 500 (SC TOOL
 TEST_CASE("Park land-value bonus: Wall, Turrets, Palace, Stadium contribute",
           "[city-effects][park]") {
     REQUIRE(getParkLandValueBonus(Structure_Wall)         == kParkLandValueBonus);
-    REQUIRE(getParkLandValueBonus(Structure_GunTurret)    == kParkLandValueBonus * 2);
-    REQUIRE(getParkLandValueBonus(Structure_RocketTurret) == kParkLandValueBonus * 2);
+    REQUIRE(getParkLandValueBonus(Structure_GunTurret)    == 20);
+    REQUIRE(getParkLandValueBonus(Structure_RocketTurret) == 20);
     REQUIRE(getParkLandValueBonus(Structure_Palace)       == kStadiumLandValueBonus);
     REQUIRE(getParkLandValueBonus(Structure_Stadium)      == kStadiumLandValueBonus);
     REQUIRE(getParkLandValueBonus(Structure_HeavyFactory) == 0);
@@ -822,16 +822,17 @@ TEST_CASE("Unemployment: positive when labor force exceeds jobs",
     CHECK(computeUnemploymentRate(160, 3, 2) == 75);
 }
 
-TEST_CASE("Hospital need: positive when more are needed",
+TEST_CASE("Hospital count: auto-created 1 per 256 res pop",
           "[city-effects][hospital]") {
-    CHECK(computeHospitalNeed(0, 0)   == 0);
-    CHECK(computeHospitalNeed(256, 0) == 1);
-    CHECK(computeHospitalNeed(512, 1) == 1);
-    CHECK(computeHospitalNeed(256, 1) == 0);
+    CHECK(computeHospitalCount(0)   == 0);
+    CHECK(computeHospitalCount(255) == 0);
+    CHECK(computeHospitalCount(256) == 1);
+    CHECK(computeHospitalCount(512) == 2);
 }
 
-TEST_CASE("Church need: mirrors hospital need formula",
+TEST_CASE("Church count: auto-created 1 per 256 res pop",
           "[city-effects][church]") {
-    CHECK(computeChurchNeed(256, 0) == 1);
-    CHECK(computeChurchNeed(256, 1) == 0);
+    CHECK(computeChurchCount(0)   == 0);
+    CHECK(computeChurchCount(256) == 1);
+    CHECK(computeChurchCount(512) == 2);
 }

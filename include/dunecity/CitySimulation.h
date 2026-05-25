@@ -84,9 +84,9 @@ public:
     /// Unemployment rate (0-100%), refreshed each zone growth pass.
     int getUnemploymentRate() const { return unemploymentRate_; }
 
-    /// Hospital/church need: positive = need more, 0 = balanced, negative = surplus.
-    int getHospitalNeed() const { return hospitalNeed_; }
-    int getChurchNeed() const { return churchNeed_; }
+    /// Hospital/church count: auto-created by the game on residential zones.
+    int getHospitalCount() const { return hospitalCount_; }
+    int getChurchCount() const { return churchCount_; }
 
     /// City Effects feature flag (Phase 6). When false, all effect scans
     /// are skipped and the maps stay at zero. Set from Game options at init.
@@ -165,8 +165,8 @@ private:
 
     int     avgLandValue_         = 0;    ///< Average land value across developed blocks (0-250)
     int     unemploymentRate_     = 0;    ///< Unemployment percentage (0-100)
-    int     hospitalNeed_         = 0;    ///< Hospitals needed (positive = need more)
-    int     churchNeed_           = 0;    ///< Churches needed (positive = need more)
+    int     hospitalCount_        = 0;    ///< Hospitals auto-created on residential zones
+    int     churchCount_          = 0;    ///< Churches auto-created on residential zones
 
     CityMapLayer<uint8_t> powerGridMap_;
     CityMapLayer<uint8_t> trafficDensityMap_;

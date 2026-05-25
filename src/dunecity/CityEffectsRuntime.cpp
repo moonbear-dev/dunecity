@@ -897,14 +897,10 @@ void CitySimulation::runZoneGrowth() {
     // Unemployment rate (SC Classic employment formula).
     unemploymentRate_ = computeUnemploymentRate(newRes, newCom, newInd);
 
-    // Hospital/church need (SC Classic census). Count hospital/church
-    // structures on the map — currently no dedicated structures exist,
-    // so need is always positive once population grows.
-    // TODO: Add Structure_Hospital and Structure_Church when building types exist.
-    int hospitalCount = 0;
-    int churchCount = 0;
-    hospitalNeed_ = computeHospitalNeed(newRes, hospitalCount);
-    churchNeed_   = computeChurchNeed(newRes, churchCount);
+    // Hospital/church census (SC Classic). The game auto-creates hospitals
+    // and churches on residential zones — 1 per 256 res pop.
+    hospitalCount_ = computeHospitalCount(newRes);
+    churchCount_   = computeChurchCount(newRes);
 }
 
 void CitySimulation::decayGrowthRateMap() {

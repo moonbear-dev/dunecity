@@ -20,6 +20,7 @@
 
 #include <structures/StructureBase.h>
 #include <dunecity/CityConstants.h>
+#include <FileClasses/GFXManager.h>
 
 // Forward declarations
 class House;
@@ -41,6 +42,11 @@ public:
 
     DuneCity::ZoneType getZoneType() const { return zoneType_; }
 
+    /// Civic overlay: Hospital or Church auto-placed by the game on residential zones.
+    enum class CivicOverlay : uint8_t { None = 0, Hospital, Church };
+    CivicOverlay getCivicOverlay() const { return civicOverlay_; }
+    void setCivicOverlay(CivicOverlay overlay) { civicOverlay_ = overlay; }
+
     ObjectInterface* getInterfaceContainer() override;
 
     void destroy() override;
@@ -58,6 +64,7 @@ public:
 private:
     DuneCity::ZoneType zoneType_;  // The type of zone this structure represents
     int registeredZonePower_ = 0;  // Power last reported into the House pool.
+    CivicOverlay civicOverlay_ = CivicOverlay::None;
 };
 
 /// A residential zone structure

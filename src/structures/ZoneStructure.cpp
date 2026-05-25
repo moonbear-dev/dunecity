@@ -66,6 +66,29 @@ void ZoneStructure::updateStructureSpecificStuff() {
 
     const int density = pTile->getCityZoneDensity();
 
+    // Civic overlay: hospital/church sprites replace the normal zone art.
+    // These are single-cell (1×1) atlases loaded as ObjPic_Hospital/Church.
+    if (civicOverlay_ != CivicOverlay::None && density > 0) {
+        const int civicPic = (civicOverlay_ == CivicOverlay::Hospital)
+            ? ObjPic_Hospital : ObjPic_Church;
+        graphic = pGFXManager->getObjPic(civicPic, getOwner()->getHouseID());
+        numImagesX = 1;
+        numImagesY = 1;
+        firstAnimFrame = lastAnimFrame = curAnimFrame = 0;
+        return;
+    }
+
+    // Restore normal zone atlas if overlay was cleared.
+    if (graphic != pGFXManager->getObjPic(graphicID, getOwner()->getHouseID())) {
+        graphic = pGFXManager->getObjPic(graphicID, getOwner()->getHouseID());
+        // Restore atlas dimensions per zone type.
+        if (graphicID == ObjPic_ZoneResidential || graphicID == ObjPic_ZoneCommercial) {
+            numImagesX = 4; numImagesY = 4;
+        } else if (graphicID == ObjPic_ZoneIndustrial) {
+            numImagesX = 4; numImagesY = 2;
+        }
+    }
+
     int valueT = 0;
     if (auto* citySim = currentGame ? currentGame->getCitySimulation() : nullptr;
         citySim && citySim->isInitialized()) {

@@ -120,7 +120,7 @@ BUILDINGS_SPECIAL = [
     ("coal_power_plant", 745, 4, 4),
     ("nuclear_power_plant", 811, 4, 4),
     ("stadium",          779, 4, 4),
-    ("stadium_full",     800, 4, 4),  # during football game
+    # stadium_full omitted: only 11 tiles (800-810), 4x4 needs 16; bleeds into nuclear_plant
     ("airport",          709, 6, 6),
 ]
 # fmt: on

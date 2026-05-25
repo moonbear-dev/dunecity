@@ -127,6 +127,8 @@ static const Coord objPicTiles[] {
     { 4, 1 },   // ObjPic_PoliceStation (4 frame slots, all identical; 2x2 footprint)
     { 4, 1 },   // ObjPic_Stadium (4 frame slots, all identical; 3x3 footprint)
     { 4, 1 },   // ObjPic_Airport (4 frame slots, all identical; 3x3 footprint)
+    { 1, 1 },   // ObjPic_Hospital (single cell, 2x2 footprint, auto-placed on residential)
+    { 1, 1 },   // ObjPic_Church   (single cell, 2x2 footprint, auto-placed on residential)
 };
 
 
@@ -864,15 +866,8 @@ GFXManager::GFXManager() {
 
         sdl2::surface_ptr stadiumSrc;
         for (const auto& dir : stadiumDirs) {
-            // Prefer the "full" stadium (animated/occupied look)
-            std::string path = dir + "stadium_full_4x4.png";
+            std::string path = dir + "stadium_4x4.png";
             auto rwops = sdl2::RWops_ptr{ SDL_RWFromFile(path.c_str(), "rb") };
-            if (rwops) {
-                stadiumSrc = LoadPNG_RW(rwops.get());
-                if (stadiumSrc) { SDL_Log("Loaded stadium sprite from: %s", path.c_str()); break; }
-            }
-            path = dir + "stadium_4x4.png";
-            rwops = sdl2::RWops_ptr{ SDL_RWFromFile(path.c_str(), "rb") };
             if (rwops) {
                 stadiumSrc = LoadPNG_RW(rwops.get());
                 if (stadiumSrc) { SDL_Log("Loaded stadium sprite from: %s", path.c_str()); break; }
@@ -1002,6 +997,68 @@ GFXManager::GFXManager() {
                             objPic[ObjPic_Airport][h][z] = sdl2::surface_ptr{
                                 SDL_ConvertSurface(objPic[ObjPic_Airport][HOUSE_HARKONNEN][z].get(),
                                                    objPic[ObjPic_Airport][HOUSE_HARKONNEN][z]->format, 0)
+                            };
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // ----- DuneCity hospital & church sprites -----
+    // Auto-placed on residential zones by the game (SC Classic behavior).
+    // Source: Micropolis 2x2 composites (32×32), matching zone cell size.
+    {
+        struct CivicSpec { int objPicID; const char* fileName; };
+        const CivicSpec civics[] = {
+            { ObjPic_Hospital, "hospital_2x2.png" },
+            { ObjPic_Church,   "church_2x2.png"   },
+        };
+        std::vector<std::string> civicDirs = {
+            getDuneLegacyDataDir() + "imported_sprites/micropolis/composites_2x2/",
+            binDir + "imported_sprites/micropolis/composites_2x2/",
+            binDir + "../../imported_sprites/micropolis/composites_2x2/",
+            binDir + "../../../../../imported_sprites/micropolis/composites_2x2/",
+        };
+        if (srcDirEnv && srcDirEnv[0]) {
+            std::string sd = srcDirEnv;
+            if (sd.back() != '/' && sd.back() != '\\') sd += '/';
+            civicDirs.push_back(sd + "imported_sprites/micropolis/composites_2x2/");
+        }
+        for (const auto& cs : civics) {
+            sdl2::surface_ptr cell;
+            for (const auto& dir : civicDirs) {
+                auto rw = sdl2::RWops_ptr{ SDL_RWFromFile((dir + cs.fileName).c_str(), "rb") };
+                if (rw) {
+                    cell = LoadPNG_RW(rw.get());
+                    if (cell) { SDL_Log("Loaded civic sprite: %s from %s", cs.fileName, dir.c_str()); break; }
+                }
+            }
+            const int cellSize = 2 * D2_TILESIZE;  // 32
+            if (!cell) {
+                SDL_Log("Civic sprite %s not found; using placeholder", cs.fileName);
+                cell = sdl2::surface_ptr{ SDL_CreateRGBSurface(0, cellSize, cellSize,
+                    SCREEN_BPP, RMASK, GMASK, BMASK, AMASK) };
+                if (cell) SDL_FillRect(cell.get(), nullptr, SDL_MapRGBA(cell->format, 200, 200, 200, 255));
+            }
+            if (cell) {
+                if (cell->w != cellSize || cell->h != cellSize) {
+                    sdl2::surface_ptr scaled{ SDL_CreateRGBSurface(0, cellSize, cellSize,
+                        SCREEN_BPP, RMASK, GMASK, BMASK, AMASK) };
+                    if (scaled) {
+                        SDL_SetSurfaceBlendMode(cell.get(), SDL_BLENDMODE_NONE);
+                        SDL_BlitScaled(cell.get(), nullptr, scaled.get(), nullptr);
+                        cell = std::move(scaled);
+                    }
+                }
+                objPic[cs.objPicID][HOUSE_HARKONNEN][0] = std::move(cell);
+                objPic[cs.objPicID][HOUSE_HARKONNEN][1] = scaleRGBASurface(objPic[cs.objPicID][HOUSE_HARKONNEN][0].get(), 2);
+                objPic[cs.objPicID][HOUSE_HARKONNEN][2] = scaleRGBASurface(objPic[cs.objPicID][HOUSE_HARKONNEN][0].get(), 3);
+                for (int h = 1; h < NUM_HOUSES; h++) {
+                    for (int z = 0; z < NUM_ZOOMLEVEL; z++) {
+                        if (objPic[cs.objPicID][HOUSE_HARKONNEN][z]) {
+                            objPic[cs.objPicID][h][z] = sdl2::surface_ptr{
+                                SDL_ConvertSurface(objPic[cs.objPicID][HOUSE_HARKONNEN][z].get(),
+                                                   objPic[cs.objPicID][HOUSE_HARKONNEN][z]->format, 0)
                             };
                         }
                     }

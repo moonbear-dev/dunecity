@@ -901,6 +901,34 @@ void CitySimulation::runZoneGrowth() {
     // and churches on residential zones — 1 per 256 res pop.
     hospitalCount_ = computeHospitalCount(newRes);
     churchCount_   = computeChurchCount(newRes);
+
+    // Designate residential zones as hospitals/churches for rendering.
+    // Walk residential nodes in map order and assign civic overlays.
+    {
+        int hospRemain = hospitalCount_;
+        int churRemain = churchCount_;
+        for (const auto& n : nodes) {
+            auto* zone = dynamic_cast<ZoneStructure*>(n.pStruct);
+            if (!zone) continue;
+            if (n.role != CityRole::Residential) {
+                zone->setCivicOverlay(ZoneStructure::CivicOverlay::None);
+                continue;
+            }
+            if (n.level <= 0) {
+                zone->setCivicOverlay(ZoneStructure::CivicOverlay::None);
+                continue;
+            }
+            if (hospRemain > 0) {
+                zone->setCivicOverlay(ZoneStructure::CivicOverlay::Hospital);
+                --hospRemain;
+            } else if (churRemain > 0) {
+                zone->setCivicOverlay(ZoneStructure::CivicOverlay::Church);
+                --churRemain;
+            } else {
+                zone->setCivicOverlay(ZoneStructure::CivicOverlay::None);
+            }
+        }
+    }
 }
 
 void CitySimulation::decayGrowthRateMap() {

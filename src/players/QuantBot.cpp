@@ -2098,6 +2098,14 @@ void QuantBot::build(int militaryValue) {
 				} break;
 
 				case Structure_HeavyFactory: {
+					// Log HF status when idle with money (Custom mode diagnostics)
+					if (gameMode == GameMode::Custom && emitStatsLog) {
+						logDebug("HF: upgrading=%d queue=%d buildList=%d upgLv=%d/%d unitLimit=%d money=%d",
+							pBuilder->isUpgrading(), pBuilder->getProductionQueueSize(),
+							pBuilder->getBuildListSize(),
+							pBuilder->getCurrentUpgradeLevel(), pBuilder->getMaxUpgradeLevel(),
+							getHouse()->isGroundUnitLimitReached(), money);
+					}
 					// only if the factory isn't busy
 					if ((pBuilder->isUpgrading() == false) && (pBuilder->getProductionQueueSize() < 1) && (pBuilder->getBuildListSize() > 0)) {
 						// we need a construction yard. Build an MCV if we don't have a starport
@@ -2145,11 +2153,13 @@ void QuantBot::build(int militaryValue) {
 							}
 						}
 						else if (gameMode == GameMode::Custom
+							&& !(currentGame && currentGame->isCitySimEnabled())
 							&& pBuilder->isAvailableToBuild(Unit_Harvester)
 							&& !getHouse()->isGroundUnitLimitReached()
 							&& itemCount[Unit_Harvester] < militaryValue / 1000
 							&& itemCount[Unit_Harvester] < harvesterLimit) {
 							// In case we get given lots of money, it will eventually run out so we need to be prepared
+							// Skip on city sim maps — no spice to harvest
 							produceItemWithLogging(Unit_Harvester);
 							itemCount[Unit_Harvester]++;
 						}

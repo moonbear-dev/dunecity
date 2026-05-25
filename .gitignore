@@ -76,8 +76,12 @@ dist/
 build0/
 analysis/
 
-# Imported original-game sprites (local use only, never commit)
-imported_sprites/
+# Imported Micropolis sprites — committed so CI doesn't regenerate each build.
+# Only the categories/ and composites/ (3x3) dirs are intermediate; the game
+# loads from raw_tiles/, composites_2x2/, and composites_special/.
+imported_sprites/micropolis/categories/
+imported_sprites/micropolis/composites/
+imported_sprites/micropolis/composites_special/*.broken
 
 # Local-only scratch / editor files
 tmp/

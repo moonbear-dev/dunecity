@@ -528,6 +528,10 @@ void CitySimulation::runZoneGrowth() {
             StructureBase* pStruct = static_cast<StructureBase*>(pObj);
             if (pStruct->getLocation().x != x || pStruct->getLocation().y != y) continue;
 
+            // Only count structures belonging to the local player.
+            // Population, demand, and zone growth are per-player.
+            if (pLocalHouse && pStruct->getOwner() != pLocalHouse) continue;
+
             const int itemID = pStruct->getItemID();
             const CityRole role = getStructureCityRole(itemID);
             if (role == CityRole::None) continue;

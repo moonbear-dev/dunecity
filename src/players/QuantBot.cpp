@@ -1473,10 +1473,10 @@ Coord QuantBot::findCityTurretPlaceLocation(Uint32 itemID) {
 		if (sid == Structure_ConstructionYard)    prio = 100;
 		else if (sid == Structure_NuclearPlant)   prio = 90;
 		else if (sid == Structure_HeavyFactory)   prio = 80;
-		else if (sid == Structure_HighTechFactory) prio = 60;
-		else if (sid == Structure_StarPort)       prio = 50;
-		else if (sid == Structure_ZoneResidential) prio = 15;
-		else if (sid == Structure_ZoneCommercial)  prio = 15;
+		else if (sid == Structure_HighTechFactory) prio = 70;
+		else if (sid == Structure_Palace)         prio = 60;
+		else if (sid == Structure_ZoneCommercial)  prio = 10;
+		else if (sid == Structure_ZoneResidential) prio = 10;
 		else continue;
 		targets.push_back({pStructure->getLocation(), prio});
 	}
@@ -1534,16 +1534,17 @@ Coord QuantBot::findCityTurretPlaceLocation(Uint32 itemID) {
 			}
 			score += adjacentOwn * 10;
 
-			// Spread-out: penalise being too close to existing turrets,
-			// but encourage pairs (distance 1-2 is ok, distance 0 is bad)
+			// Spread-out: reduce score near existing turrets to encourage
+			// spreading across the city. Allow pairs (dist 2-3) but
+			// penalise clusters beyond that.
 			for (const auto& tPos : existingTurrets) {
 				FixPoint tDist = blockDistance(candidatePos, tPos);
 				if (tDist < 1) {
 					score -= 200; // don't stack on top
 				} else if (tDist <= 3) {
-					score += 5;   // encourage pairs/small groups
-				} else if (tDist < 6) {
-					score -= 10;  // mild penalty — spread to other areas
+					score += 3;   // slight pair bonus
+				} else if (tDist < 8) {
+					score -= 30;  // strong penalty — spread to other areas
 				}
 			}
 

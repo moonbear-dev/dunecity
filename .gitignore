@@ -77,9 +77,10 @@ build0/
 analysis/
 
 # Imported Micropolis sprites — committed so CI doesn't regenerate each build.
-# Only the categories/ and composites/ (3x3) dirs are intermediate; the game
-# loads from raw_tiles/, composites_2x2/, and composites_special/.
-imported_sprites/micropolis/categories/
+# categories/roads/ is NOT ignored — GFXManager loads road tiles from there.
+# composites/ (3x3) are intermediate and not needed at runtime.
+imported_sprites/micropolis/categories/*/
+!imported_sprites/micropolis/categories/roads/
 imported_sprites/micropolis/composites/
 imported_sprites/micropolis/composites_special/*.broken
 

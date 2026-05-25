@@ -70,24 +70,14 @@ jobs:
           path: build/*.zip
 
   build-macos:
-    runs-on: macos-latest
+    runs-on: [self-hosted, macOS, ARM64]
     needs: [verify-version]
     if: always() && (needs.verify-version.result == 'success' || needs.verify-version.result == 'skipped')
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1
-        with:
-          key: macos-${{ hashFiles('vcpkg.json') }}
-
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgJsonGlob: 'vcpkg.json'
-
       - name: Configure CMake
-        run: cmake -B build -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=arm64-osx-dynamic -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        run: cmake -B build -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         run: cmake --build build --config Release --parallel

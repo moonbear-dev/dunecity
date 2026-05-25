@@ -2119,8 +2119,8 @@ void QuantBot::build(int militaryValue) {
 						else if (gameMode == GameMode::Custom
 							&& pBuilder->isAvailableToBuild(Unit_MCV)
 							&& !getHouse()->isGroundUnitLimitReached()) {
-							// City sim: 1 CY base + 1 per 150 credits/second income
-							// Non-city: scales with money (1 per 4000 credits)
+							// City sim: 1 CY base + 1 per 150 credits/second income (cap 3)
+							// Non-city: scales with money (1 per 4000 credits, cap 3)
 							int currentCYs = itemCount[Structure_ConstructionYard] + itemCount[Unit_MCV];
 							int desiredCYs = 1;
 							if (currentGame && currentGame->isCitySimEnabled()) {
@@ -2136,6 +2136,7 @@ void QuantBot::build(int militaryValue) {
 							} else {
 								desiredCYs = money / 4000;
 							}
+							if (desiredCYs > 3) desiredCYs = 3;
 							if (currentCYs < desiredCYs) {
 								produceItemWithLogging(Unit_MCV);
 								itemCount[Unit_MCV]++;

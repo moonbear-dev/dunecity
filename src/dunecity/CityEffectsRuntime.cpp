@@ -1046,8 +1046,8 @@ void CitySimulation::runDailyBudget() {
             localTouched = true;
         }
 
-        // Log once per city year to avoid spam (48 ticks/year)
-        if (cityDay_ == 0) {
+        // Log once every 10 city years per house to keep logs manageable
+        if (cityDay_ == 0 && (cityYear_ % 10 == 0)) {
             SDL_Log("[CitySim] year=%d house=%d pop=%d rate=%d%% annual_revenue=%d annual_police=%d tick_net=%+d",
                     cityYear_, house->getHouseID(), hb.pop, cityTax_,
                     annualRevenue, annualPaid, lround(net.toDouble()));

@@ -1727,6 +1727,60 @@ void QuantBot::build(int militaryValue) {
 	}
 
 	int money = getHouse()->getCredits();
+
+	// Compute this AI's own city stats (population, land value, civics).
+	// CitySimulation stores local-player-only data; the AI must derive its own.
+	int ownResPop = 0, ownComPop = 0, ownIndPop = 0;
+	int ownAvgLandValue = 0;
+	bool ownHasStadium = false, ownHasAirport = false;
+	if (currentGame && currentGame->isCitySimEnabled()) {
+		auto* citySim = currentGame->getCitySimulation();
+		int lvTotal = 0, lvCount = 0;
+		for (const StructureBase* pStructure : getStructureList()) {
+			if (!pStructure || pStructure->getOwner() != getHouse()) continue;
+			int sid = pStructure->getItemID();
+
+			// Civic building check
+			if (sid == Structure_Stadium) ownHasStadium = true;
+			if (sid == Structure_Airport) ownHasAirport = true;
+
+			// Population by city role
+			DuneCity::CityRole role = DuneCity::getStructureCityRole(sid);
+			if (role != DuneCity::CityRole::None) {
+				bool isZone = (sid == Structure_ZoneResidential
+					|| sid == Structure_ZoneCommercial
+					|| sid == Structure_ZoneIndustrial);
+				Coord pos = pStructure->getLocation();
+				int level;
+				if (isZone) {
+					const Tile* t = getMap().getTile(pos.x, pos.y);
+					level = t ? t->getCityZoneDensity() : 0;
+				} else {
+					level = std::max<int>(1, pStructure->getCityOccupancy());
+				}
+				int pop = DuneCity::getZonePopulation(sid, level);
+				switch (role) {
+					case DuneCity::CityRole::Residential: ownResPop += pop; break;
+					case DuneCity::CityRole::Commercial:  ownComPop += pop; break;
+					case DuneCity::CityRole::Industrial:  ownIndPop += pop; break;
+					default: break;
+				}
+				if (sid == Structure_Palace) {
+					ownComPop += DuneCity::getPalaceCommercialPopulation(level);
+				}
+			}
+
+			// Land value at own structure positions
+			if (citySim) {
+				Coord pos = pStructure->getLocation();
+				int lv = citySim->getLandValueMap().worldGet(pos.x, pos.y);
+				if (lv > 0) { lvTotal += lv; lvCount++; }
+			}
+		}
+		ownAvgLandValue = lvCount > 0 ? lvTotal / lvCount : 0;
+	}
+	int ownTotalPop = ownResPop + ownComPop + ownIndPop;
+
 	bool emitStatsLog = false;
 
     if (!supportMode && (militaryValue > 0 || getHouse()->getNumStructures() > 0)) {
@@ -2132,15 +2186,12 @@ void QuantBot::build(int militaryValue) {
 							int currentCYs = itemCount[Structure_ConstructionYard] + itemCount[Unit_MCV];
 							int desiredCYs = 1;
 							if (currentGame && currentGame->isCitySimEnabled()) {
+								// Use AI's own population and land value (not local player's)
 								auto* citySim = currentGame->getCitySimulation();
-								if (citySim) {
-									int totalPop = citySim->getTotalPop();
-									int tax = citySim->getCityTax();
-									int avgLV = citySim->getAvgLandValue();
-									int32_t annual = DuneCity::computeAnnualTaxRevenue(totalPop, tax, avgLV);
-									int creditsPerSec = annual / 60;
-									desiredCYs = 1 + creditsPerSec / 150;
-								}
+								int tax = citySim ? citySim->getCityTax() : 7;
+								int32_t annual = DuneCity::computeAnnualTaxRevenue(ownTotalPop, tax, ownAvgLandValue);
+								int creditsPerSec = annual / 60;
+								desiredCYs = 1 + creditsPerSec / 150;
 							} else {
 								desiredCYs = money / 4000;
 							}
@@ -2419,10 +2470,13 @@ void QuantBot::build(int militaryValue) {
 								&& money > 200
 								&& pBuilder->getProductionQueueSize() == 0
 								&& itemCount[Structure_WindTrap] > 0) {
-								auto* citySim = currentGame->getCitySimulation();
-								int16_t rValve = citySim ? citySim->getResValve() : 0;
-								int16_t cValve = citySim ? citySim->getComValve() : 0;
-								int16_t iValve = citySim ? citySim->getIndValve() : 0;
+								// Per-player zone demand from own zone ratio (target ~3:1:1 R:C:I)
+								int resCount = itemCount[Structure_ZoneResidential];
+								int comCount = itemCount[Structure_ZoneCommercial];
+								int indCount = itemCount[Structure_ZoneIndustrial];
+								int16_t rValve = static_cast<int16_t>((comCount + indCount + 1) * 3 - resCount);
+								int16_t cValve = static_cast<int16_t>((resCount + 2) / 3 - comCount);
+								int16_t iValve = static_cast<int16_t>((resCount + 2) / 3 - indCount);
 
 								Uint32 zoneID = Structure_ZoneResidential;
 								if (cValve > rValve && cValve >= iValve)
@@ -2910,11 +2964,8 @@ void QuantBot::build(int militaryValue) {
 				{
 				bool palaceAllowed;
 				if (currentGame && currentGame->isCitySimEnabled()) {
-					int cityPop = 0;
-					if (auto* citySim = currentGame->getCitySimulation()) {
-						cityPop = citySim->getTotalPop();
-					}
-					palaceAllowed = (itemCount[Structure_Palace] < 1 + cityPop / 25);
+					// Use AI's own population (not local player's)
+					palaceAllowed = (itemCount[Structure_Palace] < 1 + ownTotalPop / 25);
 				} else {
 					palaceAllowed = (itemCount[Structure_Palace] == 0 || !getGameInitSettings().getGameOptions().onlyOnePalace);
 				}
@@ -2936,26 +2987,22 @@ void QuantBot::build(int militaryValue) {
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
 					&& currentGame && currentGame->isCitySimEnabled()
 					&& money > 500) {
-					auto* citySim = currentGame->getCitySimulation();
-					if (citySim) {
-						// Stadium: needed when resPop exceeds 500 (SC Classic civic cap)
-						if (!citySim->getHasStadium()
-							&& citySim->getResPop() > 500
-							&& pBuilder->isAvailableToBuild(Structure_Stadium)
-							&& findPlaceLocation(Structure_Stadium).isValid()) {
-							itemID = Structure_Stadium;
-							logDebug("CITY-CIVIC: Building Stadium (resPop=%d > 500, no stadium)",
-								citySim->getResPop());
-						}
-						// Airport: needed when comPop exceeds 100 (SC Classic civic cap)
-						else if (!citySim->getHasAirport()
-							&& citySim->getComPop() > 100
-							&& pBuilder->isAvailableToBuild(Structure_Airport)
-							&& findPlaceLocation(Structure_Airport).isValid()) {
-							itemID = Structure_Airport;
-							logDebug("CITY-CIVIC: Building Airport (comPop=%d > 100, no airport)",
-								citySim->getComPop());
-						}
+					// Use AI's own population and civic building checks
+					if (!ownHasStadium
+						&& ownResPop > 500
+						&& pBuilder->isAvailableToBuild(Structure_Stadium)
+						&& findPlaceLocation(Structure_Stadium).isValid()) {
+						itemID = Structure_Stadium;
+						logDebug("CITY-CIVIC: Building Stadium (ownResPop=%d > 500, no stadium)",
+							ownResPop);
+					}
+					else if (!ownHasAirport
+						&& ownComPop > 100
+						&& pBuilder->isAvailableToBuild(Structure_Airport)
+						&& findPlaceLocation(Structure_Airport).isValid()) {
+						itemID = Structure_Airport;
+						logDebug("CITY-CIVIC: Building Airport (ownComPop=%d > 100, no airport)",
+							ownComPop);
 					}
 				}
 
@@ -2992,12 +3039,13 @@ void QuantBot::build(int militaryValue) {
 								powerSurplus, kZonePowerHeadroom);
 						}
 					} else {
-						// Pick zone type by demand valve — build whichever
-						// has the highest demand (R/C/I valves from city sim).
-						auto* citySim = currentGame->getCitySimulation();
-						int16_t rValve = citySim ? citySim->getResValve() : 0;
-						int16_t cValve = citySim ? citySim->getComValve() : 0;
-						int16_t iValve = citySim ? citySim->getIndValve() : 0;
+						// Per-player zone demand from own zone ratio (target ~3:1:1 R:C:I)
+						int resCount = itemCount[Structure_ZoneResidential];
+						int comCount = itemCount[Structure_ZoneCommercial];
+						int indCount = itemCount[Structure_ZoneIndustrial];
+						int16_t rValve = static_cast<int16_t>((comCount + indCount + 1) * 3 - resCount);
+						int16_t cValve = static_cast<int16_t>((resCount + 2) / 3 - comCount);
+						int16_t iValve = static_cast<int16_t>((resCount + 2) / 3 - indCount);
 
 						Uint32 zoneID = Structure_ZoneResidential;
 						if (cValve > rValve && cValve >= iValve) {
@@ -3009,10 +3057,6 @@ void QuantBot::build(int militaryValue) {
 						// Residential zones require heavy factory economy (money > 500)
 						if (zoneID == Structure_ZoneResidential && money <= 500)
 							zoneID = NONE_ID;
-
-						int resCount = itemCount[Structure_ZoneResidential];
-						int comCount = itemCount[Structure_ZoneCommercial];
-						int indCount = itemCount[Structure_ZoneIndustrial];
 
 						if (zoneID != NONE_ID && pBuilder->isAvailableToBuild(zoneID)
 							&& findPlaceLocation(zoneID).isValid()) {

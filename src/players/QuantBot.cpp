@@ -2643,17 +2643,52 @@ void QuantBot::build(int militaryValue) {
 						}
 					}
 				}
-				// 2. Refinery (if 0)
+				// Low-spice economy: skip additional refineries, pivot to R/I/C zones
+				const bool lowSpiceEconomy = (lastCalculatedSpice < 500);
+				const bool isCitySim = (currentGame && currentGame->isCitySimEnabled());
+
+				// 2-CITY. City economy bootstrap (no spice → zones are the income source)
+				// Replaces refinery priority: build R/I/C zones before military.
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
-					&& itemCount[Structure_Refinery] == 0 
+					&& isCitySim && lowSpiceEconomy) {
+					int resCount = itemCount[Structure_ZoneResidential];
+					int comCount = itemCount[Structure_ZoneCommercial];
+					int indCount = itemCount[Structure_ZoneIndustrial];
+
+					Uint32 zoneID = NONE_ID;
+					if (resCount == 0) {
+						zoneID = Structure_ZoneResidential;
+					} else if (indCount == 0) {
+						zoneID = Structure_ZoneIndustrial;
+					} else if (comCount == 0) {
+						zoneID = Structure_ZoneCommercial;
+					} else if (ownTotalPop < 10) {
+						// Still low income — keep building by ratio (target ~3:1:1)
+						int16_t rValve = static_cast<int16_t>((comCount + indCount + 1) * 3 - resCount);
+						int16_t cValve = static_cast<int16_t>((resCount + 2) / 3 - comCount);
+						int16_t iValve = static_cast<int16_t>((resCount + 2) / 3 - indCount);
+						zoneID = Structure_ZoneResidential;
+						if (cValve > rValve && cValve >= iValve) zoneID = Structure_ZoneCommercial;
+						else if (iValve > rValve && iValve > cValve) zoneID = Structure_ZoneIndustrial;
+					}
+
+					if (zoneID != NONE_ID && pBuilder->isAvailableToBuild(zoneID)
+						&& findPlaceLocation(zoneID).isValid()) {
+						itemID = zoneID;
+						logDebug("CITY-BOOTSTRAP: Building %s (R:%d C:%d I:%d pop=%d)",
+							getItemNameByID(zoneID).c_str(), resCount, comCount, indCount, ownTotalPop);
+					}
+				}
+				// 2. Refinery (if 0) — skip on city sim with no spice
+				if (itemID == NONE_ID && !skipRemainingStructureLogic
+					&& !(isCitySim && lowSpiceEconomy)
+					&& itemCount[Structure_Refinery] == 0
 					&& pBuilder->isAvailableToBuild(Structure_Refinery)) {
 					itemID = Structure_Refinery;
 					if (itemCount[Unit_Harvester] < harvesterLimit) {
 						itemCount[Unit_Harvester]++;
 					}
 				}
-				// Low-spice economy: skip additional refineries, pivot to R/I/C zones
-				const bool lowSpiceEconomy = (lastCalculatedSpice < 500);
 
 				// 3. Refinery (ratio: 1 refinery per 3 harvesters) — skip when no spice
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
@@ -2679,9 +2714,14 @@ void QuantBot::build(int militaryValue) {
 						itemCount[Unit_Harvester]++;
 					}
 				}
+				// City income gate: defer military infrastructure until zones
+				// generate enough tax revenue to sustain spending.
+				const bool cityIncomeReady = !isCitySim || !lowSpiceEconomy || ownTotalPop >= 10;
+
 				// 5. StarPort (skip if nothing available/enabled in CHOAM and no heavy factory)
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
-					&& itemCount[Structure_StarPort] == 0 
+					&& cityIncomeReady
+					&& itemCount[Structure_StarPort] == 0
 					&& pBuilder->isAvailableToBuild(Structure_StarPort) 
 					&& findPlaceLocation(Structure_StarPort).isValid()
 					&& (gameMode != GameMode::Campaign || money > 1000)
@@ -2700,13 +2740,15 @@ void QuantBot::build(int militaryValue) {
 				}
 				// 6. Radar
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
-					&& itemCount[Structure_Radar] == 0 
-					&& pBuilder->isAvailableToBuild(Structure_Radar) 
+					&& cityIncomeReady
+					&& itemCount[Structure_Radar] == 0
+					&& pBuilder->isAvailableToBuild(Structure_Radar)
 					&& money > 500) {
-				itemID = Structure_Radar;
-			}
+					itemID = Structure_Radar;
+				}
 				// 7. Light Factory
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
+					&& cityIncomeReady
 					&& itemCount[Structure_LightFactory] == 0
 					&& pBuilder->isAvailableToBuild(Structure_LightFactory)
 					&& money > 500) {
@@ -2824,6 +2866,7 @@ void QuantBot::build(int militaryValue) {
 				}
 				// 9. Heavy Factory
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
+					&& cityIncomeReady
 					&& itemCount[Structure_HeavyFactory] == 0
 					&& pBuilder->isAvailableToBuild(Structure_HeavyFactory)
 					&& money > 500) {
@@ -2832,6 +2875,7 @@ void QuantBot::build(int militaryValue) {
 				}
 				// 10. High Tech Factory (first one - after heavy factory)
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
+					&& cityIncomeReady
 					&& itemCount[Structure_HighTechFactory] == 0
 					&& itemCount[Structure_HeavyFactory] > 0
 					&& pBuilder->isAvailableToBuild(Structure_HighTechFactory)

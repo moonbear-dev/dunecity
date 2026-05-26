@@ -46,15 +46,18 @@ void CitySimulation::load(InputStream& stream) {
         return;
     }
 
-    resPop_ = stream.readSint32();
-    comPop_ = stream.readSint32();
-    indPop_ = stream.readSint32();
-    prevResPop_ = resPop_;  // Initialize from current (no save format change)
-    prevComPop_ = comPop_;
-    prevIndPop_ = indPop_;
-    resValve_ = stream.readSint16();
-    comValve_ = stream.readSint16();
-    indValve_ = stream.readSint16();
+    // Save format compatibility: load into house 0 (local player's state
+    // will be redirected via localHouseID() at runtime).
+    auto& hs = houseState_[0];
+    hs.resPop = stream.readSint32();
+    hs.comPop = stream.readSint32();
+    hs.indPop = stream.readSint32();
+    hs.prevResPop = hs.resPop;
+    hs.prevComPop = hs.comPop;
+    hs.prevIndPop = hs.indPop;
+    hs.resValve = stream.readSint16();
+    hs.comValve = stream.readSint16();
+    hs.indValve = stream.readSint16();
 
     totalFunds_              = stream.readSint32();
     cityTax_                 = stream.readSint16();
@@ -62,18 +65,17 @@ void CitySimulation::load(InputStream& stream) {
     cityDay_                 = stream.readSint32();
     lastProcessedDay_        = stream.readUint32();
     lastTaxYear_             = stream.readUint32();
-    // Derive lastBudgetTick_ from lastProcessedDay_ for save compatibility
     lastBudgetTick_          = (lastProcessedDay_ * kCyclesPerCityDay) / kCyclesPerBudgetTick;
     economicVictoryThreshold_= stream.readSint32();
 
-    policeFundingPercent_ = stream.readSint32();
-    nominalPoliceCost_    = stream.readSint32();
-    lastPoliceExpense_    = stream.readSint32();
+    hs.policeFundingPercent = stream.readSint32();
+    hs.nominalPoliceCost    = stream.readSint32();
+    hs.lastPoliceExpense    = stream.readSint32();
 
-    budget_.setLastTaxRevenue(stream.readSint32());
-    budget_.setRoadPercent(stream.readSint32());
-    budget_.setPolicePercent(stream.readSint32());
-    budget_.setFirePercent(stream.readSint32());
+    hs.budget.setLastTaxRevenue(stream.readSint32());
+    hs.budget.setRoadPercent(stream.readSint32());
+    hs.budget.setPolicePercent(stream.readSint32());
+    hs.budget.setFirePercent(stream.readSint32());
 
     milestoneFirstZoneAchieved_ = stream.readBool();
     for (int i = 0; i < NUM_MILESTONES; ++i) {
@@ -82,12 +84,14 @@ void CitySimulation::load(InputStream& stream) {
 }
 
 void CitySimulation::save(OutputStream& stream) const {
-    stream.writeSint32(resPop_);
-    stream.writeSint32(comPop_);
-    stream.writeSint32(indPop_);
-    stream.writeSint16(resValve_);
-    stream.writeSint16(comValve_);
-    stream.writeSint16(indValve_);
+    // Save format compatibility: save house 0's state (matches old format).
+    const auto& hs = houseState_[0];
+    stream.writeSint32(hs.resPop);
+    stream.writeSint32(hs.comPop);
+    stream.writeSint32(hs.indPop);
+    stream.writeSint16(hs.resValve);
+    stream.writeSint16(hs.comValve);
+    stream.writeSint16(hs.indValve);
 
     stream.writeSint32(totalFunds_);
     stream.writeSint16(cityTax_);
@@ -97,14 +101,14 @@ void CitySimulation::save(OutputStream& stream) const {
     stream.writeUint32(lastTaxYear_);
     stream.writeSint32(economicVictoryThreshold_);
 
-    stream.writeSint32(policeFundingPercent_);
-    stream.writeSint32(nominalPoliceCost_);
-    stream.writeSint32(lastPoliceExpense_);
+    stream.writeSint32(hs.policeFundingPercent);
+    stream.writeSint32(hs.nominalPoliceCost);
+    stream.writeSint32(hs.lastPoliceExpense);
 
-    stream.writeSint32(budget_.getLastTaxRevenue());
-    stream.writeSint32(budget_.getRoadPercent());
-    stream.writeSint32(budget_.getPolicePercent());
-    stream.writeSint32(budget_.getFirePercent());
+    stream.writeSint32(hs.budget.getLastTaxRevenue());
+    stream.writeSint32(hs.budget.getRoadPercent());
+    stream.writeSint32(hs.budget.getPolicePercent());
+    stream.writeSint32(hs.budget.getFirePercent());
 
     stream.writeBool(milestoneFirstZoneAchieved_);
     for (int i = 0; i < NUM_MILESTONES; ++i) {
@@ -171,8 +175,8 @@ void CitySimulation::advancePhase(uint32_t gameCycleCount) {
                         lvSum / devBlocks, lvMax,
                         crSum / devBlocks, crMax,
                         poSum / devBlocks, poMax,
-                        resPop_, comPop_, indPop_,
-                        resValve_, comValve_, indValve_);
+                        getResPop(), getComPop(), getIndPop(),
+                        getResValve(), getComValve(), getIndValve());
             }
         }
     }

@@ -11,6 +11,26 @@ class OutputStream;
 
 namespace DuneCity {
 
+/// Per-house city state — population, demand, economy, civic buildings.
+/// Density maps (pollution, crime, land value) remain global (shared environment).
+static constexpr int kMaxCityHouses = 6;  // matches NUM_HOUSES
+
+struct HouseCityState {
+    int resPop = 0, comPop = 0, indPop = 0;
+    int prevResPop = 0, prevComPop = 0, prevIndPop = 0;
+    int16_t resValve = 0, comValve = 0, indValve = 0;
+    int avgLandValue = 0;
+    int unemploymentRate = 0;
+    int hospitalCount = 0, churchCount = 0;
+    bool hasStadium = false, hasPalace = false, hasAirport = false, hasStarport = false;
+    int policeFundingPercent = 100;
+    int32_t nominalPoliceCost = 0;
+    int32_t lastPoliceExpense = 0;
+    CityBudget budget;
+
+    int getTotalPop() const { return resPop + comPop + indPop; }
+};
+
 class CitySimulation {
 public:
     CitySimulation();
@@ -28,22 +48,26 @@ public:
 
     void registerPowerSource(int x, int y, int power);
 
-    // Raw internal population (SC units — drives demand formula)
-    int getResPop() const { return resPop_; }
-    int getComPop() const { return comPop_; }
-    int getIndPop() const { return indPop_; }
-    int getTotalPop() const { return resPop_ + comPop_ + indPop_; }
+    // Per-house city state access
+    const HouseCityState& getHouseState(int houseID) const;
+    HouseCityState& getHouseStateMut(int houseID);
+
+    // Raw internal population (SC units — local player, for UI)
+    int getResPop() const;
+    int getComPop() const;
+    int getIndPop() const;
+    int getTotalPop() const;
 
     // Display population (SC multiplied for UI — what players see)
     static constexpr int kPopDisplayMultiplier = 20;
-    int getDisplayResPop() const { return resPop_ * kPopDisplayMultiplier; }
-    int getDisplayComPop() const { return comPop_ * kPopDisplayMultiplier; }
-    int getDisplayIndPop() const { return indPop_ * kPopDisplayMultiplier; }
+    int getDisplayResPop() const { return getResPop() * kPopDisplayMultiplier; }
+    int getDisplayComPop() const { return getComPop() * kPopDisplayMultiplier; }
+    int getDisplayIndPop() const { return getIndPop() * kPopDisplayMultiplier; }
     int getDisplayTotalPop() const { return getTotalPop() * kPopDisplayMultiplier; }
 
-    int16_t getResValve() const { return resValve_; }
-    int16_t getComValve() const { return comValve_; }
-    int16_t getIndValve() const { return indValve_; }
+    int16_t getResValve() const;
+    int16_t getComValve() const;
+    int16_t getIndValve() const;
 
     int32_t getTotalFunds() const;
     void setTotalFunds(int32_t v) { totalFunds_ = v; }
@@ -60,16 +84,13 @@ public:
     /// Police-funding %: 0..100, default 100. Scales coverage from each
     /// police-role structure proportionally and is also the share of
     /// annual police cost actually paid into the budget.
-    int getPoliceFundingPercent() const { return policeFundingPercent_; }
-    void setPoliceFundingPercent(int v) {
-        if (v < 0)   v = 0;
-        if (v > 100) v = 100;
-        policeFundingPercent_ = v;
-    }
+    /// These delegate to local player's house state.
+    int getPoliceFundingPercent() const;
+    void setPoliceFundingPercent(int v);
     /// Last computed police annual expense (full nominal, before funding%).
-    int32_t getNominalPoliceCost() const { return nominalPoliceCost_; }
+    int32_t getNominalPoliceCost() const;
     /// Last actual amount paid out (nominal * funding%/100).
-    int32_t getLastPoliceExpense() const { return lastPoliceExpense_; }
+    int32_t getLastPoliceExpense() const;
 
     int getMapWidth() const { return mapWidth_; }
     int getMapHeight() const { return mapHeight_; }
@@ -79,18 +100,19 @@ public:
     int32_t getEconomicVictoryThreshold() const { return economicVictoryThreshold_; }
 
     /// Average land value across developed blocks (0-250), refreshed each scan.
-    int getAvgLandValue() const { return avgLandValue_; }
+    /// Local player version for UI; per-house via getHouseState().
+    int getAvgLandValue() const;
 
     /// Unemployment rate (0-100%), refreshed each zone growth pass.
-    int getUnemploymentRate() const { return unemploymentRate_; }
+    int getUnemploymentRate() const;
 
     /// Hospital/church count: auto-created by the game on residential zones.
-    int getHospitalCount() const { return hospitalCount_; }
-    int getChurchCount() const { return churchCount_; }
+    int getHospitalCount() const;
+    int getChurchCount() const;
 
     /// Civic building presence flags (refreshed each scan).
-    bool getHasStadium() const { return hasStadium_; }
-    bool getHasAirport() const { return hasAirport_; }
+    bool getHasStadium() const;
+    bool getHasAirport() const;
 
     /// City Effects feature flag (Phase 6). When false, all effect scans
     /// are skipped and the maps stay at zero. Set from Game options at init.
@@ -105,8 +127,8 @@ public:
     const CityMapLayer<uint8_t>& getPopulationDensityMap() const { return populationDensityMap_; }
     const CityMapLayer<int8_t>&  getGrowthRateMap() const { return growthRateMap_; }
 
-    CityBudget& getCityBudget() { return budget_; }
-    const CityBudget& getCityBudget() const { return budget_; }
+    CityBudget& getCityBudget();
+    const CityBudget& getCityBudget() const;
 
     // Milestone stub methods (Phase 9 - declared but not yet implemented)
     bool wasFirstZoneMilestoneTriggered() const { return milestoneFirstZoneAchieved_; }
@@ -149,28 +171,13 @@ private:
     /// via setCityTax() / the budget window.
     static constexpr int16_t kDefaultTaxRate = 7;
 
-    int resPop_ = 0;
-    int comPop_ = 0;
-    int indPop_ = 0;
-    int prevResPop_ = 0;   ///< Previous tick population (SC: resHist[1])
-    int prevComPop_ = 0;   ///< Previous tick population (SC: comHist[1])
-    int prevIndPop_ = 0;   ///< Previous tick population (SC: indHist[1])
-    int16_t resValve_ = 0;
-    int16_t comValve_ = 0;
-    int16_t indValve_ = 0;
+    /// Per-house city state (population, demand, economy, civic buildings).
+    HouseCityState houseState_[kMaxCityHouses];
+
     int32_t totalFunds_ = 0;
     int16_t cityTax_ = kDefaultTaxRate;
     int cityYear_ = 0;
     int32_t economicVictoryThreshold_ = 500;
-
-    int     policeFundingPercent_ = 100;  ///< 0..100; scales police coverage AND expense
-    int32_t nominalPoliceCost_    = 0;    ///< Sum of getPoliceAnnualCost() across police-role structures
-    int32_t lastPoliceExpense_    = 0;    ///< Actually-paid-out portion (nominal * funding/100)
-
-    int     avgLandValue_         = 0;    ///< Average land value across developed blocks (0-250)
-    int     unemploymentRate_     = 0;    ///< Unemployment percentage (0-100)
-    int     hospitalCount_        = 0;    ///< Hospitals auto-created on residential zones
-    int     churchCount_          = 0;    ///< Churches auto-created on residential zones
 
     CityMapLayer<uint8_t> powerGridMap_;
     CityMapLayer<uint8_t> trafficDensityMap_;
@@ -180,19 +187,13 @@ private:
     CityMapLayer<uint8_t> populationDensityMap_;
     CityMapLayer<int8_t>  growthRateMap_;
 
-    CityBudget budget_;
-
     bool      effectsEnabled_ = true;   ///< City effects feature flag
     uint32_t  lastProcessedDay_ = 0;    ///< Last city-day number that ran a scan + growth roll
     uint32_t  lastTaxYear_ = 0;         ///< Legacy (unused) — kept for save-file compatibility
     uint32_t  lastBudgetTick_ = 0;      ///< Last budget tick number (1 per second, pays 1/50 annual)
     int       cityDay_ = 0;             ///< Current city day (resets within the year, monotonic across years)
 
-    /// Civic building presence flags, refreshed each scan.
-    bool hasStadium_  = false;
-    bool hasPalace_   = false;
-    bool hasAirport_  = false;
-    bool hasStarport_ = false;
+    // Civic flags are now per-house in houseState_[].
 
     /// Full-map scan: rebuilds pollution, land value, crime maps and runs
     /// zone growth from current map contents. Called from advancePhase()

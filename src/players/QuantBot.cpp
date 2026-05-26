@@ -1728,58 +1728,23 @@ void QuantBot::build(int militaryValue) {
 
 	int money = getHouse()->getCredits();
 
-	// Compute this AI's own city stats (population, land value, civics).
-	// CitySimulation stores local-player-only data; the AI must derive its own.
-	int ownResPop = 0, ownComPop = 0, ownIndPop = 0;
+	// Per-house city stats — CitySimulation now tracks these per player.
+	int ownResPop = 0, ownComPop = 0, ownIndPop = 0, ownTotalPop = 0;
 	int ownAvgLandValue = 0;
 	bool ownHasStadium = false, ownHasAirport = false;
 	if (currentGame && currentGame->isCitySimEnabled()) {
 		auto* citySim = currentGame->getCitySimulation();
-		int lvTotal = 0, lvCount = 0;
-		for (const StructureBase* pStructure : getStructureList()) {
-			if (!pStructure || pStructure->getOwner() != getHouse()) continue;
-			int sid = pStructure->getItemID();
-
-			// Civic building check
-			if (sid == Structure_Stadium) ownHasStadium = true;
-			if (sid == Structure_Airport) ownHasAirport = true;
-
-			// Population by city role
-			DuneCity::CityRole role = DuneCity::getStructureCityRole(sid);
-			if (role != DuneCity::CityRole::None) {
-				bool isZone = (sid == Structure_ZoneResidential
-					|| sid == Structure_ZoneCommercial
-					|| sid == Structure_ZoneIndustrial);
-				Coord pos = pStructure->getLocation();
-				int level;
-				if (isZone) {
-					const Tile* t = getMap().getTile(pos.x, pos.y);
-					level = t ? t->getCityZoneDensity() : 0;
-				} else {
-					level = std::max<int>(1, pStructure->getCityOccupancy());
-				}
-				int pop = DuneCity::getZonePopulation(sid, level);
-				switch (role) {
-					case DuneCity::CityRole::Residential: ownResPop += pop; break;
-					case DuneCity::CityRole::Commercial:  ownComPop += pop; break;
-					case DuneCity::CityRole::Industrial:  ownIndPop += pop; break;
-					default: break;
-				}
-				if (sid == Structure_Palace) {
-					ownComPop += DuneCity::getPalaceCommercialPopulation(level);
-				}
-			}
-
-			// Land value at own structure positions
-			if (citySim) {
-				Coord pos = pStructure->getLocation();
-				int lv = citySim->getLandValueMap().worldGet(pos.x, pos.y);
-				if (lv > 0) { lvTotal += lv; lvCount++; }
-			}
+		if (citySim) {
+			const auto& hs = citySim->getHouseState(getHouse()->getHouseID());
+			ownResPop = hs.resPop;
+			ownComPop = hs.comPop;
+			ownIndPop = hs.indPop;
+			ownTotalPop = hs.getTotalPop();
+			ownAvgLandValue = hs.avgLandValue;
+			ownHasStadium = hs.hasStadium;
+			ownHasAirport = hs.hasAirport;
 		}
-		ownAvgLandValue = lvCount > 0 ? lvTotal / lvCount : 0;
 	}
-	int ownTotalPop = ownResPop + ownComPop + ownIndPop;
 
 	bool emitStatsLog = false;
 

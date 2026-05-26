@@ -28,6 +28,52 @@
 #include <cstdlib>
 #include <vector>
 
+// --- Per-house getter implementations ---
+// These delegate to the local player's HouseCityState for backward-compatible UI.
+
+static int localHouseID() {
+    return pLocalHouse ? pLocalHouse->getHouseID() : 0;
+}
+
+namespace DuneCity {
+
+const HouseCityState& CitySimulation::getHouseState(int houseID) const {
+    if (houseID < 0 || houseID >= kMaxCityHouses) houseID = 0;
+    return houseState_[houseID];
+}
+HouseCityState& CitySimulation::getHouseStateMut(int houseID) {
+    if (houseID < 0 || houseID >= kMaxCityHouses) houseID = 0;
+    return houseState_[houseID];
+}
+
+int CitySimulation::getResPop() const { return getHouseState(localHouseID()).resPop; }
+int CitySimulation::getComPop() const { return getHouseState(localHouseID()).comPop; }
+int CitySimulation::getIndPop() const { return getHouseState(localHouseID()).indPop; }
+int CitySimulation::getTotalPop() const { return getHouseState(localHouseID()).getTotalPop(); }
+int16_t CitySimulation::getResValve() const { return getHouseState(localHouseID()).resValve; }
+int16_t CitySimulation::getComValve() const { return getHouseState(localHouseID()).comValve; }
+int16_t CitySimulation::getIndValve() const { return getHouseState(localHouseID()).indValve; }
+int CitySimulation::getAvgLandValue() const { return getHouseState(localHouseID()).avgLandValue; }
+int CitySimulation::getUnemploymentRate() const { return getHouseState(localHouseID()).unemploymentRate; }
+int CitySimulation::getHospitalCount() const { return getHouseState(localHouseID()).hospitalCount; }
+int CitySimulation::getChurchCount() const { return getHouseState(localHouseID()).churchCount; }
+bool CitySimulation::getHasStadium() const { return getHouseState(localHouseID()).hasStadium; }
+bool CitySimulation::getHasAirport() const { return getHouseState(localHouseID()).hasAirport; }
+
+int CitySimulation::getPoliceFundingPercent() const { return getHouseState(localHouseID()).policeFundingPercent; }
+void CitySimulation::setPoliceFundingPercent(int v) {
+    if (v < 0) v = 0;
+    if (v > 100) v = 100;
+    getHouseStateMut(localHouseID()).policeFundingPercent = v;
+}
+int32_t CitySimulation::getNominalPoliceCost() const { return getHouseState(localHouseID()).nominalPoliceCost; }
+int32_t CitySimulation::getLastPoliceExpense() const { return getHouseState(localHouseID()).lastPoliceExpense; }
+
+CityBudget& CitySimulation::getCityBudget() { return getHouseStateMut(localHouseID()).budget; }
+const CityBudget& CitySimulation::getCityBudget() const { return getHouseState(localHouseID()).budget; }
+
+} // namespace DuneCity
+
 namespace {
 
 /// The "level" used by the city sim for any city-role structure: zones
@@ -409,37 +455,39 @@ void CitySimulation::runEffectsScans() {
     // Nominal cost, however, stays local-only: the city budget UI pays
     // the bill for the local player's police, not the AI's. The AI's
     // police effectively run at 100% funding (no funding-slider UI).
-    int32_t nominalCost = 0;
-    const int fundingPct = policeFundingPercent_;
+    // Reset per-house police cost and civic flags before scan.
+    for (int h = 0; h < kMaxCityHouses; ++h) {
+        houseState_[h].nominalPoliceCost = 0;
+        houseState_[h].hasStadium = false;
+        houseState_[h].hasPalace  = false;
+        houseState_[h].hasAirport = false;
+        houseState_[h].hasStarport = false;
+    }
     forEachStructureOrigin(map, [&](int x, int y, const StructureBase* pStruct) {
         const int itemID = pStruct->getItemID();
+        const House* owner = pStruct->getOwner();
+        const int hID = owner ? owner->getHouseID() : -1;
+        if (hID < 0 || hID >= kMaxCityHouses) return;
+        auto& hs = houseState_[hID];
+
+        // Police coverage — applies to global crime map for all owners
         const int rawCoverage = getPoliceCoverage(itemID);
-        if (rawCoverage <= 0) return;
-
-        const bool isLocal = (pStruct->getOwner() == pLocalHouse);
-        const int effectiveFundingPct = isLocal ? fundingPct : 100;
-        const int coverage = (rawCoverage * effectiveFundingPct) / 100;
-        if (coverage > 0) {
-            stampFalloff(crimeRateMap_, x, y,
-                         kPoliceRadius, -coverage, kMaxCrime);
+        if (rawCoverage > 0) {
+            const int effectiveFundingPct = hs.policeFundingPercent;
+            const int coverage = (rawCoverage * effectiveFundingPct) / 100;
+            if (coverage > 0) {
+                stampFalloff(crimeRateMap_, x, y,
+                             kPoliceRadius, -coverage, kMaxCrime);
+            }
+            hs.nominalPoliceCost += getPoliceAnnualCost(itemID);
         }
-        if (isLocal) {
-            nominalCost += getPoliceAnnualCost(itemID);
-        }
-    });
-    nominalPoliceCost_ = nominalCost;
 
-    // Detect civic buildings for demand cap computation.
-    hasStadium_ = false;
-    hasPalace_  = false;
-    hasAirport_ = false;
-    hasStarport_ = false;
-    forEachStructureOrigin(map, [&](int /*x*/, int /*y*/, const StructureBase* pStruct) {
-        switch (pStruct->getItemID()) {
-            case Structure_Stadium: hasStadium_ = true; break;
-            case Structure_Palace:  hasPalace_  = true; break;
-            case Structure_Airport: hasAirport_ = true; break;
-            case Structure_StarPort: hasStarport_ = true; break;
+        // Civic building detection per house
+        switch (itemID) {
+            case Structure_Stadium:  hs.hasStadium  = true; break;
+            case Structure_Palace:   hs.hasPalace   = true; break;
+            case Structure_Airport:  hs.hasAirport  = true; break;
+            case Structure_StarPort: hs.hasStarport = true; break;
             default: break;
         }
     });
@@ -474,23 +522,25 @@ void CitySimulation::runEffectsScans() {
         }
     }
 
-    // Compute average land value across developed blocks for tax formula.
+    // Compute average land value per house (at each house's structure positions).
     {
         const int bsLv = landValueMap_.getBlockSize();
-        const int bwLv = (mapWidth_  + bsLv - 1) / bsLv;
-        const int bhLv = (mapHeight_ + bsLv - 1) / bsLv;
-        int devCount = 0;
-        long long lvTotal = 0;
-        for (int by = 0; by < bhLv; ++by) {
-            for (int bx = 0; bx < bwLv; ++bx) {
-                const int lv = landValueMap_.get(bx, by);
-                if (lv > 0) {
-                    ++devCount;
-                    lvTotal += lv;
-                }
+        int lvTotal[kMaxCityHouses] = {};
+        int lvCount[kMaxCityHouses] = {};
+        forEachStructureOrigin(map, [&](int x, int y, const StructureBase* pStruct) {
+            const House* owner = pStruct->getOwner();
+            if (!owner) return;
+            const int hID = owner->getHouseID();
+            if (hID < 0 || hID >= kMaxCityHouses) return;
+            const int lv = landValueMap_.get(x / bsLv, y / bsLv);
+            if (lv > 0) {
+                lvTotal[hID] += lv;
+                lvCount[hID]++;
             }
+        });
+        for (int h = 0; h < kMaxCityHouses; ++h) {
+            houseState_[h].avgLandValue = lvCount[h] > 0 ? lvTotal[h] / lvCount[h] : 0;
         }
-        avgLandValue_ = devCount > 0 ? static_cast<int>(lvTotal / devCount) : 0;
     }
 
     // Decay growth rate map toward zero.
@@ -556,15 +606,15 @@ void CitySimulation::runZoneGrowth() {
     }
     int freeResidents = std::max(0, totalResidentialSupply - totalJobSupply);
 
-    // ---- Compute RCI demand valves BEFORE the growth loop ----
-    // Population and demand valves are computed from the LOCAL PLAYER's
-    // structures only (for the budget UI and human-facing demand display).
-    // AI computes its own stats in QuantBot::build().
-    // Zone growth (below) runs for ALL players' structures.
-    {
+    // ---- Compute RCI population and demand valves PER HOUSE ----
+    // Each house gets its own population tally and demand valves.
+    // Zone growth (below) uses the owner's demand valves for zscore.
+    for (int h = 0; h < kMaxCityHouses; ++h) {
+        auto& hs = houseState_[h];
         int curRes = 0, curCom = 0, curInd = 0;
         for (const auto& n : nodes) {
-            if (pLocalHouse && n.pStruct->getOwner() != pLocalHouse) continue;
+            if (!n.pStruct->getOwner() || n.pStruct->getOwner()->getHouseID() != h)
+                continue;
             const int itemID = n.pStruct->getItemID();
             const int pop = getZonePopulation(itemID, n.level);
             switch (n.role) {
@@ -573,7 +623,6 @@ void CitySimulation::runZoneGrowth() {
                 case CityRole::Industrial:  curInd += pop; break;
                 default: break;
             }
-            // Palace dual-role: also contributes commercial population.
             if (itemID == Structure_Palace) {
                 curCom += getPalaceCommercialPopulation(n.level);
             }
@@ -583,27 +632,26 @@ void CitySimulation::runZoneGrowth() {
         vi.resPop = curRes;
         vi.comPop = curCom;
         vi.indPop = curInd;
-        vi.prevResPop = prevResPop_;
-        vi.prevComPop = prevComPop_;
-        vi.prevIndPop = prevIndPop_;
-        vi.resValve = resValve_;
-        vi.comValve = comValve_;
-        vi.indValve = indValve_;
+        vi.prevResPop = hs.prevResPop;
+        vi.prevComPop = hs.prevComPop;
+        vi.prevIndPop = hs.prevIndPop;
+        vi.resValve = hs.resValve;
+        vi.comValve = hs.comValve;
+        vi.indValve = hs.indValve;
         vi.taxRate = cityTax_;
-        vi.hasStadium  = hasStadium_;
-        vi.hasPalace   = hasPalace_;
-        vi.hasAirport  = hasAirport_;
-        vi.hasStarport = hasStarport_;
+        vi.hasStadium  = hs.hasStadium;
+        vi.hasPalace   = hs.hasPalace;
+        vi.hasAirport  = hs.hasAirport;
+        vi.hasStarport = hs.hasStarport;
 
         const ValveOutputs vo = computeDemandValves(vi);
-        resValve_ = vo.resValve;
-        comValve_ = vo.comValve;
-        indValve_ = vo.indValve;
+        hs.resValve = vo.resValve;
+        hs.comValve = vo.comValve;
+        hs.indValve = vo.indValve;
 
-        // Store current as previous for next tick (SC: miscHist)
-        prevResPop_ = curRes;
-        prevComPop_ = curCom;
-        prevIndPop_ = curInd;
+        hs.prevResPop = curRes;
+        hs.prevComPop = curCom;
+        hs.prevIndPop = curInd;
     }
 
     // Traffic connectivity engine (BFS along road network).
@@ -677,17 +725,19 @@ void CitySimulation::runZoneGrowth() {
             }
         }
 
-        // Zone score: globalValve + local evaluation (now includes traffic,
-        // pollution, crime, and land value per zone type).
-        const int valve = (n.role == CityRole::Residential) ? resValve_
-                        : (n.role == CityRole::Commercial)  ? comValve_
-                        :                                     indValve_;
+        // Zone score: owner's demand valve + local evaluation (traffic,
+        // pollution, crime, land value per zone type).
+        const int ownerID = n.pStruct->getOwner() ? n.pStruct->getOwner()->getHouseID() : 0;
+        const auto& ownerState = houseState_[ownerID >= 0 && ownerID < kMaxCityHouses ? ownerID : 0];
+        const int valve = (n.role == CityRole::Residential) ? ownerState.resValve
+                        : (n.role == CityRole::Commercial)  ? ownerState.comValve
+                        :                                     ownerState.indValve;
         int localEval = computeLocalEval(n.role, landValue, pollution,
                                          crime, traffic);
         // Commercial zones get supply-side and airport adjustments on top
         // of the base local eval (spec Section D: commercial desirability).
         if (n.role == CityRole::Commercial) {
-            localEval += computeCommercialRate(localRes, localInd, hasAirport_);
+            localEval += computeCommercialRate(localRes, localInd, ownerState.hasAirport);
         }
         const int zscore = computeZscore(valve, localEval, powered);
 
@@ -871,42 +921,37 @@ void CitySimulation::runZoneGrowth() {
         }
     }
 
-    // Recompute population totals. Palace is dual-role: its residential
-    // portion comes from getZonePopulation(), its commercial portion from
-    // getPalaceCommercialPopulation().
-    // Post-growth population (local player only — for UI display).
-    int newRes = 0, newCom = 0, newInd = 0;
-    for (const auto& n : nodes) {
-        if (pLocalHouse && n.pStruct->getOwner() != pLocalHouse) continue;
-        const int itemID = n.pStruct->getItemID();
-        const int pop = getZonePopulation(itemID, n.level);
-        switch (n.role) {
-            case CityRole::Residential: newRes += pop; break;
-            case CityRole::Commercial:  newCom += pop; break;
-            case CityRole::Industrial:  newInd += pop; break;
-            default: break;
+    // Recompute population totals per house.
+    for (int h = 0; h < kMaxCityHouses; ++h) {
+        auto& hs = houseState_[h];
+        int newRes = 0, newCom = 0, newInd = 0;
+        for (const auto& n : nodes) {
+            if (!n.pStruct->getOwner() || n.pStruct->getOwner()->getHouseID() != h)
+                continue;
+            const int itemID = n.pStruct->getItemID();
+            const int pop = getZonePopulation(itemID, n.level);
+            switch (n.role) {
+                case CityRole::Residential: newRes += pop; break;
+                case CityRole::Commercial:  newCom += pop; break;
+                case CityRole::Industrial:  newInd += pop; break;
+                default: break;
+            }
+            if (itemID == Structure_Palace) {
+                newCom += getPalaceCommercialPopulation(n.level);
+            }
         }
-        // Palace dual-role: also contributes commercial population.
-        if (itemID == Structure_Palace) {
-            newCom += getPalaceCommercialPopulation(n.level);
+        if (newRes != hs.resPop || newCom != hs.comPop || newInd != hs.indPop) {
+            SDL_Log("[CitySim] house=%d population R:%d->%d C:%d->%d I:%d->%d total=%d",
+                    h, hs.resPop, newRes, hs.comPop, newCom, hs.indPop, newInd,
+                    newRes + newCom + newInd);
         }
+        hs.resPop = newRes;
+        hs.comPop = newCom;
+        hs.indPop = newInd;
+        hs.unemploymentRate = computeUnemploymentRate(newRes, newCom, newInd);
+        hs.hospitalCount = computeHospitalCount(newRes);
+        hs.churchCount   = computeChurchCount(newRes);
     }
-    if (newRes != resPop_ || newCom != comPop_ || newInd != indPop_) {
-        SDL_Log("[CitySim] population R:%d->%d C:%d->%d I:%d->%d total=%d",
-                resPop_, newRes, comPop_, newCom, indPop_, newInd,
-                newRes + newCom + newInd);
-    }
-    resPop_ = newRes;
-    comPop_ = newCom;
-    indPop_ = newInd;
-
-    // Unemployment rate (SC Classic employment formula).
-    unemploymentRate_ = computeUnemploymentRate(newRes, newCom, newInd);
-
-    // Hospital/church census (SC Classic). The game auto-creates hospitals
-    // and churches on residential zones — 1 per 256 res pop.
-    hospitalCount_ = computeHospitalCount(newRes);
-    churchCount_   = computeChurchCount(newRes);
 
     // Designate residential zones as hospitals/churches for rendering.
     // Cap overlays: at most 1 hospital per 8 populated res zones and
@@ -923,8 +968,9 @@ void CitySimulation::runZoneGrowth() {
 
         int maxHosp = std::max(1, populatedResZones / 8);
         int maxChur = std::max(1, populatedResZones / 8);
-        int hospRemain = std::min(hospitalCount_, maxHosp);
-        int churRemain = std::min(churchCount_, maxChur);
+        const int lhID = localHouseID();
+        int hospRemain = std::min(houseState_[lhID].hospitalCount, maxHosp);
+        int churRemain = std::min(houseState_[lhID].churchCount, maxChur);
 
         // Spacing: place a hospital every N zones, a church offset halfway between
         int stride = (hospRemain + churRemain > 0)
@@ -1018,15 +1064,13 @@ void CitySimulation::runDailyBudget() {
         hb.policeCost += getPoliceAnnualCost(itemID);
     });
 
-    int32_t localRevenue = 0;
-    int32_t localPaid    = 0;
-    bool    localTouched = false;
-
     for (auto& [house, hb] : houseBudgets) {
         // Annual values divided by days-per-year for smooth daily payout.
-        // Revenue scales with average land value — richer cities earn more.
-        const int32_t annualRevenue = computeAnnualTaxRevenue(hb.pop, cityTax_, avgLandValue_);
-        const int fundingPct = (house == pLocalHouse) ? policeFundingPercent_ : 100;
+        // Revenue scales with the house's own average land value.
+        const int hID = house->getHouseID();
+        const auto& hs = houseState_[hID >= 0 && hID < kMaxCityHouses ? hID : 0];
+        const int32_t annualRevenue = computeAnnualTaxRevenue(hb.pop, cityTax_, hs.avgLandValue);
+        const int fundingPct = hs.policeFundingPercent;
         const int32_t annualPaid = (hb.policeCost * fundingPct) / 100;
 
         // Per-cycle payout: use FixPoint so fractional credits accumulate
@@ -1041,11 +1085,10 @@ void CitySimulation::runDailyBudget() {
             house->takeCredits(-net);
         }
 
-        if (house == pLocalHouse) {
-            // Store annualised figures for the budget UI
-            localRevenue = annualRevenue;
-            localPaid    = annualPaid;
-            localTouched = true;
+        // Store per-house budget figures
+        if (hID >= 0 && hID < kMaxCityHouses) {
+            houseState_[hID].lastPoliceExpense = annualPaid;
+            houseState_[hID].budget.setLastTaxRevenue(annualRevenue);
         }
 
         // Log once every 10 city years per house to keep logs manageable
@@ -1054,13 +1097,6 @@ void CitySimulation::runDailyBudget() {
                     cityYear_, house->getHouseID(), hb.pop, cityTax_,
                     annualRevenue, annualPaid, lround(net.toDouble()));
         }
-    }
-
-    // Update local-player UI state. Budget UI shows annualised figures;
-    // the actual credit pool gets the daily slice via returnCredits/takeCredits.
-    if (localTouched) {
-        lastPoliceExpense_ = localPaid;
-        budget_.setLastTaxRevenue(localRevenue);
     }
 }
 

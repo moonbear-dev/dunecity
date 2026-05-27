@@ -40,7 +40,8 @@ namespace DuneCity {
 //   Heavy Factory      -> Industrial high
 //   HighTech Factory   -> Industrial high
 //   Repair Yard        -> Industrial high
-//   Spice Silo         -> Industrial low
+//   Spice Silo         -> Industrial medium (no pollution)
+//   Construction Yard  -> Industrial high (acts as factory)
 //   Radar              -> Commercial medium
 //   House IX           -> Commercial high
 //   Starport           -> Shipyard / Industrial high (jobs, economic role)
@@ -142,6 +143,7 @@ inline CityRole getStructureCityRole(int itemID) {
         case Structure_Airport:
             return CityRole::Commercial;
         case Structure_ZoneIndustrial:
+        case Structure_ConstructionYard:
         case Structure_LightFactory:
         case Structure_HeavyFactory:
         case Structure_HighTechFactory:
@@ -164,14 +166,14 @@ inline int getStructureMaxLevel(int itemID) {
         case Structure_ZoneIndustrial:
         case Structure_Palace:          // civic dual — grows to max density
             return 3;
-        case Structure_Silo:            // industrial low
-            return 1;
         case Structure_Radar:           // commercial medium
         case Structure_LightFactory:    // industrial medium
+        case Structure_Silo:            // industrial medium (no pollution)
             return 2;
         case Structure_Refinery:        // industrial high
         case Structure_HighTechFactory: // industrial high
         case Structure_IX:              // commercial high
+        case Structure_ConstructionYard: // industrial high (acts as factory)
         case Structure_HeavyFactory:    // industrial high
         case Structure_RepairYard:      // industrial high
         case Structure_StarPort:        // shipyard — industrial high
@@ -197,6 +199,15 @@ inline int getPollutionEmission(int itemID, int level) {
     // Starport is Industrial for jobs/demand but does not pollute (it's a
     // trade hub, not a factory). Per spec override.
     if (itemID == Structure_StarPort) return 0;
+
+    // Spice Silo is industrial-medium for jobs/demand but stores spice — no
+    // smokestacks, no pollution.
+    if (itemID == Structure_Silo) return 0;
+
+    // Construction Yard counts as industrial-high (a "heavy factory") for
+    // supply purposes, but the player can't reposition it — emitting pollution
+    // would unfairly stunt the residential cluster that grows around it.
+    if (itemID == Structure_ConstructionYard) return 0;
 
     // Industrial pollution scales with level: 10 / 25 / 50.
     static constexpr int kIndustrialPollution[3] = { 10, 25, 50 };
@@ -736,7 +747,20 @@ inline ValveOutputs computeDemandValves(const ValveInputs& in) {
     }
 
     // Migration and births
-    const double migration = normResPop * (employment - 1.0);
+    double migration = normResPop * (employment - 1.0);
+    // Tiny-city safeguard: the first residential zone (16 internal pop)
+    // creates 2 normResPop with effectively zero jobs, which lands employment
+    // near 0 and dumps migration into a deep negative — within ~7 scan ticks
+    // the resValve clamps at -2000 and stays there. SC Classic ran on bigger
+    // initial cities; DuneCity starts from zero, so suppress the negative
+    // migration penalty until residential population reaches a real threshold.
+    // Births still drive a small positive demand during this phase, so the
+    // player sees R demand grow normally instead of crashing the moment they
+    // zone their first block.
+    constexpr int kTinyCityResPopThreshold = 64;  // ~3 R-zones at L1
+    if (in.resPop < kTinyCityResPopThreshold && migration < 0.0) {
+        migration = 0.0;
+    }
     const double births = normResPop * birthRate;
     const double projectedResPop = normResPop + migration + births;
 
@@ -877,10 +901,15 @@ constexpr int      kBudgetTicksPerYear  = static_cast<int>(kCyclesPerCityYear);
 /// `avgLandValue` is 0..250; at 128 (midpoint) the multiplier is ~1.0x.
 /// When avgLandValue is 0 (unknown / not passed), falls back to the
 /// population-only formula for backward compatibility.
+///
+/// Per-citizen contribution: 200 credits/year at 100% tax rate. 10× the
+/// original 20 — Dune City game-years are short enough that the older rate
+/// left the AI and the player perpetually starved, and we want zone income
+/// to fund military investment on a comparable timescale to spice harvest.
 inline int32_t computeAnnualTaxRevenue(int totalPopulation, int taxRatePct,
                                        int avgLandValue = 0) {
     if (totalPopulation <= 0 || taxRatePct <= 0) return 0;
-    int32_t base = (totalPopulation * 20 * taxRatePct) / 100;
+    int32_t base = (totalPopulation * 200 * taxRatePct) / 100;
     if (avgLandValue > 0) {
         // Scale by land value: 128 → 1.0x, 250 → ~2.0x, 30 → ~0.23x
         base = static_cast<int32_t>((static_cast<int64_t>(base) * avgLandValue) / 128);

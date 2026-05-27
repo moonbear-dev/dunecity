@@ -474,9 +474,12 @@ TEST_CASE("Tax setter feeds annual revenue computation",
           "[tax][setter][integration]") {
     CitySimulation sim;
     sim.setCityTax(10);
-    REQUIRE(computeAnnualTaxRevenue(1000, sim.getCityTax()) == 100);
+    // Per-citizen contribution is 200 credits/year at 100% tax (see
+    // computeAnnualTaxRevenue in CityEffects.h — bumped 10x in e9b02e1).
+    // 1000 pop × 10% tax × 200 = 20000.
+    REQUIRE(computeAnnualTaxRevenue(1000, sim.getCityTax()) == 20000);
     sim.setCityTax(15);
-    REQUIRE(computeAnnualTaxRevenue(1000, sim.getCityTax()) == 150);
+    REQUIRE(computeAnnualTaxRevenue(1000, sim.getCityTax()) == 30000);
 }
 
 // =============================================================================

@@ -45,7 +45,7 @@ TEST_CASE("getStructureMaxLevel matches structure tier", "[city-effects][role]")
     REQUIRE(getStructureMaxLevel(Structure_ZoneResidential)  == 3);
     REQUIRE(getStructureMaxLevel(Structure_ZoneCommercial)   == 3);
     REQUIRE(getStructureMaxLevel(Structure_ZoneIndustrial)   == 3);
-    REQUIRE(getStructureMaxLevel(Structure_Silo)             == 1);  // I-low
+    REQUIRE(getStructureMaxLevel(Structure_Silo)             == 2);  // I-medium
     REQUIRE(getStructureMaxLevel(Structure_Radar)            == 2);  // C-medium
     REQUIRE(getStructureMaxLevel(Structure_HighTechFactory)  == 3);  // I-high
     REQUIRE(getStructureMaxLevel(Structure_IX)               == 3);  // C-high
@@ -83,10 +83,13 @@ TEST_CASE("Pollution: civic / commercial / residential / defensive structures ar
     REQUIRE(getPollutionEmission(Structure_ZoneCommercial, 3)   == 0);
 }
 
-TEST_CASE("Pollution: Silo and HighTechFactory now pollute (industrial role)", "[city-effects][pollution]") {
-    // Silo is I-low, only level 1
-    REQUIRE(getPollutionEmission(Structure_Silo, 1)            == 10);
-    // HighTechFactory is I-high
+TEST_CASE("Pollution: Silo is clean (spice store, no smokestack)", "[city-effects][pollution]") {
+    // Silo is I-medium for supply but per-spec override emits no pollution.
+    REQUIRE(getPollutionEmission(Structure_Silo, 1) == 0);
+    REQUIRE(getPollutionEmission(Structure_Silo, 2) == 0);
+}
+
+TEST_CASE("Pollution: HighTechFactory pollutes (industrial role)", "[city-effects][pollution]") {
     REQUIRE(getPollutionEmission(Structure_HighTechFactory, 1) == 10);
     REQUIRE(getPollutionEmission(Structure_HighTechFactory, 3) == 50);
 }
@@ -301,20 +304,20 @@ TEST_CASE("Annual tax is zero for empty city or zero rate",
 
 TEST_CASE("Annual tax scales linearly with population and rate (no land value)",
           "[city-effects][tax]") {
-    // With avgLandValue=0 (default), base formula applies: pop*20*rate/100
-    // pop=100, rate=7: 100*20*7/100 = 140
-    REQUIRE(computeAnnualTaxRevenue(100, 7)  == 140);
-    REQUIRE(computeAnnualTaxRevenue(200, 7)  == 280);
-    REQUIRE(computeAnnualTaxRevenue(100, 14) == 280);
-    REQUIRE(computeAnnualTaxRevenue(50, 20)  == 200);
+    // With avgLandValue=0 (default), base formula applies: pop*200*rate/100
+    // pop=100, rate=7: 100*200*7/100 = 1400
+    REQUIRE(computeAnnualTaxRevenue(100, 7)  == 1400);
+    REQUIRE(computeAnnualTaxRevenue(200, 7)  == 2800);
+    REQUIRE(computeAnnualTaxRevenue(100, 14) == 2800);
+    REQUIRE(computeAnnualTaxRevenue(50, 20)  == 2000);
 }
 
 TEST_CASE("Annual tax scales with land value when provided",
           "[city-effects][tax]") {
-    // Base: pop=100, rate=7, no LV: 140
+    // Base: pop=100, rate=7, no LV: 1400
     const int32_t base = computeAnnualTaxRevenue(100, 7);
-    REQUIRE(base == 140);
-    // avgLandValue=128 → 1.0x multiplier (140*128/128 = 140)
+    REQUIRE(base == 1400);
+    // avgLandValue=128 → 1.0x multiplier (1400*128/128 = 1400)
     REQUIRE(computeAnnualTaxRevenue(100, 7, 128) == base);
     // avgLandValue=250 → ~1.95x
     CHECK(computeAnnualTaxRevenue(100, 7, 250) > base);

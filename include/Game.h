@@ -715,6 +715,9 @@ public:
         
         // Per-frame accumulators for min/max tracking
         double aiMsThisFrame = 0.0;
+        double aiWorstHouseMsThisFrame = 0.0;
+        int    aiWorstHouseIdxThisFrame = -1;
+        double citySimMsThisFrame = 0.0;
         double unitsMsThisFrame = 0.0;
         double structuresMsThisFrame = 0.0;
         double renderingMsThisFrame = 0.0;

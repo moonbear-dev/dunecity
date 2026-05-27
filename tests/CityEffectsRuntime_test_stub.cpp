@@ -28,4 +28,12 @@ void CitySimulation::runZoneGrowth()      {}
 void CitySimulation::runDailyBudget()     {}
 void CitySimulation::decayGrowthRateMap() {}
 
+int CitySimulation::getResPop() const { return 0; }
+int CitySimulation::getComPop() const { return 0; }
+int CitySimulation::getIndPop() const { return 0; }
+int16_t CitySimulation::getResValve() const { return 0; }
+int16_t CitySimulation::getComValve() const { return 0; }
+int16_t CitySimulation::getIndValve() const { return 0; }
+void CitySimulation::setPoliceFundingPercent(int) {}
+
 }  // namespace DuneCity

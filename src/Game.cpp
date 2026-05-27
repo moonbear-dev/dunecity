@@ -2155,6 +2155,9 @@ void Game::runMainLoop() {
         
         // Reset per-frame accumulators
         frameTiming.aiMsThisFrame = 0.0;
+        frameTiming.aiWorstHouseMsThisFrame = 0.0;
+        frameTiming.aiWorstHouseIdxThisFrame = -1;
+        frameTiming.citySimMsThisFrame = 0.0;
         frameTiming.unitsMsThisFrame = 0.0;
         frameTiming.structuresMsThisFrame = 0.0;
         frameTiming.pathfindingMsThisFrame = 0.0;
@@ -2362,6 +2365,40 @@ void Game::runMainLoop() {
         frameTiming.totalTurretScans += frameTiming.turretScansThisFrame;
         frameTiming.turretScanMs += frameTiming.turretScanMsThisFrame;
         frameTiming.frameCount++;
+
+        // Frame-spike detection: any single frame slower than ~50 FPS is a
+        // visible stutter even if the rolling average looks fine. Log a one-
+        // line breakdown so we can correlate the spike with whatever phase
+        // ate the time (AI build, structures, units, pathfinding, render).
+        // Skip the first 60 frames to suppress warm-up noise.
+        constexpr double kFrameSpikeThresholdMs = 20.0;
+        constexpr Uint32 kSpikeWarmupFrames = 60;
+        static Uint32 lastSpikeLogCycle = 0;
+        if (thisFrameMs > kFrameSpikeThresholdMs
+            && frameTiming.frameCount > kSpikeWarmupFrames
+            // Rate-limit to one spike log per 10 game cycles so a sustained
+            // bad period doesn't flood the file.
+            && (gameCycleCount - lastSpikeLogCycle >= 10 || lastSpikeLogCycle == 0)) {
+            lastSpikeLogCycle = gameCycleCount;
+            logPerformance("[FRAME SPIKE] Cycle %u frame=%.1fms cycles=%d ai=%.1f(worst h%d=%.1f)"
+                           " citySim=%.1f units=%.1f"
+                           " (tgt=%.1f nav=%.1f move=%.1f turn=%.1f vis=%.1f)"
+                           " struct=%.1f path=%.1f render=%.1f net=%.1f"
+                           " turretScan=%.1f(%dx) sim_avg=%.1f units=%d queue=%zu",
+                gameCycleCount, thisFrameMs, frameTiming.gameCyclesThisFrame,
+                frameTiming.aiMsThisFrame,
+                frameTiming.aiWorstHouseIdxThisFrame, frameTiming.aiWorstHouseMsThisFrame,
+                frameTiming.citySimMsThisFrame,
+                frameTiming.unitsMsThisFrame,
+                frameTiming.unitTargetingMsThisFrame, frameTiming.unitNavigateMsThisFrame,
+                frameTiming.unitMoveMsThisFrame, frameTiming.unitTurnMsThisFrame,
+                frameTiming.unitVisibilityMsThisFrame,
+                frameTiming.structuresMsThisFrame, frameTiming.pathfindingMsThisFrame,
+                frameTiming.renderingMsThisFrame, frameTiming.networkWaitMsThisFrame,
+                frameTiming.turretScanMsThisFrame, frameTiming.turretScansThisFrame,
+                frameTiming.simMsAvg, frameTiming.unitCount,
+                pathRequestQueue.size());
+        }
         
         // Track max values
         if(thisFrameMs > frameTiming.maxTotalMs) frameTiming.maxTotalMs = thisFrameMs;
@@ -2514,17 +2551,36 @@ void Game::updateGameState() {
     pInterface->getRadarView().update();
     cmdManager.executeCommands(gameCycleCount);
 
-    // Time AI/house updates (this is where QuantBot and other AI runs)
+    // Time AI/house updates (this is where QuantBot and other AI runs).
+    // Track per-house worst case so a frame-spike log can name the
+    // offending player if one house ate most of the AI budget.
     Uint64 aiStart = SDL_GetPerformanceCounter();
+    double worstHouseMs = 0.0;
+    int worstHouseIdx = -1;
     for(int i = 0; i < NUM_HOUSES; i++) {
         if(house[i] != nullptr) {
+            const Uint64 houseStart = SDL_GetPerformanceCounter();
             house[i]->update();
+            const Uint64 houseEnd = SDL_GetPerformanceCounter();
+            const double houseMs = getElapsedMs(houseStart, houseEnd);
+            if(houseMs > worstHouseMs) {
+                worstHouseMs = houseMs;
+                worstHouseIdx = i;
+            }
+            // Log any single-house update that took > 10ms — that's already
+            // half a 60fps frame budget gone to one AI.
+            if(houseMs > 10.0) {
+                logPerformance("[AI SPIKE] Cycle %u house=%d update=%.1fms",
+                    gameCycleCount, i, houseMs);
+            }
         }
     }
     Uint64 aiEnd = SDL_GetPerformanceCounter();
     const double aiMs = getElapsedMs(aiStart, aiEnd);
     frameTiming.aiMs += aiMs;
     frameTiming.aiMsThisFrame += aiMs;
+    frameTiming.aiWorstHouseMsThisFrame = worstHouseMs;
+    frameTiming.aiWorstHouseIdxThisFrame = worstHouseIdx;
 
     screenborder->update();
     triggerManager.trigger(gameCycleCount);
@@ -2532,7 +2588,15 @@ void Game::updateGameState() {
 
     // DuneCity: advance one phase of the city simulation
     if (citySimEnabled_ && citySimulation_) {
+        const Uint64 citySimStart = SDL_GetPerformanceCounter();
         citySimulation_->advancePhase(gameCycleCount);
+        const Uint64 citySimEnd = SDL_GetPerformanceCounter();
+        const double citySimMs = getElapsedMs(citySimStart, citySimEnd);
+        frameTiming.citySimMsThisFrame += citySimMs;
+        if(citySimMs > 10.0) {
+            logPerformance("[CITYSIM SPIKE] Cycle %u advancePhase=%.1fms",
+                gameCycleCount, citySimMs);
+        }
 
         // Power shortage warning: notify player when zones lose power
         if (citySimulation_->isPowerShortageJustStarted()) {

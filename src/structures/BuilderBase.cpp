@@ -24,6 +24,8 @@
 #include <SoundPlayer.h>
 #include <Map.h>
 #include <House.h>
+#include <Game.h>
+#include <dunecity/CitySimulation.h>
 #include <units/UnitBase.h>
 
 #include <players/HumanPlayer.h>
@@ -322,6 +324,23 @@ void BuilderBase::updateBuildList()
         if (isCityOnly && !currentGame->isCitySimEnabled()) {
             removeItem(buildList, iter, itemID2Add);
             continue;
+        }
+
+        // City-sim gate: Starport is a shipyard scaled to a sizable city —
+        // require 20000 displayed population (= 1000 internal) before it can
+        // be built. Outside city sim there's no population, so no gate.
+        if (itemID2Add == Structure_StarPort && currentGame->isCitySimEnabled()) {
+            constexpr int kStarPortMinDisplayPop = 20000;
+            constexpr int kStarPortMinInternalPop =
+                kStarPortMinDisplayPop / DuneCity::CitySimulation::kPopDisplayMultiplier;
+            auto* citySim = currentGame->getCitySimulation();
+            const int ownPop = (citySim != nullptr)
+                ? citySim->getHouseState(owner->getHouseID()).getTotalPop()
+                : 0;
+            if (ownPop < kStarPortMinInternalPop) {
+                removeItem(buildList, iter, itemID2Add);
+                continue;
+            }
         }
 
         const ObjectData::ObjectDataStruct& objData = currentGame->objectData.data[itemID2Add][originalHouseID];

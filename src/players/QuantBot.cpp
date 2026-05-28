@@ -2662,6 +2662,12 @@ void QuantBot::build(int militaryValue) {
 					constexpr int kCityRefineryCap = 4;
 					constexpr int kZonesPerRefinery = 3;
 
+					// First refinery is always required as a tech prerequisite
+					// (unlocks buildings in the tech tree), even on no-spice maps.
+					const bool firstRefineryNeeded = refCount == 0
+						&& pBuilder->isAvailableToBuild(Structure_Refinery)
+						&& findPlaceLocation(Structure_Refinery).isValid();
+
 					// On spice maps, queue a refinery whenever zones have pulled
 					// ahead of the 3:1 ratio. This is the alternation pulse.
 					const bool refineryDue = !lowSpiceEconomy
@@ -2670,13 +2676,14 @@ void QuantBot::build(int militaryValue) {
 						&& pBuilder->isAvailableToBuild(Structure_Refinery)
 						&& findPlaceLocation(Structure_Refinery).isValid();
 
-					if (refineryDue) {
+					if (firstRefineryNeeded || refineryDue) {
 						itemID = Structure_Refinery;
 						if (itemCount[Unit_Harvester] < harvesterLimit) {
 							itemCount[Unit_Harvester]++;
 						}
-						logDebug("CITY-ECON: Building Refinery (zones=%d ref=%d, alternation)",
-							zoneCount, refCount);
+						logDebug("CITY-ECON: Building Refinery (zones=%d ref=%d, %s)",
+							zoneCount, refCount,
+							firstRefineryNeeded ? "tech prerequisite" : "alternation");
 					} else if (zoneCount < kCityBootstrapZoneSeed) {
 						// Seed the economy. Missing-type rule first (the I and C
 						// valves crash to -1500 at game start because nobody is

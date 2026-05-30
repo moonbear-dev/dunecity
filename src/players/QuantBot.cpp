@@ -1542,12 +1542,12 @@ Coord QuantBot::findCityTurretPlaceLocation(Uint32 itemID) {
 	int newSizeX = getStructureSize(itemID).x;
 	int newSizeY = getStructureSize(itemID).y;
 
-	// Crime is the ONLY factor. Two-pass O(W*H) algorithm — avoids the
-	// O(W*H*R^2) cost of scoring every candidate by its full coverage area:
-	//   1. Single scan of the crime map to find the hottest tile.
-	//   2. Spiral outward from there for a valid placement spot.
-	// Returns Invalid() if there's no crime anywhere or no spot is
-	// reachable from the hottest tile.
+	// Own-territory crime hotspot placement. Scans only tiles covered by
+	// the AI's own structures (full footprint, not just origin), then
+	// spirals outward from the hottest own-territory tile for a valid spot.
+	// This prevents the AI from chasing enemy crime across the map and
+	// instead suppresses crime in its own city. Also provides air defence
+	// as a side benefit of rocket turret placement.
 	auto* citySim = currentGame ? currentGame->getCitySimulation() : nullptr;
 	if (!citySim) return Coord::Invalid();
 
@@ -1557,18 +1557,29 @@ Coord QuantBot::findCityTurretPlaceLocation(Uint32 itemID) {
 
 	int bestCrime = 0;
 	int hotspotX = -1, hotspotY = -1;
-	for (int x = 0; x < mapW; x++) {
-		for (int y = 0; y < mapH; y++) {
-			int c = crimeMap.worldGet(x, y);
-			if (c > bestCrime) {
-				bestCrime = c;
-				hotspotX = x;
-				hotspotY = y;
+
+	// Scan crime across the full footprint of every own structure.
+	for (const StructureBase* pStructure : getStructureList()) {
+		if (!pStructure || pStructure->getOwner() != getHouse())
+			continue;
+		Coord pos = pStructure->getStructureSize();
+		Coord loc = pStructure->getLocation();
+		for (int dy = 0; dy < pos.y; dy++) {
+			for (int dx = 0; dx < pos.x; dx++) {
+				int tx = loc.x + dx;
+				int ty = loc.y + dy;
+				if (tx < 0 || ty < 0 || tx >= mapW || ty >= mapH) continue;
+				int c = crimeMap.worldGet(tx, ty);
+				if (c > bestCrime) {
+					bestCrime = c;
+					hotspotX = tx;
+					hotspotY = ty;
+				}
 			}
 		}
 	}
 
-	if (hotspotX < 0) return Coord::Invalid();  // no crime anywhere
+	if (hotspotX < 0) return Coord::Invalid();  // no own-territory crime
 
 	// Spiral search outward from the hotspot for a valid placement.
 	// Capped at a reasonable radius so we don't degenerate into a full
@@ -3049,8 +3060,11 @@ void QuantBot::build(int militaryValue) {
 					logDebug("Build Silo - storage at %d/%d", getHouse()->getStoredCredits().lround(), getHouse()->getCapacity());
 								}
 				// 17. City protection turrets (city sim only) — before Palace
-				//     Crime is the ONLY factor: only build when own territory
-				//     has crime above threshold (maxOwnCrime > 30).
+				//     Aim for zero visible crime: build when own territory
+				//     has any meaningful crime (maxOwnCrime > 2). Threshold
+				//     of 2 filters display rounding noise from the crime map
+				//     while still driving residual crime to zero. Also
+				//     doubles as air defence via rocket turret AA.
 				if (itemID == NONE_ID && !skipRemainingStructureLogic
 					&& currentGame && currentGame->isCitySimEnabled()
 					&& money > 500
@@ -3059,25 +3073,33 @@ void QuantBot::build(int militaryValue) {
 					bool shouldBuild = false;
 					int maxOwnCrime = 0;
 
-					// Crime is the ONLY factor: only build turrets when OWN
-					// territory has crime above threshold.
+					// Scan crime across the full footprint of every own
+					// structure, not just origin tiles. A 2x2 zone's far
+					// corner can have crime the origin doesn't see.
 					if (auto* citySim = currentGame->getCitySimulation()) {
 						const auto& crimeMap = citySim->getCrimeRateMap();
 						for (const StructureBase* pStructure : getStructureList()) {
 							if (!pStructure || pStructure->getOwner() != getHouse())
 								continue;
 							Coord pos = pStructure->getLocation();
-							int c = crimeMap.worldGet(pos.x, pos.y);
-							if (c > maxOwnCrime) maxOwnCrime = c;
+							Coord sz  = pStructure->getStructureSize();
+							for (int dy = 0; dy < sz.y; dy++) {
+								for (int dx = 0; dx < sz.x; dx++) {
+									int c = crimeMap.worldGet(pos.x + dx, pos.y + dy);
+									if (c > maxOwnCrime) maxOwnCrime = c;
+								}
+							}
 						}
-						shouldBuild = (maxOwnCrime > 30);
+						// Threshold 2: filters sub-pixel noise, drives
+						// visible crime to zero.
+						shouldBuild = (maxOwnCrime > 2);
 					}
 
 					if (shouldBuild) {
 						Coord loc = findCityTurretPlaceLocation(Structure_RocketTurret);
 						if (loc.isValid()) {
 							itemID = Structure_RocketTurret;
-							logDebug("CITY-TURRET: Building rocket turret (ownCrime=%d)",
+							logDebug("CITY-TURRET: Building rocket turret for crime suppression (ownCrime=%d)",
 								maxOwnCrime);
 						}
 					}

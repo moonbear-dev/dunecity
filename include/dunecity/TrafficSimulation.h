@@ -55,6 +55,7 @@ private:
 
     std::vector<Pos> driveStack_;
     std::vector<Pos> pathTiles_;  ///< road tiles visited on last successful drive
+    std::vector<bool> visited_;   ///< reusable BFS visited buffer (avoids per-call allocation)
     static constexpr int DX[4] = { 0, 1, 0, -1 };
     static constexpr int DY[4] = { -1, 0, 1, 0 };
 };

@@ -663,20 +663,49 @@ void CitySimulation::runZoneGrowth() {
         growthRateMap_.init(mapWidth_, mapHeight_, 2);
     }
 
+    // Spatial supply grids: pre-bin each node's R/C/I supply into block
+    // buckets so the per-node supply lookup is O(blocks-in-radius) instead
+    // of O(N) where N = total nodes. Block size 4 with kSupplyRadius=16
+    // means scanning a 9x9 block neighborhood (81 blocks) per node.
+    constexpr int kSupplyBlockSize = 4;
+    const int sbw = (mapWidth_  + kSupplyBlockSize - 1) / kSupplyBlockSize;
+    const int sbh = (mapHeight_ + kSupplyBlockSize - 1) / kSupplyBlockSize;
+    std::vector<int> supplyGridR(sbw * sbh, 0);
+    std::vector<int> supplyGridC(sbw * sbh, 0);
+    std::vector<int> supplyGridI(sbw * sbh, 0);
+    for (const auto& n : nodes) {
+        const int bx = n.x / kSupplyBlockSize;
+        const int by = n.y / kSupplyBlockSize;
+        const int idx = by * sbw + bx;
+        supplyGridR[idx] += n.supplyR;
+        supplyGridC[idx] += n.supplyC;
+        supplyGridI[idx] += n.supplyI;
+    }
+    const int supplyBlockRadius = (kSupplyRadius + kSupplyBlockSize - 1) / kSupplyBlockSize;
+
     for (auto& n : nodes) {
         const Coord pos = n.pStruct->getLocation();
         if (pos.isInvalid()) continue;
 
         const int targetLevel = n.level + 1;
 
-        // Local supply within kSupplyRadius.
+        // Local supply within kSupplyRadius — summed from spatial grid blocks.
         int localComm = 0, localInd = 0, localRes = 0;
-        for (const auto& s : nodes) {
-            const int dist = std::max(std::abs(s.x - pos.x), std::abs(s.y - pos.y));
-            if (dist > kSupplyRadius) continue;
-            localComm += s.supplyC;
-            localInd  += s.supplyI;
-            localRes  += s.supplyR;
+        {
+            const int cbx = pos.x / kSupplyBlockSize;
+            const int cby = pos.y / kSupplyBlockSize;
+            const int bx0 = std::max(0, cbx - supplyBlockRadius);
+            const int bx1 = std::min(sbw - 1, cbx + supplyBlockRadius);
+            const int by0 = std::max(0, cby - supplyBlockRadius);
+            const int by1 = std::min(sbh - 1, cby + supplyBlockRadius);
+            for (int by = by0; by <= by1; ++by) {
+                for (int bx = bx0; bx <= bx1; ++bx) {
+                    const int idx = by * sbw + bx;
+                    localRes  += supplyGridR[idx];
+                    localComm += supplyGridC[idx];
+                    localInd  += supplyGridI[idx];
+                }
+            }
         }
 
         const int landValue = landValueMap_.get(pos.x / bs, pos.y / bs);

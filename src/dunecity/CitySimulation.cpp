@@ -134,13 +134,18 @@ void CitySimulation::advancePhase(uint32_t gameCycleCount) {
         runDailyBudget();
     }
 
-    // Day tick: run effects scans + roll for zone growth. Growth is
-    // gated stochastically per zone inside runZoneGrowth() so a city
-    // population creeps up day by day rather than jumping in big steps.
+    // Day tick: run effects scans and zone growth on SEPARATE cycles to
+    // halve the per-frame spike. Effects scan runs on the day boundary;
+    // zone growth runs on the next game cycle via pendingGrowthPhase_.
+    if (pendingGrowthPhase_) {
+        pendingGrowthPhase_ = false;
+        runZoneGrowth();
+    }
+
     if (totalDays > lastProcessedDay_) {
         lastProcessedDay_ = totalDays;
         runEffectsScans();
-        runZoneGrowth();
+        pendingGrowthPhase_ = true;
 
         // Diagnostic snapshot every 8 city days (~1/6 city year). Logs
         // average/max land value, crime, pollution across DEVELOPED

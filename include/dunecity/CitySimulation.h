@@ -192,6 +192,7 @@ private:
     uint32_t  lastTaxYear_ = 0;         ///< Legacy (unused) — kept for save-file compatibility
     uint32_t  lastBudgetTick_ = 0;      ///< Last budget tick number (1 per second, pays 1/50 annual)
     int       cityDay_ = 0;             ///< Current city day (resets within the year, monotonic across years)
+    bool      pendingGrowthPhase_ = false; ///< true when runEffectsScans() ran this day but runZoneGrowth() is deferred to next cycle
 
     // Civic flags are now per-house in houseState_[].
 

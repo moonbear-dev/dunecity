@@ -106,8 +106,15 @@ bool TrafficSimulation::tryDrive(int startX, int startY, ZoneType destZone) {
     if (!currentGameMap) return false;
     const int mapW = currentGameMap->getSizeX();
     const int mapH = currentGameMap->getSizeY();
-    std::vector<bool> visited(mapW * mapH, false);
-    visited[startY * mapW + startX] = true;
+    const size_t mapSize = static_cast<size_t>(mapW) * mapH;
+    // Reuse visited buffer across calls to avoid per-BFS heap allocation.
+    // assign() is cheaper than constructing a new vector each time.
+    if (visited_.size() != mapSize) {
+        visited_.assign(mapSize, false);
+    } else {
+        std::fill(visited_.begin(), visited_.end(), false);
+    }
+    visited_[startY * mapW + startX] = true;
 
     struct BFSEntry { int x, y, dist; };
     std::queue<BFSEntry> bfsQueue;
@@ -130,9 +137,9 @@ bool TrafficSimulation::tryDrive(int startX, int startY, ZoneType destZone) {
             const int ny = cy + DY[d];
             if (nx < 0 || ny < 0 || nx >= mapW || ny >= mapH) continue;
             const int nIdx = ny * mapW + nx;
-            if (visited[nIdx]) continue;
+            if (visited_[nIdx]) continue;
             if (!isRoad(nx, ny)) continue;
-            visited[nIdx] = true;
+            visited_[nIdx] = true;
             bfsQueue.push({nx, ny, dist + 1});
             pathTiles_.push_back({nx, ny});
         }

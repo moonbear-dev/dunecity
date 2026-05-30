@@ -914,7 +914,7 @@ private:
     static constexpr size_t kMinBudget = 5000;    // Minimum 5k tokens/cycle
     static constexpr size_t kMaxBudget = 25000;   // Maximum 25k tokens/cycle
     static constexpr size_t kHardCap = 30000;     // With carry-over (not used in multiplayer)
-    static constexpr size_t kDebtCap = 10000;     // Max carry-over tokens (not used in multiplayer)
+    static constexpr size_t kDebtCap = 2000;      // Max carry-over tokens — reduced from 10k to limit burst spikes on large maps
     
     static constexpr int kBudgetCheckInterval = 375;  // Check every 375 cycles (~7.5s at 50Hz)
     

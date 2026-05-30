@@ -1521,7 +1521,9 @@ UnitBase::PathRequestStats UnitBase::resolvePendingPathRequest() {
         return stats;
     }
 
-    recalculatePathTimer = 500;  // Increased from 100 to reduce excessive re-pathing
+    // Jitter the cooldown by objectID to stagger re-requests across units,
+    // preventing multiple units from hitting the pathfinder on the same cycle.
+    recalculatePathTimer = 500 + static_cast<int>(getObjectID() % 100);
 
     std::size_t nodesExpanded = 0;
     bool invalidDestination = false;

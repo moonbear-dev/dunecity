@@ -764,6 +764,28 @@ GFXManager::GFXManager() {
                         }
                     }
                 }
+                // Last resort: if fallback sprite was also null, fill atlas
+                // with a debug placeholder so objPic is never null.
+                if (!objPic[ObjPic_NuclearPlant][HOUSE_HARKONNEN][0]) {
+                    sdl2::surface_ptr ph{ SDL_CreateRGBSurface(0, atlasW, atlasH,
+                        SCREEN_BPP, RMASK, GMASK, BMASK, AMASK) };
+                    if (ph) {
+                        SDL_FillRect(ph.get(), nullptr, SDL_MapRGBA(ph->format, 180, 100, 100, 255));
+                        objPic[ObjPic_NuclearPlant][HOUSE_HARKONNEN][0] = std::move(ph);
+                        objPic[ObjPic_NuclearPlant][HOUSE_HARKONNEN][1] = scaleRGBASurface(objPic[ObjPic_NuclearPlant][HOUSE_HARKONNEN][0].get(), 2);
+                        objPic[ObjPic_NuclearPlant][HOUSE_HARKONNEN][2] = scaleRGBASurface(objPic[ObjPic_NuclearPlant][HOUSE_HARKONNEN][0].get(), 3);
+                        for (int h = 1; h < NUM_HOUSES; h++) {
+                            for (int z = 0; z < NUM_ZOOMLEVEL; z++) {
+                                if (objPic[ObjPic_NuclearPlant][HOUSE_HARKONNEN][z]) {
+                                    objPic[ObjPic_NuclearPlant][h][z] = sdl2::surface_ptr{
+                                        SDL_ConvertSurface(objPic[ObjPic_NuclearPlant][HOUSE_HARKONNEN][z].get(),
+                                                           objPic[ObjPic_NuclearPlant][HOUSE_HARKONNEN][z]->format, 0)
+                                    };
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -837,7 +859,28 @@ GFXManager::GFXManager() {
                     }
                 }
             } else {
-                SDL_Log("Police station sprite not found at imported_sprites/micropolis/composites_2x2/police_station_2x2.png");
+                SDL_Log("Police station sprite not found; using placeholder");
+                // Fill the already-cleared atlas with a visible debug color so
+                // objPic is never null and getZoomedObjPic won't crash.
+                if (atlas) {
+                    SDL_FillRect(atlas.get(), nullptr,
+                                 SDL_MapRGBA(atlas->format, 100, 120, 180, 255));
+                    objPic[ObjPic_PoliceStation][HOUSE_HARKONNEN][0] = std::move(atlas);
+                    objPic[ObjPic_PoliceStation][HOUSE_HARKONNEN][1] =
+                        scaleRGBASurface(objPic[ObjPic_PoliceStation][HOUSE_HARKONNEN][0].get(), 2);
+                    objPic[ObjPic_PoliceStation][HOUSE_HARKONNEN][2] =
+                        scaleRGBASurface(objPic[ObjPic_PoliceStation][HOUSE_HARKONNEN][0].get(), 3);
+                    for (int h = 1; h < NUM_HOUSES; h++) {
+                        for (int z = 0; z < NUM_ZOOMLEVEL; z++) {
+                            if (objPic[ObjPic_PoliceStation][HOUSE_HARKONNEN][z]) {
+                                objPic[ObjPic_PoliceStation][h][z] = sdl2::surface_ptr{
+                                    SDL_ConvertSurface(objPic[ObjPic_PoliceStation][HOUSE_HARKONNEN][z].get(),
+                                                       objPic[ObjPic_PoliceStation][HOUSE_HARKONNEN][z]->format, 0)
+                                };
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -920,6 +963,26 @@ GFXManager::GFXManager() {
                     }
                 }
             }
+            if (!objPic[ObjPic_Stadium][HOUSE_HARKONNEN][0]) {
+                sdl2::surface_ptr ph{ SDL_CreateRGBSurface(0, numFrames * frameW, frameH,
+                    SCREEN_BPP, RMASK, GMASK, BMASK, AMASK) };
+                if (ph) {
+                    SDL_FillRect(ph.get(), nullptr, SDL_MapRGBA(ph->format, 120, 180, 100, 255));
+                    objPic[ObjPic_Stadium][HOUSE_HARKONNEN][0] = std::move(ph);
+                    objPic[ObjPic_Stadium][HOUSE_HARKONNEN][1] = scaleRGBASurface(objPic[ObjPic_Stadium][HOUSE_HARKONNEN][0].get(), 2);
+                    objPic[ObjPic_Stadium][HOUSE_HARKONNEN][2] = scaleRGBASurface(objPic[ObjPic_Stadium][HOUSE_HARKONNEN][0].get(), 3);
+                    for (int h = 1; h < NUM_HOUSES; h++) {
+                        for (int z = 0; z < NUM_ZOOMLEVEL; z++) {
+                            if (objPic[ObjPic_Stadium][HOUSE_HARKONNEN][z]) {
+                                objPic[ObjPic_Stadium][h][z] = sdl2::surface_ptr{
+                                    SDL_ConvertSurface(objPic[ObjPic_Stadium][HOUSE_HARKONNEN][z].get(),
+                                                       objPic[ObjPic_Stadium][HOUSE_HARKONNEN][z]->format, 0)
+                                };
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -998,6 +1061,26 @@ GFXManager::GFXManager() {
                                 SDL_ConvertSurface(objPic[ObjPic_Airport][HOUSE_HARKONNEN][z].get(),
                                                    objPic[ObjPic_Airport][HOUSE_HARKONNEN][z]->format, 0)
                             };
+                        }
+                    }
+                }
+            }
+            if (!objPic[ObjPic_Airport][HOUSE_HARKONNEN][0]) {
+                sdl2::surface_ptr ph{ SDL_CreateRGBSurface(0, numFrames * frameW, frameH,
+                    SCREEN_BPP, RMASK, GMASK, BMASK, AMASK) };
+                if (ph) {
+                    SDL_FillRect(ph.get(), nullptr, SDL_MapRGBA(ph->format, 180, 160, 100, 255));
+                    objPic[ObjPic_Airport][HOUSE_HARKONNEN][0] = std::move(ph);
+                    objPic[ObjPic_Airport][HOUSE_HARKONNEN][1] = scaleRGBASurface(objPic[ObjPic_Airport][HOUSE_HARKONNEN][0].get(), 2);
+                    objPic[ObjPic_Airport][HOUSE_HARKONNEN][2] = scaleRGBASurface(objPic[ObjPic_Airport][HOUSE_HARKONNEN][0].get(), 3);
+                    for (int h = 1; h < NUM_HOUSES; h++) {
+                        for (int z = 0; z < NUM_ZOOMLEVEL; z++) {
+                            if (objPic[ObjPic_Airport][HOUSE_HARKONNEN][z]) {
+                                objPic[ObjPic_Airport][h][z] = sdl2::surface_ptr{
+                                    SDL_ConvertSurface(objPic[ObjPic_Airport][HOUSE_HARKONNEN][z].get(),
+                                                       objPic[ObjPic_Airport][HOUSE_HARKONNEN][z]->format, 0)
+                                };
+                            }
                         }
                     }
                 }
@@ -1920,7 +2003,24 @@ SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned in
     if(objPic[id][house][z] == nullptr) {
         // remap to this color
         if(objPic[id][HOUSE_HARKONNEN][z] == nullptr) {
-            THROW(std::runtime_error, "GFXManager::getZoomedObjPic(): Unit Picture with ID %u is not loaded!", id);
+            // DuneCity civic sprites: fall back to ConstructionYard instead of crashing
+            static const unsigned int duneCityCivicIds[] = {
+                ObjPic_NuclearPlant, ObjPic_PoliceStation, ObjPic_Stadium,
+                ObjPic_Airport, ObjPic_Hospital, ObjPic_Church
+            };
+            bool isDuneCityCivic = false;
+            for(auto cid : duneCityCivicIds) {
+                if(id == cid) { isDuneCityCivic = true; break; }
+            }
+            if(isDuneCityCivic && objPic[ObjPic_ConstructionYard][HOUSE_HARKONNEN][z]) {
+                SDL_Log("GFXManager::getZoomedObjPic(): DuneCity civic sprite ID %u not loaded, falling back to ConstructionYard", id);
+                objPic[id][HOUSE_HARKONNEN][z] = sdl2::surface_ptr{
+                    SDL_ConvertSurface(objPic[ObjPic_ConstructionYard][HOUSE_HARKONNEN][z].get(),
+                                       objPic[ObjPic_ConstructionYard][HOUSE_HARKONNEN][z]->format, 0)
+                };
+            } else {
+                THROW(std::runtime_error, "GFXManager::getZoomedObjPic(): Unit Picture with ID %u is not loaded!", id);
+            }
         }
 
         objPic[id][house][z] = mapSurfaceColorRange(objPic[id][HOUSE_HARKONNEN][z].get(), PALCOLOR_HARKONNEN, houseToPaletteIndex[house]);

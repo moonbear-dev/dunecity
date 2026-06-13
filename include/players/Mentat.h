@@ -15,20 +15,26 @@
  *  along with Dune Legacy.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef QuantBot_H
-#define QuantBot_H
+#ifndef Mentat_H
+#define Mentat_H
 
 #include <players/Player.h>
 #include <units/MCV.h>
 #include <players/QuantBotConfig.h>
+#include <players/MentatBuildContext.h>
 
 #include <DataTypes.h>
 #include <set>
 #include <map>
 #include <unordered_map>
+#include <vector>
 
-class QuantBot : public Player
+struct MentatBuildStepMentat;
+
+class Mentat : public Player
 {
+    friend struct MentatBuildStepMentat;  // Build order lambdas need access to private members
+
 public:
     enum class Difficulty {
         Easy = 0,
@@ -43,10 +49,10 @@ public:
         Campaign = 5
     };
 
-    QuantBot(House* associatedHouse, const std::string& playername, Difficulty difficulty, bool supportModeEnabled = false);
-    QuantBot(InputStream& stream, House* associatedHouse);
+    Mentat(House* associatedHouse, const std::string& playername, Difficulty difficulty, bool supportModeEnabled = false);
+    Mentat(InputStream& stream, House* associatedHouse);
     void init();
-    ~QuantBot();
+    ~Mentat();
     void save(OutputStream& stream) const override;
 
     void update() override;
@@ -132,7 +138,33 @@ private:
     void attack(int militaryValue);
     void manageCityBuilding();
 
+    // --- Mentat refactor: CY build order vector ---
+    static const std::vector<MentatBuildStepMentat>& getCYBuildOrder();
+
+    // --- Mentat refactor: per-builder production handlers ---
+    void handleCYProduction(const BuilderBase* pBuilder, const StructureBase* pStructure, MentatBuildContext& ctx, bool emitStatsLog);
+    void handleHeavyFactory(const BuilderBase* pBuilder, MentatBuildContext& ctx, bool emitStatsLog,
+                            FixPoint tankPercent, FixPoint siegePercent, FixPoint specialPercent,
+                            FixPoint launcherPercent, FixPoint ornithopterPercent);
+    void handleHighTechFactory(const BuilderBase* pBuilder, MentatBuildContext& ctx,
+                               FixPoint ornithopterPercent);
+    void handleLightFactory(const BuilderBase* pBuilder, MentatBuildContext& ctx);
+    void handleStarPort(const BuilderBase* pBuilder, MentatBuildContext& ctx);
+    void handleRepairs(const StructureBase* pStructure, MentatBuildContext& ctx);
+    void handleSpecialWeapon(const StructureBase* pStructure, MentatBuildContext& ctx);
+    void handleStructurePlacement(const ConstructionYard* pConstYard, const BuilderBase* pBuilder, MentatBuildContext& ctx);
+
+    // Unit ratio calculation (extracted from build())
+    void calculateUnitRatios(MentatBuildContext& ctx,
+                             FixPoint& tankPercent, FixPoint& siegePercent,
+                             FixPoint& specialPercent, FixPoint& launcherPercent,
+                             FixPoint& ornithopterPercent,
+                             bool emitStatsLog);
+
+    // Build context snapshot
+    MentatBuildContext buildContextSnapshot(int militaryValue);
+
     Sint32 cityBuildTimer = 0;
 };
 
-#endif //QuantBot_H
+#endif //Mentat_H

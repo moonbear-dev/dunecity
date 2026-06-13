@@ -22,6 +22,7 @@
 #include <players/CampaignAIPlayer.h>
 #include <players/SmartBot.h>
 #include <players/QuantBot.h>
+#include <players/Mentat.h>
 
 std::vector<PlayerFactory::PlayerData> PlayerFactory::playerDataList;
 
@@ -81,6 +82,48 @@ void PlayerFactory::registerAllPlayers() {
                                             "AI Support (Brutal)",
         [](House* house, const std::string& playername) { return std::make_unique<QuantBot>(house, playername, QuantBot::Difficulty::Brutal, true); },
         [](InputStream& inputStream, House* house) { return std::make_unique<QuantBot>(inputStream, house); });
+
+    // Mentat (refactored AI)
+    playerDataList.emplace_back("mentatDefend", "Mentat (Defend)",
+        [](House* h, const std::string& n) { return std::make_unique<Mentat>(h, n, Mentat::Difficulty::Defend); },
+        [](InputStream& s, House* h) { return std::make_unique<Mentat>(s, h); });
+
+    playerDataList.emplace_back("mentatEasy", "Mentat (Easy)",
+        [](House* h, const std::string& n) { return std::make_unique<Mentat>(h, n, Mentat::Difficulty::Easy); },
+        [](InputStream& s, House* h) { return std::make_unique<Mentat>(s, h); });
+
+    playerDataList.emplace_back("mentatMedium", "Mentat (Medium)",
+        [](House* h, const std::string& n) { return std::make_unique<Mentat>(h, n, Mentat::Difficulty::Medium); },
+        [](InputStream& s, House* h) { return std::make_unique<Mentat>(s, h); });
+
+    playerDataList.emplace_back("mentatHard", "Mentat (Hard)",
+        [](House* h, const std::string& n) { return std::make_unique<Mentat>(h, n, Mentat::Difficulty::Hard); },
+        [](InputStream& s, House* h) { return std::make_unique<Mentat>(s, h); });
+
+    playerDataList.emplace_back("mentatBrutal", "Mentat (Brutal)",
+        [](House* h, const std::string& n) { return std::make_unique<Mentat>(h, n, Mentat::Difficulty::Brutal); },
+        [](InputStream& s, House* h) { return std::make_unique<Mentat>(s, h); });
+
+    // Mentat Support variants
+    playerDataList.emplace_back("mentatSupportDefend", "Mentat Support (Defend)",
+        [](House* h, const std::string& n) { return std::make_unique<Mentat>(h, n, Mentat::Difficulty::Defend, true); },
+        [](InputStream& s, House* h) { return std::make_unique<Mentat>(s, h); });
+
+    playerDataList.emplace_back("mentatSupportEasy", "Mentat Support (Easy)",
+        [](House* h, const std::string& n) { return std::make_unique<Mentat>(h, n, Mentat::Difficulty::Easy, true); },
+        [](InputStream& s, House* h) { return std::make_unique<Mentat>(s, h); });
+
+    playerDataList.emplace_back("mentatSupportMedium", "Mentat Support (Medium)",
+        [](House* h, const std::string& n) { return std::make_unique<Mentat>(h, n, Mentat::Difficulty::Medium, true); },
+        [](InputStream& s, House* h) { return std::make_unique<Mentat>(s, h); });
+
+    playerDataList.emplace_back("mentatSupportHard", "Mentat Support (Hard)",
+        [](House* h, const std::string& n) { return std::make_unique<Mentat>(h, n, Mentat::Difficulty::Hard, true); },
+        [](InputStream& s, House* h) { return std::make_unique<Mentat>(s, h); });
+
+    playerDataList.emplace_back("mentatSupportBrutal", "Mentat Support (Brutal)",
+        [](House* h, const std::string& n) { return std::make_unique<Mentat>(h, n, Mentat::Difficulty::Brutal, true); },
+        [](InputStream& s, House* h) { return std::make_unique<Mentat>(s, h); });
 
     playerDataList.emplace_back(  "SmartBot",
                                             "SmartBot",

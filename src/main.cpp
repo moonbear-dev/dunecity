@@ -496,7 +496,8 @@ static bool promptToRestoreOutOfSyncConfigurations()
 void createDefaultConfigFile(const std::string& configfilepath, const std::string& language) {
     SDL_Log("Creating user config file '%s'", configfilepath.c_str());
 
-    // Try to copy template file from config directory first
+    // Try to copy template file from config directory first (only if FileManager is initialized)
+    if (pFileManager) {
     try {
         auto templateFile = pFileManager->openFile("config/" + std::string(CONFIGFILENAME));
         if (templateFile) {
@@ -518,6 +519,7 @@ void createDefaultConfigFile(const std::string& configfilepath, const std::strin
         SDL_Log("Warning: Could not copy template from config directory: %s", e.what());
         SDL_Log("Falling back to programmatic creation...");
     }
+    } // end if (pFileManager)
 
     // Fallback: create programmatically in user directory
     SDL_Log("Creating default config file in user directory: %s", configfilepath.c_str());

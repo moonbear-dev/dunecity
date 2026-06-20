@@ -411,8 +411,15 @@ Uint32 ObjectBase::getHealthColor() const {
 
 namespace {
 
+// 0 = normal, 1 = walls (slightly deprioritized), 2 = carryalls (heavily deprioritized)
+int getTargetDeprioritizationLevel(const ObjectBase& candidate) {
+    if(candidate.getItemID() == Unit_Carryall) return 2;
+    if(candidate.getItemID() == Structure_Wall) return 1;
+    return 0;
+}
+
 bool isDeprioritizedTarget(const ObjectBase& candidate) {
-    return candidate.getItemID() == Structure_Wall || candidate.getItemID() == Unit_Carryall;
+    return getTargetDeprioritizationLevel(candidate) > 0;
 }
 
 bool isTileVisibleToSeeker(const ObjectBase& seeker, const Coord& tileCoord) {
@@ -436,6 +443,10 @@ const ObjectBase* findClosestTargetLegacy(const ObjectBase& seeker) {
     const int maxRadiusY = std::max(seekerLocation.y, currentGameMap->getSizeY() - 1 - seekerLocation.y);
     const int maxRadius = std::max(maxRadiusX, maxRadiusY);
 
+    const ObjectBase* bestTarget = nullptr;
+    int bestDeprio = 3; // worse than carryall
+    FixPoint bestDistance = FixPt_MAX;
+
     for(int radius = 1; radius <= maxRadius; ++radius) {
         for(int dx = -radius; dx <= radius; ++dx) {
             for(int dy = -radius; dy <= radius; ++dy) {
@@ -455,13 +466,34 @@ const ObjectBase* findClosestTargetLegacy(const ObjectBase& seeker) {
 
                 ObjectBase* candidate = tile->getObject();
                 if(candidate != nullptr && seeker.canAttack(candidate)) {
-                    return candidate;
+                    const int deprio = getTargetDeprioritizationLevel(*candidate);
+                    const FixPoint dist = blockDistance(seekerLocation, checkCoord);
+
+                    // Prefer lower deprioritization; same tier -> prefer closer
+                    if(deprio < bestDeprio || (deprio == bestDeprio && dist < bestDistance)) {
+                        bestTarget = candidate;
+                        bestDeprio = deprio;
+                        bestDistance = dist;
+                    }
                 }
             }
         }
+
+        // Early exit: if we found a non-deprioritized target this ring, stop
+        if(bestTarget != nullptr && bestDeprio == 0) {
+            break;
+        }
+        // If we found a wall but no carryall-free target yet, keep searching one more ring
+        // Give buildings a fair chance at being found before giving up
+        if(bestTarget != nullptr && bestDeprio <= 1 && radius > 5) {
+            break;
+        }
+        if(bestTarget != nullptr && bestDeprio == 2 && radius > 10) {
+            break;
+        }
     }
 
-    return nullptr;
+    return bestTarget;
 }
 
 const ObjectBase* findTargetLegacy(const ObjectBase& seeker, int checkRange) {
@@ -621,7 +653,12 @@ const ObjectBase* findTargetViaGrid(const ObjectBase& seeker,
 
         if(bestTarget != nullptr) {
             const FixPoint nextRingLowerBound = FixPoint((ring + 1) * cellSize);
-            if(bestDistance <= nextRingLowerBound || ring == searchRadius) {
+            // Don't break early if best target is deprioritized — keep searching for buildings
+            const int bestDeprio = getTargetDeprioritizationLevel(*bestTarget);
+            if(bestDeprio == 0 && (bestDistance <= nextRingLowerBound || ring == searchRadius)) {
+                break;
+            }
+            if(bestDeprio > 0 && ring == searchRadius) {
                 break;
             }
         } else if(!huntMode) {

@@ -12,10 +12,12 @@ Not all original terrain effects on unit speed are present right now, e.g. units
 Add missing voice announcements
 
 Think about other cursor and indictator graphics
+  - Scale system cursors for high-DPI / 4K displays (cursor pixel size is fixed at native sprite dimensions, needs rescaling or software-rendered cursor override)
 
 Make an option to show the original build icons
 
 Make GUI scale option for higher resolution screens.
+  - Add option to hide version watermark / mod label during gameplay (esp. combat view clutter)
 
 Test sound and music volume
 

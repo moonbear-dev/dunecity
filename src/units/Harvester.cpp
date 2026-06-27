@@ -559,9 +559,12 @@ void Harvester::move()
                     doReturn();
                 }
             } else if(pathList.empty()) {
-                // Stuck: in harvesting mode with a destination, but can't path there
-                // Clear harvesting mode so checkPos() can search for new spice
-                harvestingMode = false;
+                // Stuck: in harvesting mode with a destination, but can't path there.
+                // If a carryall is coming to deliver us, preserve harvestingMode so
+                // checkPos() doesn't reset guardPoint/destination back to the old tile.
+                if(!awaitingPickup) {
+                    harvestingMode = false;
+                }
             }
         }
     }

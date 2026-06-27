@@ -37,11 +37,18 @@ SDL_Surface* scaleSurface(SDL_Surface* src, int scale) {
     if (!dst) {
         return nullptr;
     }
+    // Copy palette from src so indexed (8-bit) pixels map correctly on dst.
+    if (src->format->palette) {
+        SDL_SetPixelFormatPalette(dst->format, src->format->palette);
+    }
     // Preserve color key on the scaled surface.
     Uint32 colorKey = 0;
     if (SDL_GetColorKey(src, &colorKey) == 0) {
         SDL_SetColorKey(dst, SDL_TRUE, colorKey);
     }
+    // Disable blending on src so the blitter treats color-keyed pixels as
+    // opaque indices, not as alpha values (SDL2 trap with paletted surfaces).
+    SDL_SetSurfaceBlendMode(src, SDL_BLENDMODE_NONE);
     SDL_Rect srcRect = { 0, 0, src->w, src->h };
     SDL_Rect dstRect = { 0, 0, src->w * scale, src->h * scale };
     SDL_BlitScaled(src, &srcRect, dst, &dstRect);

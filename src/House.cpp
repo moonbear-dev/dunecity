@@ -249,6 +249,10 @@ void House::addCredits(FixPoint newCredits, bool wasRefined) {
         }
 
         storedCredits += newCredits;
+        FixPoint total = storedCredits + startingCredits;
+        if(total > MAX_GAME_CREDITS) {
+            storedCredits -= (total - MAX_GAME_CREDITS);
+        }
         if(this == pLocalHouse) {
             if(((currentGame->winFlags & WINLOSEFLAGS_QUOTA) != 0) && (quota != 0)) {
                 if(storedCredits >= quota) {
@@ -270,6 +274,10 @@ void House::returnCredits(FixPoint newCredits) {
         } else {
             addCredits(leftCapacity, false);
             startingCredits += (newCredits - leftCapacity);
+            FixPoint total = storedCredits + startingCredits;
+            if(total > MAX_GAME_CREDITS) {
+                startingCredits -= (total - MAX_GAME_CREDITS);
+            }
         }
     }
 }

@@ -169,6 +169,7 @@ public:
 
     inline FixPoint getStartingCredits() const { return startingCredits; }
     inline FixPoint getStoredCredits() const { return storedCredits; }
+    static constexpr int MAX_GAME_CREDITS = 999999;
     inline int getCredits() const { return lround(storedCredits+startingCredits); }
     void addCredits(FixPoint newCredits, bool wasRefined = false);
     void returnCredits(FixPoint newCredits);

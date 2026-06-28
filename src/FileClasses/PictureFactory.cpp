@@ -834,6 +834,8 @@ sdl2::surface_ptr PictureFactory::createHeraldNeu(SDL_Surface* heraldFre) const 
 
         auto pBase = mapSurfaceColorRange(heraldFre, PALCOLOR_FREMEN, PALCOLOR_NEUTRAL);
         pBase = mapSurfaceColorRange(pBase.get(), PALCOLOR_FREMEN+1, PALCOLOR_NEUTRAL+1);
+        // Remap Ordos green (decorative frame pixels from Harkonnen herald) to Neutral white/grey
+        pBase = mapSurfaceColorRange(pBase.get(), PALCOLOR_ORDOS, PALCOLOR_NEUTRAL);
         SDL_BlitSurface(pMask.get(), nullptr, pBase.get(), nullptr);
         return pBase;
     }
@@ -841,6 +843,7 @@ sdl2::surface_ptr PictureFactory::createHeraldNeu(SDL_Surface* heraldFre) const 
     // Fallback: remap Fremen colors to Neutral white palette
     auto pRecolored = mapSurfaceColorRange(heraldFre, PALCOLOR_FREMEN, PALCOLOR_NEUTRAL);
     pRecolored = mapSurfaceColorRange(pRecolored.get(), PALCOLOR_FREMEN+1, PALCOLOR_NEUTRAL+1);
+    pRecolored = mapSurfaceColorRange(pRecolored.get(), PALCOLOR_ORDOS, PALCOLOR_NEUTRAL);
     return pRecolored;
 }
 

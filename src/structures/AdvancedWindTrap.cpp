@@ -23,8 +23,7 @@ void AdvancedWindTrap::init() {
     structureSize.x = 3;
     structureSize.y = 3;
 
-    // Reuse WindTrap sprite until a dedicated asset is provided
-    graphicID = ObjPic_Windtrap;
+    graphicID = ObjPic_AdvancedWindTrap;
     graphic = pGFXManager->getObjPic(graphicID, getOwner()->getHouseID());
     numImagesX = NUM_WINDTRAP_ANIMATIONS_PER_ROW;
     numImagesY = (2+NUM_WINDTRAP_ANIMATIONS+NUM_WINDTRAP_ANIMATIONS_PER_ROW-1)/NUM_WINDTRAP_ANIMATIONS_PER_ROW;

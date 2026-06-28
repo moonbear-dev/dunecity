@@ -129,6 +129,7 @@ static const Coord objPicTiles[] {
     { 4, 1 },   // ObjPic_Airport (4 frame slots, all identical; 3x3 footprint)
     { 1, 1 },   // ObjPic_Hospital (single cell, 2x2 footprint, auto-placed on residential)
     { 1, 1 },   // ObjPic_Church   (single cell, 2x2 footprint, auto-placed on residential)
+    { 8, 1 },   // ObjPic_AdvancedWindTrap (8 frame slots, all identical; 3x3 footprint)
 };
 
 
@@ -1149,6 +1150,127 @@ GFXManager::GFXManager() {
             }
         }
     }
+        // ----- DuneCity advanced wind trap (super power plant) sprite -----
+        //
+        // Tornie's custom super_power_plant.png art. 3x3 gameplay footprint,
+        // no real animation — we build an 8-frame horizontal atlas (all
+        // identical) so StructureBase animation indexing has somewhere to
+        // land. Same approach as the nuclear plant above.
+        {
+            std::vector<std::string> superDirs = {
+                getDuneLegacyDataDir(),
+                binDir,
+                binDir + "../../",
+                binDir + "../../../../../",
+            };
+            if (srcDirEnv && srcDirEnv[0]) {
+                std::string srcDir = srcDirEnv;
+                if (srcDir.back() != '/' && srcDir.back() != '\\') srcDir += '/';
+                superDirs.push_back(srcDir);
+            }
+
+            const int frameW = 3 * D2_TILESIZE;
+            const int frameH = 3 * D2_TILESIZE;
+            const int numFrames = 8;
+            const int atlasW = numFrames * frameW;
+            const int atlasH = frameH;
+            sdl2::surface_ptr atlas{ SDL_CreateRGBSurface(0, atlasW, atlasH,
+                SCREEN_BPP, RMASK, GMASK, BMASK, AMASK) };
+            if (atlas) {
+                SDL_FillRect(atlas.get(), nullptr, SDL_MapRGBA(atlas->format, 0, 0, 0, 0));
+            }
+
+            sdl2::surface_ptr superSrc;
+            for (const auto& dir : superDirs) {
+                std::string path = dir + "super_power_plant.png";
+                auto rwops = sdl2::RWops_ptr{ SDL_RWFromFile(path.c_str(), "rb") };
+                if (rwops) {
+                    superSrc = LoadPNG_RW(rwops.get());
+                    if (superSrc) {
+                        SDL_Log("Loaded super power plant sprite from: %s", path.c_str());
+                        break;
+                    }
+                }
+            }
+
+            if (atlas && superSrc) {
+                // Scale the source to fill the full 48×48 frame so the
+                // advanced wind trap occupies its entire 3×3 gameplay footprint.
+                SDL_SetSurfaceBlendMode(superSrc.get(), SDL_BLENDMODE_NONE);
+                for (int f = 0; f < numFrames; ++f) {
+                    SDL_Rect frameDst = { f * frameW, 0, frameW, frameH };
+                    SDL_BlitScaled(superSrc.get(), nullptr, atlas.get(), &frameDst);
+                }
+
+                objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0] = std::move(atlas);
+                objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][1] = scaleRGBASurface(objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0].get(), 2);
+                objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][2] = scaleRGBASurface(objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0].get(), 3);
+
+                for (int h = 1; h < NUM_HOUSES; h++) {
+                    for (int z = 0; z < NUM_ZOOMLEVEL; z++) {
+                        if (objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][z]) {
+                            objPic[ObjPic_AdvancedWindTrap][h][z] = sdl2::surface_ptr{
+                                SDL_ConvertSurface(objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][z].get(),
+                                                   objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][z]->format, 0)
+                            };
+                        }
+                    }
+                }
+            } else {
+                SDL_Log("Super power plant sprite not found; AdvancedWindTrap will fall back to Windtrap art");
+                SDL_Surface* fallback = objPic[ObjPic_Windtrap][HOUSE_HARKONNEN][0].get();
+                if (atlas && fallback) {
+                    const int fallbackFrames = objPicTiles[ObjPic_Windtrap].x;
+                    const int fallbackFrameW = fallback->w / fallbackFrames;
+                    const int fallbackFrameH = fallback->h / objPicTiles[ObjPic_Windtrap].y;
+
+                    SDL_SetSurfaceBlendMode(fallback, SDL_BLENDMODE_NONE);
+                    for (int f = 0; f < numFrames; ++f) {
+                        const int sourceFrame = f % fallbackFrames;
+                        SDL_Rect src{ sourceFrame * fallbackFrameW, 0, fallbackFrameW, fallbackFrameH };
+                        SDL_Rect dst{ f * frameW, 0, frameW, frameH };
+                        SDL_BlitScaled(fallback, &src, atlas.get(), &dst);
+                    }
+
+                    objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0] = std::move(atlas);
+                    objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][1] = scaleRGBASurface(objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0].get(), 2);
+                    objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][2] = scaleRGBASurface(objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0].get(), 3);
+
+                    for (int h = 1; h < NUM_HOUSES; h++) {
+                        for (int z = 0; z < NUM_ZOOMLEVEL; z++) {
+                            if (objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][z]) {
+                                objPic[ObjPic_AdvancedWindTrap][h][z] = sdl2::surface_ptr{
+                                    SDL_ConvertSurface(objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][z].get(),
+                                                       objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][z]->format, 0)
+                                };
+                            }
+                        }
+                    }
+                }
+                // Last resort: if fallback sprite was also null, fill atlas
+                // with a debug placeholder so objPic is never null.
+                if (!objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0]) {
+                    sdl2::surface_ptr ph{ SDL_CreateRGBSurface(0, atlasW, atlasH,
+                        SCREEN_BPP, RMASK, GMASK, BMASK, AMASK) };
+                    if (ph) {
+                        SDL_FillRect(ph.get(), nullptr, SDL_MapRGBA(ph->format, 100, 100, 180, 255));
+                        objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0] = std::move(ph);
+                        objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][1] = scaleRGBASurface(objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0].get(), 2);
+                        objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][2] = scaleRGBASurface(objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0].get(), 3);
+                        for (int h = 1; h < NUM_HOUSES; h++) {
+                            for (int z = 0; z < NUM_ZOOMLEVEL; z++) {
+                                if (objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][z]) {
+                                    objPic[ObjPic_AdvancedWindTrap][h][z] = sdl2::surface_ptr{
+                                        SDL_ConvertSurface(objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][z].get(),
+                                                           objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][z]->format, 0)
+                                    };
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     } // end city-sprite loading scope (binDir, srcDirEnv, scaleRGBASurface)
 
     // Final safety net: ensure every DuneCity civic sprite has a populated
@@ -1159,7 +1281,7 @@ GFXManager::GFXManager() {
     {
         static const unsigned int civicIds[] = {
             ObjPic_NuclearPlant, ObjPic_PoliceStation, ObjPic_Stadium,
-            ObjPic_Airport, ObjPic_Hospital, ObjPic_Church
+            ObjPic_Airport, ObjPic_Hospital, ObjPic_Church, ObjPic_AdvancedWindTrap
         };
         for (auto cid : civicIds) {
             if (!objPic[cid][HOUSE_HARKONNEN][0]) {
@@ -1245,6 +1367,7 @@ GFXManager::GFXManager() {
                                      || id == ObjPic_PoliceStation
                                      || id == ObjPic_Stadium
                                      || id == ObjPic_Airport
+                                     || id == ObjPic_AdvancedWindTrap
                                      || id == ObjPic_Star);
 
         for(int h = 0; h < (int) NUM_HOUSES; h++) {

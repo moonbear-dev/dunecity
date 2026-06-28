@@ -134,6 +134,7 @@ MentatMenu::MentatMenu(int newHouse)
             // don't add shoulderAnim, draw it in DrawSpecificStuff
         } break;
 
+        case HOUSE_NEUTRAL:
         case HOUSE_MERCENARY: {
             anim = pGFXManager->getAnimation(Anim_MercenaryEyes);
             eyesAnim.setAnimation(anim);
@@ -281,7 +282,8 @@ void MentatMenu::drawSpecificStuff() {
         } break;
 
         case HOUSE_ORDOS:
-        case HOUSE_MERCENARY: {
+        case HOUSE_MERCENARY:
+        case HOUSE_NEUTRAL: {
             shoulderPos = Point(256,257) + getPosition();
         } break;
 

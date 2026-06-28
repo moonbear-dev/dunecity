@@ -376,6 +376,7 @@ void MapEditor::loadMap(const std::string& filepath) {
     players.push_back(Player(getHouseNameByNumber(HOUSE_FREMEN),HOUSE_FREMEN,HOUSE_FREMEN,false,false,"Team4"));
     players.push_back(Player(getHouseNameByNumber(HOUSE_SARDAUKAR),HOUSE_SARDAUKAR,HOUSE_SARDAUKAR,false,false,"Team5"));
     players.push_back(Player(getHouseNameByNumber(HOUSE_MERCENARY),HOUSE_MERCENARY,HOUSE_MERCENARY,false,false,"Team6"));
+    players.push_back(Player(getHouseNameByNumber(HOUSE_NEUTRAL),HOUSE_NEUTRAL,HOUSE_NEUTRAL,false,false,"Team6"));
 
     // load map
     loadedINIFile = std::make_unique<INIFile>(filepath, false);

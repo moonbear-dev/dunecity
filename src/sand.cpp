@@ -739,11 +739,11 @@ void startSinglePlayerGame(const GameInitSettings& init)
                         if(currentGameInitInfo.getGameType() == GameType::Campaign) {
                             const int level = missionNumberToLevelNumber(currentGameInitInfo.getMission());
 
-                            if(level == 4 && (houseID == HOUSE_HARKONNEN || houseID == HOUSE_ATREIDES || houseID == HOUSE_ORDOS)) {
+                            if(level == 4 && (houseID == HOUSE_HARKONNEN || houseID == HOUSE_ATREIDES || houseID == HOUSE_ORDOS || houseID == HOUSE_NEUTRAL || houseID == HOUSE_MERCENARY)) {
                                 SDL_Log("Playing meanwhile...");
                                 Meanwhile meanwhile(houseID,true);
                                 meanwhile.run();
-                            } else if(level == 8 && (houseID == HOUSE_HARKONNEN || houseID == HOUSE_ATREIDES || houseID == HOUSE_ORDOS)) {
+                            } else if(level == 8 && (houseID == HOUSE_HARKONNEN || houseID == HOUSE_ATREIDES || houseID == HOUSE_ORDOS || houseID == HOUSE_NEUTRAL || houseID == HOUSE_MERCENARY)) {
                                 SDL_Log("Playing meanwhile...");
                                 Meanwhile meanwhile(houseID,false);
                                 meanwhile.run();

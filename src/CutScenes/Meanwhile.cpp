@@ -37,8 +37,8 @@
 
 Meanwhile::Meanwhile(int house, bool firstMeanwhile) {
 
-    // Neutral uses Atreides cutscenes
-    if(house == HOUSE_NEUTRAL) house = HOUSE_ATREIDES;
+    // Neutral and Mercenary use Ordos cutscenes
+    if(house == HOUSE_NEUTRAL || house == HOUSE_MERCENARY) house = HOUSE_ORDOS;
 
     if(house != HOUSE_HARKONNEN && house != HOUSE_ATREIDES && house != HOUSE_ORDOS) {
         THROW(std::invalid_argument, "Invalid house number %d!", house);

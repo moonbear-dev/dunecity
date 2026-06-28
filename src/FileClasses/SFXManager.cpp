@@ -117,7 +117,9 @@ void SFXManager::loadEnglishVoice() {
                 HouseNameChunk = getChunkFromFile(HouseString + "MERC.VOC");
                 break;
             case HOUSE_NEUTRAL:
-                continue; // Neutral house has no voiceovers
+                HouseString = "A";
+                HouseNameChunk = getChunkFromFile(HouseString + "ATRE.VOC");
+                break; // Neutral uses Atreides voices
             default:
                 break;
         }

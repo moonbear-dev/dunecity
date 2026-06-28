@@ -559,8 +559,8 @@ MaxSpeed = 3.8400
 BuildTime = 80
 InfSpawnProp = 25
 Builder(O) = Heavy Factory
+Builder(N) = Invalid
 TechLevel = 1
-TechLevel(N) = 7
 Prerequisite = House IX
 
 [Frigate]

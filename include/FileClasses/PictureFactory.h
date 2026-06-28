@@ -69,6 +69,8 @@ public:
     static std::unique_ptr<Animation> mapMentatAnimationToSardaukar(Animation* harkonnenAnimation);
     static sdl2::surface_ptr mapMentatSurfaceToMercenary(SDL_Surface* ordosMentat);
     static std::unique_ptr<Animation> mapMentatAnimationToMercenary(Animation* ordosAnimation);
+    static sdl2::surface_ptr mapMentatSurfaceToNeutral(SDL_Surface* pSurface);
+    static std::unique_ptr<Animation> mapMentatAnimationToNeutral(Animation* pAnimation);
 
     typedef enum {
         SimpleFrame,

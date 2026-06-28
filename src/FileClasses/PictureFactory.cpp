@@ -1028,6 +1028,23 @@ std::unique_ptr<Animation> PictureFactory::mapMentatAnimationToMercenary(Animati
     return newAnimation;
 }
 
+sdl2::surface_ptr PictureFactory::mapMentatSurfaceToNeutral(SDL_Surface* pSurface) {
+    return mapSurfaceColorRange(pSurface, PALCOLOR_ORDOS, PALCOLOR_NEUTRAL);
+}
+
+std::unique_ptr<Animation> PictureFactory::mapMentatAnimationToNeutral(Animation* pAnimation) {
+    auto newAnimation = std::make_unique<Animation>();
+
+    for(const sdl2::surface_ptr& pSurface : pAnimation->getFrames()) {
+        newAnimation->addFrame(mapMentatSurfaceToNeutral(pSurface.get()));
+    }
+
+    newAnimation->setFrameDurationTime(pAnimation->getFrameDurationTime());
+    newAnimation->setNumLoops(pAnimation->getLoopsLeft());
+
+    return newAnimation;
+}
+
 sdl2::surface_ptr PictureFactory::mapMentatSurfaceToFremen(SDL_Surface* fremenMentat) {
     sdl2::surface_ptr mappedSurface{ mapSurfaceColorRange(fremenMentat, PALCOLOR_ATREIDES, PALCOLOR_FREMEN) };
 

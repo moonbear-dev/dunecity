@@ -366,7 +366,8 @@ void MapChoice::createMapSurfaceWithPieces(unsigned int scenario) {
 }
 
 void MapChoice::loadINI() {
-    const std::string filename = fmt::sprintf("REGION%c.INI", houseChar[house]);
+    char regionHouseChar = (house == HOUSE_NEUTRAL) ? houseChar[HOUSE_HARKONNEN] : houseChar[house];
+    const std::string filename = fmt::sprintf("REGION%c.INI", regionHouseChar);
 
     INIFile RegionINI(pFileManager->openFile(filename).get());
 

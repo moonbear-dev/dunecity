@@ -590,8 +590,8 @@ sdl2::surface_ptr mapSurfaceColorRange(SDL_Surface* source, int srcColor, int de
 
     sdl2::surface_ptr retPic{ SDL_ConvertSurface(source,source->format,source->flags) };
 
-    if (!source)
-        THROW(std::runtime_error, "mapSurfaceColorRange(): Cannot copy image!");
+    if (!retPic)
+        THROW(std::runtime_error, "mapSurfaceColorRange(): Cannot copy image (SDL_ConvertSurface failed: %s)!", SDL_GetError());
 
     if (retPic->format->BytesPerPixel == 1) {
         SDL_SetSurfaceBlendMode(retPic.get(), SDL_BLENDMODE_NONE);

@@ -49,6 +49,8 @@ typedef enum {
     ObjPic_Quad,
     ObjPic_Trike,
     ObjPic_RocketTrike,
+    ObjPic_LauncherRed_Base,  ///< DuneCity: red-tinted tank body for the Neutral Launcher
+    ObjPic_LauncherRed_Gun,   ///< DuneCity: red-tinted rocket turret for the Neutral Launcher
     ObjPic_Harvester,
     ObjPic_Harvester_Sand,
     ObjPic_MCV,
@@ -130,7 +132,7 @@ typedef enum {
 } ObjPic_enum;
 
 static const std::array<std::string, NUM_OBJPICS> ObjPicNames =  { { "Tank_Base", "Tank_Gun", "Siegetank_Base", "Siegetank_Gun", "Devastator_Base",
-    "Devastator_Gun", "Sonictank_Gun", "Launcher_Gun", "Quad", "Trike", "RocketTrike", "Harvester", "Harvester_Sand", "MCV", "Carryall", "CarryallShadow",
+    "Devastator_Gun", "Sonictank_Gun", "Launcher_Gun", "Quad", "Trike", "RocketTrike", "LauncherRed_Base", "LauncherRed_Gun", "Harvester", "Harvester_Sand", "MCV", "Carryall", "CarryallShadow",
     "Frigate", "FrigateShadow", "Ornithopter", "OrnithopterShadow", "Trooper", "Troopers", "Soldier", "Infantry", "Saboteur", "Sandworm",
     "ConstructionYard", "Windtrap", "Refinery", "Barracks", "WOR", "Radar", "LightFactory", "Silo", "HeavyFactory", "HighTechFactory",
     "IX", "Palace", "RepairYard", "Starport", "GunTurret", "RocketTurret", "Wall",

@@ -565,7 +565,7 @@ Builder(S) = Invalid
 Builder(M) = Invalid
 Builder(F) = Invalid
 Builder(O) = Heavy Factory
-Builder(N) = Invalid
+Builder(N) = Heavy Factory
 TechLevel = 1
 Prerequisite = House IX
 
@@ -592,6 +592,7 @@ Builder = Heavy Factory
 Enabled = true
 HitPoints = 100
 Price = 450
+Price(N) = 725
 ViewRange = 5
 WeaponDamage = 75
 WeaponDamage(N) = 94

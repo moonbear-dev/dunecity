@@ -117,6 +117,15 @@ jobs:
         with:
           vcpkgJsonGlob: 'vcpkg.json'
 
+      # run-vcpkg sets VCPKG_BINARY_SOURCES to 'clear;x-gha,readwrite' but
+      # the x-gha backend was removed from vcpkg. The 'clear' prefix also
+      # disables the default file-based cache. Override to use a persistent
+      # local directory on the self-hosted runner instead.
+      - name: Fix vcpkg binary caching
+        run: |
+          mkdir -p "$HOME/.cache/vcpkg/archives"
+          echo "VCPKG_BINARY_SOURCES=clear;files,$HOME/.cache/vcpkg/archives,readwrite" >> "$GITHUB_ENV"
+
       - name: Configure CMake
         run: cmake -B build -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
@@ -254,8 +263,11 @@ jobs:
   # Rolling dev build: update a "latest-dev" pre-release on every main push
   # so builds are always downloadable from the releases page.
   dev-release:
-    needs: [build-windows, build-macos]
-    if: github.ref == 'refs/heads/main'
+    needs: [build-windows, build-linux, build-macos]
+    if: |
+      always() &&
+      github.ref == 'refs/heads/main' &&
+      (needs.build-windows.result == 'success' || needs.build-linux.result == 'success' || needs.build-macos.result == 'success')
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -829,6 +829,14 @@ sdl2::surface_ptr PictureFactory::createHeraldMerc(SDL_Surface* heraldAtre, SDL_
 }
 
 sdl2::surface_ptr PictureFactory::createHeraldNeu(SDL_Surface* heraldOrdos, SDL_Surface* /*launcherIcon*/) const {
+    // If the user has supplied a custom HeraldNeu.png, load and use it directly.
+    if(pFileManager->exists("HeraldNeu.png")) {
+        auto pCustom = LoadPNG_RW(pFileManager->openFile("HeraldNeu.png").get());
+        if(pCustom) {
+            return pCustom;
+        }
+    }
+
     constexpr int BANNER_W = 83;
     constexpr int BANNER_H = 91;
     constexpr int BORDER_SIZE = 7;
@@ -882,6 +890,18 @@ sdl2::surface_ptr PictureFactory::createHeraldNeu(SDL_Surface* heraldOrdos, SDL_
         if (pMask) {
             SDL_SetColorKey(pMask.get(), SDL_TRUE, 0);
             SDL_BlitSurface(pMask.get(), nullptr, pFrame.get(), nullptr);
+        }
+    }
+
+    // Export the generated banner to data/HeraldNeu.png on first generation so the
+    // user has a starting point to edit. Only written if it doesn't already exist
+    // on disk; once present, the load-first branch above will pick it up next run.
+    const std::string heraldNeuPath = getDuneLegacyDataDir() + "HeraldNeu.png";
+    if(!existsFile(heraldNeuPath)) {
+        if(SavePNG(pFrame.get(), heraldNeuPath.c_str()) == 0) {
+            SDL_Log("createHeraldNeu(): wrote generated banner to %s", heraldNeuPath.c_str());
+        } else {
+            SDL_Log("createHeraldNeu(): failed to write %s", heraldNeuPath.c_str());
         }
     }
 

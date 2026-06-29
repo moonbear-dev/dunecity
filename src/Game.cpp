@@ -1403,7 +1403,7 @@ void Game::drawScreen()
         });
 
     /* draw corner flags */
-    drawCornerFlags();
+    // drawCornerFlags();
 
     /* draw underground units */
     currentGameMap->for_each(x1, y1, x2, y2,

@@ -215,6 +215,9 @@ MainMenu::~MainMenu() = default;
 
 int MainMenu::showMenu()
 {
+    // Re-enable cursor in case a game or cutscene left it hidden
+    SDL_ShowCursor(SDL_ENABLE);
+
     musicPlayer->changeMusic(MUSIC_MENU);
 
     // Start version check in background (only once)

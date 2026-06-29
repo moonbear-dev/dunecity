@@ -1188,6 +1188,9 @@ GFXManager::GFXManager() {
                 if (rwops) {
                     superSrc = LoadPNG_RW(rwops.get());
                     if (superSrc) {
+                        // Convert RGB→RGBA so the blit sets alpha=255 instead of leaving it 0
+                        sdl2::surface_ptr converted{SDL_ConvertSurfaceFormat(superSrc.get(), SDL_PIXELFORMAT_RGBA32, 0)};
+                        if (converted) superSrc = std::move(converted);
                         SDL_Log("Loaded super power plant sprite from: %s", path.c_str());
                         break;
                     }
@@ -1694,50 +1697,11 @@ GFXManager::GFXManager() {
         if (airTex) smallDetailPicTex[Picture_Airport] = std::move(airTex);
         else        smallDetailPicTex[Picture_Airport] = extractSmallDetailPic("STARPORT.WSA");
 
-        // Advanced Windtrap: load the custom PNG icon (182×110), subsample it to
-        // 91×55 using the same stride-2 algorithm as extractSmallDetailPic() so it
-        // fits the sidebar portrait area.  Fall back to the sprite-derived icon.
-        if (pFileManager->exists("Tornie_AdvancedWindtrap_icon.png")) {
-            auto pngSurf = LoadPNG_RW(pFileManager->openFile("Tornie_AdvancedWindtrap_icon.png").get());
-            if (pngSurf && pngSurf->w >= 2 && pngSurf->h >= 2) {
-                const int srcW = pngSurf->w;
-                const int srcH = pngSurf->h;
-                const int dstW = srcW / 2;
-                const int dstH = srcH / 2;
-                sdl2::surface_ptr smallSurf{SDL_CreateRGBSurfaceWithFormat(0, dstW, dstH, 32, SDL_PIXELFORMAT_RGBA32)};
-                if (smallSurf && SDL_LockSurface(pngSurf.get()) == 0) {
-                    const int srcBpp = pngSurf->format->BytesPerPixel;
-                    SDL_LockSurface(smallSurf.get());
-                    for (int dy = 0; dy < dstH; ++dy) {
-                        const auto* srcRow = static_cast<const Uint8*>(pngSurf->pixels)
-                                             + (dy * 2) * pngSurf->pitch;
-                        auto* dstRow = static_cast<Uint8*>(smallSurf->pixels)
-                                       + dy * smallSurf->pitch;
-                        for (int dx = 0; dx < dstW; ++dx) {
-                            const auto* srcPx = srcRow + (dx * 2) * srcBpp;
-                            Uint8 r, g, b, a;
-                            SDL_GetRGBA(srcBpp == 4 ? *reinterpret_cast<const Uint32*>(srcPx)
-                                                    : (srcBpp == 3 ? (srcPx[0] | (srcPx[1] << 8) | (srcPx[2] << 16)) : *srcPx),
-                                        pngSurf->format, &r, &g, &b, &a);
-                            Uint32 dstPixel = SDL_MapRGBA(smallSurf->format, r, g, b, a);
-                            *reinterpret_cast<Uint32*>(dstRow + dx * 4) = dstPixel;
-                        }
-                    }
-                    SDL_UnlockSurface(smallSurf.get());
-                    SDL_UnlockSurface(pngSurf.get());
-                    auto tex = convertSurfaceToTexture(smallSurf.get());
-                    if (tex) {
-                        SDL_SetTextureBlendMode(tex.get(), SDL_BLENDMODE_BLEND);
-                        smallDetailPicTex[Picture_AdvancedWindTrap] = std::move(tex);
-                    }
-                }
-            }
-        }
-        if (!smallDetailPicTex[Picture_AdvancedWindTrap]) {
-            auto advTex = makeStructDetailPic(ObjPic_AdvancedWindTrap, 3 * D2_TILESIZE, 3 * D2_TILESIZE);
-            if (advTex) smallDetailPicTex[Picture_AdvancedWindTrap] = std::move(advTex);
-            else        smallDetailPicTex[Picture_AdvancedWindTrap] = extractSmallDetailPic("WINDTRAP.WSA");
-        }
+        // Advanced Windtrap: auto-extract the sidebar icon from the sprite atlas,
+        // same treatment as other structures (Nuclear Plant, Police Station, etc).
+        auto advTex = makeStructDetailPic(ObjPic_AdvancedWindTrap, 3 * D2_TILESIZE, 3 * D2_TILESIZE);
+        if (advTex) smallDetailPicTex[Picture_AdvancedWindTrap] = std::move(advTex);
+        else        smallDetailPicTex[Picture_AdvancedWindTrap] = extractSmallDetailPic("WINDTRAP.WSA");
     }
 
     // unused: FARTR.WSA, FHARK.WSA, FORDOS.WSA

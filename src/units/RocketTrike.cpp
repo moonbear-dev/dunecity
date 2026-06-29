@@ -43,7 +43,7 @@ void RocketTrike::init() {
     numWeapons = 1;
     bulletType = Bullet_SmallRocket;
 
-    graphicID = ObjPic_Trike;
+    graphicID = ObjPic_RocketTrike;
     graphic = pGFXManager->getObjPic(graphicID,getOwner()->getHouseID());
 
     numImagesX = NUM_ANGLES;

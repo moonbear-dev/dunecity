@@ -54,6 +54,7 @@ static const Coord objPicTiles[] {
     { 8, 1 },   // ObjPic_Launcher_Gun
     { 8, 1 },   // ObjPic_Quad
     { 8, 1 },   // ObjPic_Trike
+    { 8, 1 },   // ObjPic_RocketTrike
     { 8, 1 },   // ObjPic_Harvester
     { 8, 3 },   // ObjPic_Harvester_Sand
     { 8, 1 },   // ObjPic_MCV
@@ -200,6 +201,49 @@ GFXManager::GFXManager() {
     objPic[ObjPic_Launcher_Gun][HOUSE_HARKONNEN][0] = units2->getPictureArray(8,1,GROUNDUNIT_ROW(35));
     objPic[ObjPic_Quad][HOUSE_HARKONNEN][0] = units->getPictureArray(8,1,GROUNDUNIT_ROW(0));
     objPic[ObjPic_Trike][HOUSE_HARKONNEN][0] = units->getPictureArray(8,1,GROUNDUNIT_ROW(5));
+
+    // DuneCity: the Rocket Trike reuses the standard Trike body art but with a
+    // red tint instead of the stock blue-grey.  Load a *second*, independent
+    // copy of the Trike sprite (getPictureArray allocates a fresh surface with
+    // its own palette, so this does not touch the regular Trike or the Raider
+    // Trike) and tint its cool/neutral body palette entries toward red.  We
+    // only rewrite palette RGB values, never pixel indices, so the per-house
+    // colour remap in getZoomedObjPic (PALCOLOR_HARKONNEN -> house) still works.
+    objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][0] = units->getPictureArray(8,1,GROUNDUNIT_ROW(5));
+    {
+        SDL_Surface* rt = objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][0].get();
+        SDL_Palette* pal = (rt != nullptr) ? rt->format->palette : nullptr;
+        if(pal != nullptr) {
+            for(int i = 0; i < pal->ncolors; i++) {
+                // Leave the Harkonnen house-colour stripe untouched so team
+                // colours survive the per-house remap.
+                if(i >= PALCOLOR_HARKONNEN && i < PALCOLOR_HARKONNEN + 7) {
+                    continue;
+                }
+
+                const SDL_Color c = pal->colors[i];
+                const int maxc = (c.r > c.g ? (c.r > c.b ? c.r : c.b) : (c.g > c.b ? c.g : c.b));
+                const int minc = (c.r < c.g ? (c.r < c.b ? c.r : c.b) : (c.g < c.b ? c.g : c.b));
+                const bool nearGrey = (maxc - minc) <= 32;
+                const bool coolish  = (c.b >= c.r) && (c.b >= c.g);
+
+                // Skip near-black outline/shadow pixels so the silhouette and
+                // shading stay intact; recolour everything else that reads as
+                // a cool/neutral body tone.
+                if(maxc > 24 && (nearGrey || coolish)) {
+                    const int lum = (c.r * 30 + c.g * 59 + c.b * 11) / 100;
+                    SDL_Color red;
+                    int r = lum + lum / 2;          // boost red, preserve shading
+                    red.r = static_cast<Uint8>(r > 255 ? 255 : r);
+                    red.g = static_cast<Uint8>(lum / 6);
+                    red.b = static_cast<Uint8>(lum / 7);
+                    red.a = c.a;
+                    SDL_SetPaletteColors(pal, &red, i, 1);
+                }
+            }
+        }
+    }
+
     objPic[ObjPic_Harvester][HOUSE_HARKONNEN][0] = units->getPictureArray(8,1,GROUNDUNIT_ROW(10));
     objPic[ObjPic_Harvester_Sand][HOUSE_HARKONNEN][0] = units1->getPictureArray(8,3,HARVESTERSAND_ROW(72),HARVESTERSAND_ROW(73),HARVESTERSAND_ROW(74));
     objPic[ObjPic_MCV][HOUSE_HARKONNEN][0] = units->getPictureArray(8,1,GROUNDUNIT_ROW(15));

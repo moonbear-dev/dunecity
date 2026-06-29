@@ -21,7 +21,8 @@
 #include <units/GroundUnit.h>
 
 /// Rocket Trike — House Neutral light vehicle armed with trooper-style rockets.
-/// Uses the standard Trike sprite but fires Bullet_SmallRocket projectiles.
+/// Uses a red-tinted variant of the Trike sprite (ObjPic_RocketTrike) and fires
+/// Bullet_SmallRocket projectiles.
 class RocketTrike final : public GroundUnit
 {
 public:

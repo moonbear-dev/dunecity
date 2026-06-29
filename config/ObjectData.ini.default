@@ -220,7 +220,7 @@ Builder = Construction Yard
 TechLevel = 2
 TechLevel(H) = 3
 TechLevel(S) = 3
-TechLevel(N) = 4
+TechLevel(N) = 3
 Prerequisite = Windtrap, Refinery
 
 [Palace]
@@ -670,6 +670,21 @@ Builder = Light Factory
 Builder(A) = Invalid
 Builder(H) = Invalid
 Builder(N) = Invalid
+
+[Rocket Trike]
+Enabled = true
+HitPoints = 80
+Price = 225
+ViewRange = 2
+WeaponDamage = 5
+WeaponRange = 5
+WeaponReloadTime = 150
+MaxSpeed = 9.25
+BuildTime = 40
+InfSpawnProp = 25
+Builder = Invalid
+Builder(N) = Light Factory
+TechLevel(N) = 3
 
 [Saboteur]
 Enabled = true

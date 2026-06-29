@@ -97,6 +97,7 @@ SDL_Texture* resolveItemPicture(int itemID, HOUSETYPE house) {
         case Unit_Sandworm:                 newPicID = Picture_Sandworm;            break;
         case Unit_AmbientAirplane:          newPicID = Picture_Carryall;            break;
         case Unit_AmbientHelicopter:        newPicID = Picture_Ornithopter;         break;
+        case Unit_RocketTrike:              newPicID = Picture_RocketTrike;         break;
         case Unit_Soldier:                  newPicID = Picture_Soldier;             break;
         case Unit_Trooper: {
             switch(house) {
@@ -286,6 +287,7 @@ Uint32  getItemIDByName(const std::string& name) {
     else if(lowerName == "troopers")                                            return Unit_Troopers;
     else if((lowerName == "ambient airplane") || (lowerName == "city airplane")) return Unit_AmbientAirplane;
     else if((lowerName == "ambient helicopter") || (lowerName == "city helicopter")) return Unit_AmbientHelicopter;
+    else if((lowerName == "rocket trike") || (lowerName == "rockettrike"))      return Unit_RocketTrike;
     else                                                                        return ItemID_Invalid;
 }
 
@@ -350,6 +352,7 @@ std::string getItemNameByID(Uint32 itemID) {
         case Unit_Troopers:                 return "Troopers";          break;
         case Unit_AmbientAirplane:          return "Ambient Airplane";  break;
         case Unit_AmbientHelicopter:        return "Ambient Helicopter";break;
+        case Unit_RocketTrike:              return "Rocket Trike";      break;
 
         default:
             THROW(std::invalid_argument, "getItemNameByID(): Invalid item ID!");
@@ -418,6 +421,7 @@ std::string resolveItemName(int itemID) {
         case Unit_Troopers:                 return _("@DUNE.ENG|201#Troopers");            break;
         case Unit_AmbientAirplane:          return _("City Airplane");                     break;
         case Unit_AmbientHelicopter:        return _("City Helicopter");                   break;
+        case Unit_RocketTrike:              return _("Rocket Trike");                      break;
 
         default:
             THROW(std::invalid_argument, "resolveItemName(): Invalid item ID!");

@@ -1744,6 +1744,22 @@ GFXManager::GFXManager() {
         }
     }
 
+    // Rocket Trike: prefer RocketTrikeIcon.png (91x55 sidebar slot), fall back
+    // to the standard Trike WSA portrait.
+    if (pFileManager->exists("RocketTrikeIcon.png")) {
+        auto iconSurf = LoadPNG_RW(pFileManager->openFile("RocketTrikeIcon.png").get());
+        if (iconSurf) {
+            auto tex = convertSurfaceToTexture(iconSurf.get());
+            if (tex) {
+                SDL_SetTextureBlendMode(tex.get(), SDL_BLENDMODE_BLEND);
+                smallDetailPicTex[Picture_RocketTrike] = std::move(tex);
+            }
+        }
+    }
+    if (!smallDetailPicTex[Picture_RocketTrike]) {
+        smallDetailPicTex[Picture_RocketTrike] = extractSmallDetailPic("TRIKE.WSA");
+    }
+
     // unused: FARTR.WSA, FHARK.WSA, FORDOS.WSA
 
 
@@ -1948,9 +1964,9 @@ GFXManager::GFXManager() {
     uiGraphic[UI_MentatBackground][HOUSE_FREMEN] = PictureFactory::mapMentatSurfaceToFremen(uiGraphic[UI_MentatBackground][HOUSE_ATREIDES].get());
     uiGraphic[UI_MentatBackground][HOUSE_SARDAUKAR] = PictureFactory::mapMentatSurfaceToSardaukar(uiGraphic[UI_MentatBackground][HOUSE_HARKONNEN].get());
     uiGraphic[UI_MentatBackground][HOUSE_MERCENARY] = PictureFactory::mapMentatSurfaceToMercenary(uiGraphic[UI_MentatBackground][HOUSE_ORDOS].get());
-    // House Neutral uses the Ordos (female) mentat shape remapped to neutral's
-    // own grey house colour.
-    uiGraphic[UI_MentatBackground][HOUSE_NEUTRAL] = PictureFactory::mapMentatSurfaceToNeutral(uiGraphic[UI_MentatBackground][HOUSE_ORDOS].get());
+    // House Neutral uses the Atreides (Cyril, male) mentat shape with all blue
+    // tones recoloured to white/grey appropriate for House Neutral.
+    uiGraphic[UI_MentatBackground][HOUSE_NEUTRAL] = PictureFactory::mapMentatSurfaceToNeutral(uiGraphic[UI_MentatBackground][HOUSE_ATREIDES].get());
 
     uiGraphic[UI_MentatBackgroundBene][HOUSE_HARKONNEN] = Scaler::defaultDoubleSurface(LoadCPS_RW(pFileManager->openFile("MENTATM.CPS").get()).get());
     if(uiGraphic[UI_MentatBackgroundBene][HOUSE_HARKONNEN] != nullptr) {

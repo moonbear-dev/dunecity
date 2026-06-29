@@ -77,6 +77,7 @@
 #include <units/Trooper.h>
 #include <units/AmbientAirplane.h>
 #include <units/AmbientHelicopter.h>
+#include <units/RocketTrike.h>
 
 #include <array>
 #include <vector>
@@ -865,6 +866,7 @@ ObjectBase* ObjectBase::createObject(int itemID, House* Owner, bool byScenario) 
         case Unit_Trooper:                  newObject = new Trooper(Owner); break;
         case Unit_AmbientAirplane:          newObject = new AmbientAirplane(Owner); break;
         case Unit_AmbientHelicopter:        newObject = new AmbientHelicopter(Owner); break;
+        case Unit_RocketTrike:              newObject = new RocketTrike(Owner); break;
         case Unit_Special: {
             switch(Owner->getHouseID()) {
                 case HOUSE_HARKONNEN:       newObject = new Devastator(Owner); break;
@@ -949,6 +951,7 @@ ObjectBase* ObjectBase::loadObject(InputStream& stream, int itemID, Uint32 objec
         case Unit_Trooper:                  newObject = new Trooper(stream); break;
         case Unit_AmbientAirplane:          newObject = new AmbientAirplane(stream); break;
         case Unit_AmbientHelicopter:        newObject = new AmbientHelicopter(stream); break;
+        case Unit_RocketTrike:              newObject = new RocketTrike(stream); break;
 
         default:                            newObject = nullptr;
                                             SDL_Log("ObjectBase::loadObject(): %d is no valid ItemID!",itemID);

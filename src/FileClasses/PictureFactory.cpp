@@ -1099,49 +1099,23 @@ std::unique_ptr<Animation> PictureFactory::mapMentatAnimationToMercenary(Animati
 }
 
 sdl2::surface_ptr PictureFactory::mapMentatSurfaceToNeutral(SDL_Surface* pSurface) {
-    auto mappedSurface = mapSurfaceColorRange(pSurface, PALCOLOR_ORDOS, PALCOLOR_NEUTRAL);
+    // Neutral mentat is based on the Atreides mentat (Cyril, the male advisor
+    // with blue robes). Remap the Atreides house-colour range (160-175, blue)
+    // to the Neutral grey range (128-135).  Do NOT touch skin/face colours.
+    auto mappedSurface = mapSurfaceColorRange(pSurface, PALCOLOR_ATREIDES, PALCOLOR_NEUTRAL);
 
     Uint8 colorMap[256];
     for(int i = 0; i < 256; i++) {
         colorMap[i] = i;
     }
 
-    // Map Ordos accent colors (outside the 7-range) to neutral grey equivalents
-    colorMap[186] = PALCOLOR_NEUTRAL + 10;
-    colorMap[187] = PALCOLOR_NEUTRAL + 11;
-
-    // Tint the Ordos girl's sandy/tan tones to the neutral house grey ramp
-    // (PALCOLOR_NEUTRAL..PALCOLOR_NEUTRAL+6), mapped by luminance. These warm
-    // palette indices are not covered by the 7-colour house range and otherwise
-    // leave gold/sand accents on the Neutral mentat. See histogram of MENTATO.CPS.
-    // Gold sash + ring (36-47) and its dark shading (60-63):
-    colorMap[36] = PALCOLOR_NEUTRAL + 1;
-    colorMap[37] = PALCOLOR_NEUTRAL + 1;
-    colorMap[38] = PALCOLOR_NEUTRAL + 1;
-    colorMap[39] = PALCOLOR_NEUTRAL + 1;
-    colorMap[40] = PALCOLOR_NEUTRAL + 2;
-    colorMap[41] = PALCOLOR_NEUTRAL + 2;
-    colorMap[42] = PALCOLOR_NEUTRAL + 2;
-    colorMap[43] = PALCOLOR_NEUTRAL + 3;
-    colorMap[44] = PALCOLOR_NEUTRAL + 3;
-    colorMap[45] = PALCOLOR_NEUTRAL + 3;
-    colorMap[46] = PALCOLOR_NEUTRAL + 3;
-    colorMap[47] = PALCOLOR_NEUTRAL + 4;
-    colorMap[60] = PALCOLOR_NEUTRAL + 4;
-    colorMap[61] = PALCOLOR_NEUTRAL + 4;
-    colorMap[62] = PALCOLOR_NEUTRAL + 4;
-    colorMap[63] = PALCOLOR_NEUTRAL + 5;
-    // Sandy/tan hair (96-100 and 226-230):
-    colorMap[96]  = PALCOLOR_NEUTRAL + 4;
-    colorMap[97]  = PALCOLOR_NEUTRAL + 5;
-    colorMap[98]  = PALCOLOR_NEUTRAL + 5;
-    colorMap[99]  = PALCOLOR_NEUTRAL + 6;
-    colorMap[100] = PALCOLOR_NEUTRAL + 6;
-    colorMap[226] = PALCOLOR_NEUTRAL + 3;
-    colorMap[227] = PALCOLOR_NEUTRAL + 3;
-    colorMap[228] = PALCOLOR_NEUTRAL + 4;
-    colorMap[229] = PALCOLOR_NEUTRAL + 5;
-    colorMap[230] = PALCOLOR_NEUTRAL + 6;
+    // Map Atreides accent blue indices outside the 7-colour house range
+    // (same indices adjusted in mapMentatSurfaceToFremen for Fremen).
+    // These are specific CPS-palette blue shadow/highlight pixels on Cyril.
+    colorMap[179] = PALCOLOR_NEUTRAL + 5;
+    colorMap[180] = PALCOLOR_NEUTRAL + 5;
+    colorMap[181] = PALCOLOR_NEUTRAL + 6;
+    colorMap[182] = PALCOLOR_NEUTRAL + 6;
 
     mapColor(mappedSurface.get(), colorMap);
 

@@ -115,12 +115,14 @@ typedef enum {
     // save-compat for all pre-existing IDs.  isUnit() handles the gap.
     Unit_AmbientAirplane = 50,        ///< DuneCity: Ambient city airplane (non-combat, spawned by Airport)
     Unit_AmbientHelicopter = 51,      ///< DuneCity: Ambient city helicopter (non-combat, spawned by Airport)
-    Unit_ExtLastID = 51,
 
     // Additional extended structures after units (isStructure handles non-contiguous range)
     Structure_AdvancedWindTrap = 52,  ///< DuneCity: Advanced Windtrap (500 credits, -300 power, 3x3)
 
-    ItemID_LastID = 52,
+    Unit_RocketTrike = 53,            ///< DuneCity: Rocket Trike (Neutral only, trooper rockets, light factory)
+    Unit_ExtLastID = 53,
+
+    ItemID_LastID = 53,
 
     Num_ItemID
 } ItemID_enum;

@@ -288,6 +288,7 @@ target_sources(dunecity
         units/Trooper.cpp
         units/AmbientAirplane.cpp
         units/AmbientHelicopter.cpp
+        units/RocketTrike.cpp
 
         # CutScenes
         CutScenes/CutScene.cpp

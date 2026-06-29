@@ -15,24 +15,26 @@
  *  along with Dune Legacy.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef VERSION
-    #define VERSION "1.0.156"
-#endif
+#ifndef ROCKETTRIKE_H
+#define ROCKETTRIKE_H
 
-#ifndef PACKAGE
-    #define PACKAGE "dunecity"
-#endif
+#include <units/GroundUnit.h>
 
-#define VERSIONSTRING   PACKAGE VERSION
+/// Rocket Trike — House Neutral light vehicle armed with trooper-style rockets.
+/// Uses the standard Trike sprite but fires Bullet_SmallRocket projectiles.
+class RocketTrike final : public GroundUnit
+{
+public:
+    explicit RocketTrike(House* newOwner);
+    explicit RocketTrike(InputStream& stream);
+    void init();
+    virtual ~RocketTrike();
 
-#ifndef DUNELEGACY_DATADIR
-    #define DUNELEGACY_DATADIR "."
-#endif
+    void destroy() override;
 
-#ifndef CONFIGFILENAME
-    #define CONFIGFILENAME "Dune City.ini"
-#endif
+    bool hasBumpyMovementOnRock() const override { return true; }
 
-#ifndef LOGFILENAME
-    #define LOGFILENAME "Dune City.log"
-#endif
+    void playAttackSound() override;
+};
+
+#endif //ROCKETTRIKE_H

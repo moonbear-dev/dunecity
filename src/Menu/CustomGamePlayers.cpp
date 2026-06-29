@@ -1320,6 +1320,7 @@ void CustomGamePlayers::extractMapInfo(INIFile* pMap)
     if(pMap->hasSection("Fremen"))    boundHousesOnMap.push_back(HOUSE_FREMEN);
     if(pMap->hasSection("Sardaukar")) boundHousesOnMap.push_back(HOUSE_SARDAUKAR);
     if(pMap->hasSection("Mercenary")) boundHousesOnMap.push_back(HOUSE_MERCENARY);
+    if(pMap->hasSection("Neutral"))    boundHousesOnMap.push_back(HOUSE_NEUTRAL);
 
     numHouses = boundHousesOnMap.size();
     if(pMap->hasSection("Player1"))   numHouses++;

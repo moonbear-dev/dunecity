@@ -318,6 +318,7 @@ void LoadMapWindow::onMapListSelectionChange(bool bInteractive)
     if(inimap.hasSection("Fremen")) numPlayers++;
     if(inimap.hasSection("Mercenary")) numPlayers++;
     if(inimap.hasSection("Sardaukar")) numPlayers++;
+    if(inimap.hasSection("Neutral")) numPlayers++;
     if(inimap.hasSection("Player1")) numPlayers++;
     if(inimap.hasSection("Player2")) numPlayers++;
     if(inimap.hasSection("Player3")) numPlayers++;

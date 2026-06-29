@@ -678,7 +678,8 @@ sdl2::surface_ptr PictureFactory::createMapChoiceScreen(int House) const {
         } break;
 
         case HOUSE_ORDOS:
-        case HOUSE_MERCENARY: {
+        case HOUSE_MERCENARY:
+        case HOUSE_NEUTRAL: {
             SDL_BlitSurface(ordosLogo.get(),nullptr,pMapChoiceScreen.get(),&LeftLogo);
             SDL_BlitSurface(ordosLogo.get(),nullptr,pMapChoiceScreen.get(),&RightLogo);
         } break;

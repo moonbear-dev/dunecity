@@ -120,6 +120,9 @@ int MapChoice::showMenu()
 {
     musicPlayer->changeMusic(MUSIC_MAPCHOICE);
 
+    // Re-enable cursor in case a cutscene or game teardown left it hidden
+    SDL_ShowCursor(SDL_ENABLE);
+
     return MenuBase::showMenu();
 }
 

@@ -61,10 +61,10 @@ void AdvancedWindTrap::blitToScreen() {
     // Draw the building body (animated power-plant atlas) first.
     StructureBase::blitToScreen();
 
-    // Like the Starport and Palace, the Advanced Windtrap flies two animated
-    // house-colored flags at the top corners of its 3x3 footprint. Reuse the
-    // ObjPic_CornerFlag sprite (3 frames) and the same ~8-cycle timing as the
-    // map corner flags in Game::drawCornerFlags().
+    // Dune II style: the Advanced Windtrap flies two animated house-colored
+    // flags at the top corners *within* its 3x3 footprint (not floating above
+    // it). Reuse the ObjPic_CornerFlag sprite (3 frames) and the same ~8-cycle
+    // timing as the map corner flags in Game::drawCornerFlags().
     if(fogged) {
         return;
     }
@@ -83,8 +83,8 @@ void AdvancedWindTrap::blitToScreen() {
 
     SDL_Rect src = { frame * zoomedTileSize, 0, zoomedTileSize, zoomedTileSize };
 
-    // Raise both flags one tile above the roofline so the poles rise off the top.
-    const int flagY = screenY - zoomedTileSize;
+    // Keep both flags at the top edge of the building, inside the 3x3 footprint.
+    const int flagY = screenY;
 
     SDL_Rect leftDst  = { screenX, flagY, zoomedTileSize, zoomedTileSize };
     SDL_RenderCopy(renderer, flagTex, &src, &leftDst);

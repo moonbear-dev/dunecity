@@ -1931,7 +1931,11 @@ GFXManager::GFXManager() {
     uiGraphic[UI_MentatBackground][HOUSE_FREMEN] = PictureFactory::mapMentatSurfaceToFremen(uiGraphic[UI_MentatBackground][HOUSE_ATREIDES].get());
     uiGraphic[UI_MentatBackground][HOUSE_SARDAUKAR] = PictureFactory::mapMentatSurfaceToSardaukar(uiGraphic[UI_MentatBackground][HOUSE_HARKONNEN].get());
     uiGraphic[UI_MentatBackground][HOUSE_MERCENARY] = PictureFactory::mapMentatSurfaceToMercenary(uiGraphic[UI_MentatBackground][HOUSE_ORDOS].get());
-    uiGraphic[UI_MentatBackground][HOUSE_NEUTRAL] = PictureFactory::mapMentatSurfaceToNeutral(uiGraphic[UI_MentatBackground][HOUSE_ORDOS].get());
+    // House Neutral uses the Ordos (female) mentat directly — copy the Ordos
+    // background surface verbatim, with no palette remap to grey.
+    uiGraphic[UI_MentatBackground][HOUSE_NEUTRAL] = sdl2::surface_ptr{
+        SDL_ConvertSurface(uiGraphic[UI_MentatBackground][HOUSE_ORDOS].get(),
+                           uiGraphic[UI_MentatBackground][HOUSE_ORDOS]->format, 0)};
 
     uiGraphic[UI_MentatBackgroundBene][HOUSE_HARKONNEN] = Scaler::defaultDoubleSurface(LoadCPS_RW(pFileManager->openFile("MENTATM.CPS").get()).get());
     if(uiGraphic[UI_MentatBackgroundBene][HOUSE_HARKONNEN] != nullptr) {
@@ -2280,10 +2284,17 @@ GFXManager::GFXManager() {
     animation[Anim_MercenaryMouth] = PictureFactory::mapMentatAnimationToMercenary(animation[Anim_OrdosMouth].get());
     animation[Anim_MercenaryShoulder] = PictureFactory::mapMentatAnimationToMercenary(animation[Anim_OrdosShoulder].get());
     animation[Anim_MercenaryRing] = PictureFactory::mapMentatAnimationToMercenary(animation[Anim_OrdosRing].get());
-    animation[Anim_NeutralEyes] = PictureFactory::mapMentatAnimationToNeutral(animation[Anim_OrdosEyes].get());
-    animation[Anim_NeutralMouth] = PictureFactory::mapMentatAnimationToNeutral(animation[Anim_OrdosMouth].get());
-    animation[Anim_NeutralShoulder] = PictureFactory::mapMentatAnimationToNeutral(animation[Anim_OrdosShoulder].get());
-    animation[Anim_NeutralRing] = PictureFactory::mapMentatAnimationToNeutral(animation[Anim_OrdosRing].get());
+    // House Neutral uses the Ordos (female) mentat directly — load the same
+    // Ordos SHP frames with no colour transform to grey.
+    animation[Anim_NeutralEyes] = menshpo->getAnimation(0,4,true,true);
+    animation[Anim_NeutralEyes]->setFrameRate(0.5);
+    animation[Anim_NeutralMouth] = menshpo->getAnimation(5,9,true,true,true);
+    animation[Anim_NeutralMouth]->setFrameRate(5.0);
+    animation[Anim_NeutralShoulder] = menshpo->getAnimation(10,10,true,true);
+    animation[Anim_NeutralShoulder]->setFrameRate(1.0);
+    animation[Anim_NeutralRing] = menshpo->getAnimation(11,14,true,true,true);
+    animation[Anim_NeutralRing]->setNumLoops(1);
+    animation[Anim_NeutralRing]->setFrameRate(6.0);
 
     animation[Anim_BeneEyes] = menshpm->getAnimation(0,4,true,true);
     if(animation[Anim_BeneEyes] != nullptr) {

@@ -487,12 +487,15 @@ MapEditorInterface::MapEditorInterface(MapEditor* pMapEditor)
     editorModeStructs_Palace.setOnClick(std::bind(&MapEditorInterface::onStructButton, this, Structure_Palace));
     editorModeStructs_HBox6.addWidget(&editorModeStructs_Palace);
 
-    editorModeStructs_HBox6.addWidget(HSpacer::create(2));
+
+    // AdvancedWindTrap gets its own row — three 3x3 buildings in one HBox
+    // overflows the sidebar width.
+    editorModeStructs_VBox.addWidget(&editorModeStructs_HBox7, 3*D2_TILESIZE + 4);
 
     editorModeStructs_AdvancedWindTrap.setToggleButton(true);
     editorModeStructs_AdvancedWindTrap.setTooltipText(resolveItemName(Structure_AdvancedWindTrap));
     editorModeStructs_AdvancedWindTrap.setOnClick(std::bind(&MapEditorInterface::onStructButton, this, Structure_AdvancedWindTrap));
-    editorModeStructs_HBox6.addWidget(&editorModeStructs_AdvancedWindTrap);
+    editorModeStructs_HBox7.addWidget(&editorModeStructs_AdvancedWindTrap);
 
 
     // DuneCity: expose SimCity-style buildings (R/C/I zones, Road, nuclear

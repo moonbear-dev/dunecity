@@ -2543,9 +2543,12 @@ GFXManager::GFXManager() {
             if (!ok) return nullptr;
             if (bPingPong) {
                 // mirror frames back: 3,2,1 (skip 0 and last to avoid stutter)
-                const auto& frames = anim->getFrames();
-                for (int fi = (int)frames.size()-2; fi >= 1; fi--) {
-                    sdl2::surface_ptr copy = copySurface(frames[fi].get());
+                // Snapshot raw pointers first — addFrame may reallocate the vector
+                // which would invalidate a reference/iterator held across the loop.
+                std::vector<SDL_Surface*> snapshot;
+                for (const auto& f : anim->getFrames()) snapshot.push_back(f.get());
+                for (int fi = (int)snapshot.size()-2; fi >= 1; fi--) {
+                    sdl2::surface_ptr copy = copySurface(snapshot[fi]);
                     anim->addFrame(std::move(copy), false, false);
                 }
             }

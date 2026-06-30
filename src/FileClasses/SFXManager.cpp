@@ -118,8 +118,8 @@ void SFXManager::loadEnglishVoice() {
                 break;
             case HOUSE_NEUTRAL:
                 HouseString = "A";
-                HouseNameChunk = getChunkFromFile("MNEU.VOC", "ANEU.VOC");
-                break; // Neutral uses Atreides action voices but its own house name (prefer MNEU)
+                HouseNameChunk = getChunkFromFile("NNEU.VOC", "ANEU.VOC");
+                break; // Neutral house name call - NNEU.VOC is the dedicated Neutral sound
             default:
                 break;
         }

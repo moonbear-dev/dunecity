@@ -638,6 +638,7 @@ if(WIN32)
             "${DATA_DIR}/ANEU.VOC"
             "${DATA_DIR}/HNEU.VOC"
             "${DATA_DIR}/MNEU.VOC"
+            "${DATA_DIR}/NNEU.VOC"
             "${DATA_DIR}/ONEU.VOC"
         DESTINATION .
     )

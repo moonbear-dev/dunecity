@@ -25,9 +25,13 @@
 #include <FileClasses/INIFile.h>
 #include <FileClasses/music/MusicPlayer.h>
 
+#include <mod/ModManager.h>
+
 #include <misc/string_util.h>
 #include <misc/exceptions.h>
 #include <misc/format.h>
+
+#include <sys/stat.h>
 
 #include <sand.h>
 
@@ -372,7 +376,24 @@ void MapChoice::loadINI() {
     // Neutral house now has its own region map (REGIONN.INI).
     const std::string filename = fmt::sprintf("REGION%c.INI", houseChar[house]);
 
-    INIFile RegionINI(pFileManager->openFile(filename).get());
+    // DuneCity: prefer mod campaign override if available
+    std::unique_ptr<INIFile> pRegionINI;
+    std::string campaignDir = ModManager::instance().getActiveCampaignDir();
+    if (!campaignDir.empty()) {
+        std::string modPath = campaignDir + "/" + filename;
+        struct stat st;
+        if (stat(modPath.c_str(), &st) == 0) {
+            SDL_RWops* rw = SDL_RWFromFile(modPath.c_str(), "rb");
+            if (rw) {
+                pRegionINI = std::make_unique<INIFile>(rw);
+                SDL_RWclose(rw);
+            }
+        }
+    }
+    if (!pRegionINI) {
+        pRegionINI = std::make_unique<INIFile>(pFileManager->openFile(filename).get());
+    }
+    INIFile& RegionINI = *pRegionINI;
 
     piecePosition[0].x = 0;
     piecePosition[0].y = 0;

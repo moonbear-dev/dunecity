@@ -120,6 +120,13 @@ public:
      * Falls back to vanilla if mod doesn't have this file.
      */
     std::string getActiveGameOptionsPath() const;
+
+    /**
+     * Get the campaign override directory for the active mod.
+     * Checks both user-config and install-data mod paths.
+     * \return Path to campaign directory, or "" if none exists.
+     */
+    std::string getActiveCampaignDir() const;
     
     /**
      * Load game options from active mod's GameOptions.ini.

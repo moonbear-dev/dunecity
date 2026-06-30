@@ -25,6 +25,7 @@
 
 #include <SDL.h>
 
+#include <sys/stat.h>
 #include <fstream>
 #include <sstream>
 #include <cstdint>
@@ -235,6 +236,29 @@ std::string ModManager::getActiveGameOptionsPath() const {
     }
     
     return filePath;
+}
+
+std::string ModManager::getActiveCampaignDir() const {
+    if (!initialized || activeMod == VANILLA_MOD_NAME) return "";
+
+    auto isDir = [](const std::string& path) {
+        struct stat st;
+        return stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode);
+    };
+
+    // Check user-config mod path first
+    std::string userCampaign = getModPath(activeMod) + "/campaign";
+    if (isDir(userCampaign)) {
+        return userCampaign;
+    }
+
+    // Check install-data mod path
+    std::string installCampaign = getDuneLegacyDataDir() + "/mods/" + activeMod + "/campaign";
+    if (isDir(installCampaign)) {
+        return installCampaign;
+    }
+
+    return "";
 }
 
 SettingsClass::GameOptionsClass ModManager::loadEffectiveGameOptions(

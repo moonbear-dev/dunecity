@@ -1339,6 +1339,22 @@ void MapEditorInterface::changeHouseDropDown(HOUSETYPE newHouse) {
     }
 }
 
+/// Returns a copy of `base` with a purple star dot composited at the bottom-right corner.
+/// Used to mark Tornie mod units in the map editor unit palette.
+static sdl2::surface_ptr makeStarredSymbol(SDL_Surface* base) {
+    if (!base) return {};
+
+    sdl2::surface_ptr copy{ SDL_ConvertSurface(base, base->format, 0) };
+    if (!copy) return {};
+
+    // Draw a 5x5 purple filled square as the star marker (bottom-right corner)
+    SDL_Rect dot = { copy->w - 6, copy->h - 6, 5, 5 };
+    Uint32 purple = SDL_MapRGB(copy->format, 180, 0, 255);
+    SDL_FillRect(copy.get(), &dot, purple);
+
+    return copy;
+}
+
 void MapEditorInterface::changeInterfaceColor(HOUSETYPE newHouse) {
     house = newHouse;
     color = SDL2RGB(palette[houseToPaletteIndex[newHouse] + 3]);
@@ -1412,16 +1428,16 @@ void MapEditorInterface::changeInterfaceColor(HOUSETYPE newHouse) {
     editorModeUnits_MCV.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_MCV, newHouse));
     editorModeUnits_Trike.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Trike, newHouse));
     editorModeUnits_Raider.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Raider, newHouse));
-    // No dedicated UI_MapEditor_RocketTrike graphic exists; reuse the plain Trike icon.
-    editorModeUnits_RocketTrike.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Trike, newHouse));
+    // No dedicated UI_MapEditor_RocketTrike graphic exists; reuse the plain Trike icon with purple star.
+    editorModeUnits_RocketTrike.setSymbol(makeStarredSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Trike, newHouse)));
     editorModeUnits_Quad.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Quad, newHouse));
     editorModeUnits_Tank.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Tank, newHouse));
     editorModeUnits_SiegeTank.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_SiegeTank, newHouse));
     editorModeUnits_Launcher.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Launcher, newHouse));
-    // DuneCity: Elite Launcher uses the Launcher editor icon
-    editorModeUnits_EliteLauncher.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Launcher, newHouse));
-    // DuneCity: Elite Siege Tank uses the Siege Tank editor icon
-    editorModeUnits_EliteSiegeTank.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_SiegeTank, newHouse));
+    // DuneCity: Elite Launcher uses the Launcher editor icon with purple star
+    editorModeUnits_EliteLauncher.setSymbol(makeStarredSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Launcher, newHouse)));
+    // DuneCity: Elite Siege Tank uses the Siege Tank editor icon with purple star
+    editorModeUnits_EliteSiegeTank.setSymbol(makeStarredSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_SiegeTank, newHouse)));
     editorModeUnits_Devastator.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Devastator, newHouse));
     editorModeUnits_SonicTank.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_SonicTank, newHouse));
     editorModeUnits_Deviator.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Deviator, newHouse));

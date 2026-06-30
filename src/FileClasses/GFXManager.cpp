@@ -1697,7 +1697,21 @@ GFXManager::GFXManager() {
     smallDetailPicTex[Picture_LightFactory] = extractSmallDetailPic("LITEFTRY.WSA");
     smallDetailPicTex[Picture_MCV] = extractSmallDetailPic("MCV.WSA");
     smallDetailPicTex[Picture_Ornithopter] = extractSmallDetailPic("ORNI.WSA");
-    smallDetailPicTex[Picture_Palace] = extractSmallDetailPic("PALACE.WSA");
+    // Prefer PalaceIcon.png from Tornie.PAK/data for all houses if present
+    if (pFileManager->exists("PalaceIcon.png")) {
+        auto iconSurf = LoadPNG_RW(pFileManager->openFile("PalaceIcon.png").get());
+        if (iconSurf) {
+            auto tex = convertSurfaceToTexture(iconSurf.get());
+            if (tex) {
+                SDL_SetTextureBlendMode(tex.get(), SDL_BLENDMODE_BLEND);
+                smallDetailPicTex[Picture_Palace] = std::move(tex);
+                SDL_Log("Loaded Palace icon from PalaceIcon.png");
+            }
+        }
+    }
+    if (!smallDetailPicTex[Picture_Palace]) {
+        smallDetailPicTex[Picture_Palace] = extractSmallDetailPic("PALACE.WSA");
+    }
     // DuneCity: Neutral Palace ability icon (Trike & Quad spawn action button).
     // This is separate from the building icon (Picture_Palace) which uses
     // vanilla PALACE.WSA for all houses.

@@ -601,6 +601,7 @@ BuildTime = 72
 InfSpawnProp = 25
 Builder = Heavy Factory
 Builder(N) = Invalid
+Prerequisite(N) = House IX
 TechLevel = 5
 UpgradeLevel = 2
 

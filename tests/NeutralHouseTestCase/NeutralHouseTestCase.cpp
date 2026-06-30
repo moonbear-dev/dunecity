@@ -51,8 +51,8 @@ TEST_CASE("NeutralHouse: HOUSE_NEUTRAL is after HOUSE_MERCENARY",
 
 TEST_CASE("NeutralHouse: savegame version includes HOUSE_NEUTRAL",
           "[neutral][savegame]") {
-    // SAVEGAMEVERSION 9813 added HOUSE_NEUTRAL (NUM_HOUSES = 7).
-    REQUIRE(SAVEGAMEVERSION == 9813);
+    // SAVEGAMEVERSION 9814 added Unit_EliteLauncher (9813 added HOUSE_NEUTRAL).
+    REQUIRE(SAVEGAMEVERSION == 9814);
 }
 
 // =============================================================================

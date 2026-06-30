@@ -1944,7 +1944,9 @@ GFXManager::GFXManager() {
         }
     }
     if (!smallDetailPicTex[Picture_EliteSiegeTank]) {
-        smallDetailPicTex[Picture_EliteSiegeTank] = extractSmallDetailPic("HTANK.WSA");
+        // Try Tornie.PAK custom WSA first, fall back to Siege Tank WSA
+        const char* estWsa = pFileManager->exists("EliteSiegeTank.WSA") ? "EliteSiegeTank.WSA" : "HTANK.WSA";
+        smallDetailPicTex[Picture_EliteSiegeTank] = extractSmallDetailPic(estWsa);
     }
 
     // unused: FARTR.WSA, FHARK.WSA, FORDOS.WSA
@@ -2508,16 +2510,11 @@ GFXManager::GFXManager() {
     animation[Anim_MercenaryMouth] = PictureFactory::mapMentatAnimationToMercenary(animation[Anim_OrdosMouth].get());
     animation[Anim_MercenaryShoulder] = PictureFactory::mapMentatAnimationToMercenary(animation[Anim_OrdosShoulder].get());
     animation[Anim_MercenaryRing] = PictureFactory::mapMentatAnimationToMercenary(animation[Anim_OrdosRing].get());
-    // DuneCity: Neutral mentat animations from MENSHPM.SHP (Chani)
-    animation[Anim_NeutralEyes] = menshpm->getAnimation(0,4,true,true);
-    animation[Anim_NeutralEyes]->setFrameRate(0.5);
-    animation[Anim_NeutralMouth] = menshpm->getAnimation(5,9,true,true,true);
-    animation[Anim_NeutralMouth]->setFrameRate(5.0);
-    animation[Anim_NeutralShoulder] = menshpm->getAnimation(10,10,true,true);
-    animation[Anim_NeutralShoulder]->setFrameRate(1.0);
-    animation[Anim_NeutralRing] = menshpm->getAnimation(11,14,true,true,true);
-    animation[Anim_NeutralRing]->setNumLoops(1);
-    animation[Anim_NeutralRing]->setFrameRate(6.0);
+    // DuneCity: Neutral mentat — Ordos animations with neutral palette remap
+    animation[Anim_NeutralEyes] = PictureFactory::mapMentatAnimationToNeutral(animation[Anim_OrdosEyes].get());
+    animation[Anim_NeutralMouth] = PictureFactory::mapMentatAnimationToNeutral(animation[Anim_OrdosMouth].get());
+    animation[Anim_NeutralShoulder] = PictureFactory::mapMentatAnimationToNeutral(animation[Anim_OrdosShoulder].get());
+    animation[Anim_NeutralRing] = PictureFactory::mapMentatAnimationToNeutral(animation[Anim_OrdosRing].get());
 
     animation[Anim_BeneEyes] = menshpm->getAnimation(0,4,true,true);
     if(animation[Anim_BeneEyes] != nullptr) {

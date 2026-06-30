@@ -29,6 +29,7 @@
 #include <FileClasses/Wsafile.h>
 
 #include <misc/draw_util.h>
+#include <Colors.h>
 #include <misc/Scaler.h>
 #include <misc/exceptions.h>
 
@@ -1032,22 +1033,21 @@ std::unique_ptr<Animation> PictureFactory::createNeutralPlanet(Animation* harkon
         colorMap[i] = i;
     }
 
-    // Remap Harkonnen red/crimson tones → neutral grey/stone
-    // Harkonnen planet uses palette indices 154-165 (dark reds)
-    // Map to grey range (indices 29, 30, 31 are dark greys; 13, 24, 22 are stone)
-    colorMap[154] = 29;
-    colorMap[155] = 30;
-    colorMap[156] = 31;
-    colorMap[157] = 24;
-    colorMap[158] = 22;
-    colorMap[159] = 13;
-    colorMap[160] = 29;
-    colorMap[161] = 30;
-    colorMap[162] = 31;
-    colorMap[163] = 24;
-    colorMap[164] = 22;
-    colorMap[165] = 13;
-    colorMap[15] = 31;
+    // Remap Harkonnen red/crimson tones → white/light-grey (Neutral house)
+    // Darker reds → mid grey; mid reds → light grey; bright reds → near-white
+    colorMap[154] = 13;   // dark red  → dark grey
+    colorMap[155] = 22;   // "
+    colorMap[156] = 24;   // "
+    colorMap[157] = 29;   // mid red   → mid grey
+    colorMap[158] = 30;   // "
+    colorMap[159] = 31;   // "
+    colorMap[160] = PALCOLOR_LIGHTGREY;  // lighter red → light grey
+    colorMap[161] = PALCOLOR_LIGHTGREY;
+    colorMap[162] = PALCOLOR_LIGHTGREY;
+    colorMap[163] = PALCOLOR_WHITE;      // bright red → near-white
+    colorMap[164] = PALCOLOR_WHITE;
+    colorMap[165] = PALCOLOR_WHITE;
+    colorMap[15]  = PALCOLOR_WHITE;
 
     for(const sdl2::surface_ptr& pSurface : harkonnenPlanetAnimation->getFrames()) {
         sdl2::surface_ptr newFrame = copySurface(pSurface.get());

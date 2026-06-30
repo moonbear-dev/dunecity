@@ -2168,8 +2168,18 @@ GFXManager::GFXManager() {
     uiGraphic[UI_MentatBackground][HOUSE_SARDAUKAR] = PictureFactory::mapMentatSurfaceToSardaukar(uiGraphic[UI_MentatBackground][HOUSE_HARKONNEN].get());
     uiGraphic[UI_MentatBackground][HOUSE_MERCENARY] = PictureFactory::mapMentatSurfaceToMercenary(uiGraphic[UI_MentatBackground][HOUSE_ORDOS].get());
     // DuneCity: Neutral mentat background — remap from Ordos (matches Ordos-based animation overlays)
-    uiGraphic[UI_MentatBackground][HOUSE_NEUTRAL] =
-        PictureFactory::mapMentatSurfaceToNeutral(uiGraphic[UI_MentatBackground][HOUSE_ORDOS].get());
+    // Neutral mentat: prefer MentatNeutral.png (Chani portrait) from Tornie.PAK
+    if (pFileManager->exists("MentatNeutral.png")) {
+        auto surf = LoadPNG_RW(pFileManager->openFile("MentatNeutral.png").get());
+        if (surf) {
+            uiGraphic[UI_MentatBackground][HOUSE_NEUTRAL] = Scaler::defaultDoubleSurface(surf.get());
+            SDL_Log("Loaded Neutral mentat background from MentatNeutral.png");
+        }
+    }
+    if (!uiGraphic[UI_MentatBackground][HOUSE_NEUTRAL]) {
+        uiGraphic[UI_MentatBackground][HOUSE_NEUTRAL] =
+            PictureFactory::mapMentatSurfaceToNeutral(uiGraphic[UI_MentatBackground][HOUSE_ORDOS].get());
+    }
 
     uiGraphic[UI_MentatBackgroundBene][HOUSE_HARKONNEN] = Scaler::defaultDoubleSurface(LoadCPS_RW(pFileManager->openFile("MENTATM.CPS").get()).get());
     if(uiGraphic[UI_MentatBackgroundBene][HOUSE_HARKONNEN] != nullptr) {

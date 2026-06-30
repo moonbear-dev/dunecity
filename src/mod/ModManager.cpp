@@ -41,6 +41,7 @@ static const char* QUANTBOT_CONFIG_FILE = "QuantBot Config.ini";
 static const char* GAME_OPTIONS_FILE = "GameOptions.ini";
 static const char* VANILLA_MOD_NAME = "vanilla";
 static const char* DUNECITY_MOD_NAME = "dunecity";
+static const char* TORNIE_MOD_NAME = "Tornie";
 
 // Install config file names (with .default suffix)
 static const char* OBJECT_DATA_DEFAULT = "ObjectData.ini.default";
@@ -87,7 +88,7 @@ void ModManager::initialize() {
     }
 
     // Seed Tornie mod if not present
-    if (!modExists("Tornie")) {
+    if (!modExists(TORNIE_MOD_NAME)) {
         seedTornieFromDefaults();
     }
 
@@ -822,7 +823,6 @@ void ModManager::seedDunecityFromDefaults() {
 void ModManager::seedTornieFromDefaults() {
     SDL_Log("ModManager: Seeding Tornie mod from bundled install...");
 
-    static const char* TORNIE_MOD_NAME = "Tornie";
     std::string tornie_dst = getModPath(TORNIE_MOD_NAME);
     std::string tornie_src = getDuneLegacyDataDir() + "/mods/Tornie";
 

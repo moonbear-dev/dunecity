@@ -1729,6 +1729,7 @@ GFXManager::GFXManager() {
     if (!smallDetailPicTex[Picture_PalaceNeutral]) {
         smallDetailPicTex[Picture_PalaceNeutral] = extractSmallDetailPic("PALACE.WSA");
     }
+    SDL_Log("GFX INIT: post-PalaceNeutral icon");
     // Quad: the neutral Palace activation ability (PalaceInterface) uses
     // Picture_Quad. Prefer the standalone QuadIcon.png in data/ — it ships at
     // the exact 91×55 sidebar-slot size, so load it straight to a texture.
@@ -1767,6 +1768,7 @@ GFXManager::GFXManager() {
     smallDetailPicTex[Picture_Wall] = extractSmallDetailPic("WALL.WSA");
     smallDetailPicTex[Picture_WindTrap] = extractSmallDetailPic("WINDTRAP.WSA");
     smallDetailPicTex[Picture_WOR] = extractSmallDetailPic("WOR.WSA");
+    SDL_Log("GFX INIT: small detail pics done");
 
     // DuneCity zone build-menu icons — scale the imported zone sprite down
     // to 91x55 for the small detail pic.  Falls back to SLAB.WSA if the
@@ -1860,6 +1862,7 @@ GFXManager::GFXManager() {
         smallDetailPicTex[Picture_Road]        = extractSmallDetailPic("SLAB.WSA");
     }
     smallDetailPicTex[Picture_PowerLine]       = extractSmallDetailPic("SLAB.WSA");
+    SDL_Log("GFX INIT: zone detail pics done");
 
     // Nuclear plant, police, stadium, airport build-menu icons — pull
     // first frame from their Micropolis atlases so they're recognizable.
@@ -1964,6 +1967,7 @@ GFXManager::GFXManager() {
     }
 
     // unused: FARTR.WSA, FHARK.WSA, FORDOS.WSA
+    SDL_Log("GFX INIT: road/struct detail pics done");
 
 
     // Helper function to safely create tiny picture textures
@@ -2016,6 +2020,7 @@ GFXManager::GFXManager() {
     tinyPictureTex[TinyPicture_Special] = createTinyPictureTexture(75, "Special");    // use devastator picture
     tinyPictureTex[TinyPicture_Infantry] = createTinyPictureTexture(81, "Infantry");
     tinyPictureTex[TinyPicture_Troopers] = createTinyPictureTexture(91, "Troopers");
+    SDL_Log("GFX INIT: tiny pics done");
 
     // load UI graphics
     uiGraphic[UI_RadarAnimation][HOUSE_HARKONNEN] = Scaler::doubleSurfaceNN(radar->getAnimationAsPictureRow(NUM_STATIC_ANIMATIONS_PER_ROW).get());
@@ -2493,6 +2498,7 @@ GFXManager::GFXManager() {
 
 
     // load animations
+    SDL_Log("GFX INIT: starting animation load");
     animation[Anim_HarkonnenEyes] = menshph->getAnimation(0,4,true,true);
     animation[Anim_HarkonnenEyes]->setFrameRate(0.3);
     animation[Anim_HarkonnenMouth] = menshph->getAnimation(5,9,true,true,true);
@@ -2517,6 +2523,7 @@ GFXManager::GFXManager() {
     animation[Anim_OrdosRing] = menshpo->getAnimation(11,14,true,true,true);
     animation[Anim_OrdosRing]->setNumLoops(1);
     animation[Anim_OrdosRing]->setFrameRate(6.0);
+    SDL_Log("GFX INIT: base house animations done");
     animation[Anim_FremenEyes] = PictureFactory::mapMentatAnimationToFremen(animation[Anim_AtreidesEyes].get());
     animation[Anim_FremenMouth] = PictureFactory::mapMentatAnimationToFremen(animation[Anim_AtreidesMouth].get());
     animation[Anim_FremenShoulder] = PictureFactory::mapMentatAnimationToFremen(animation[Anim_AtreidesShoulder].get());
@@ -2528,8 +2535,23 @@ GFXManager::GFXManager() {
     animation[Anim_MercenaryMouth] = PictureFactory::mapMentatAnimationToMercenary(animation[Anim_OrdosMouth].get());
     animation[Anim_MercenaryShoulder] = PictureFactory::mapMentatAnimationToMercenary(animation[Anim_OrdosShoulder].get());
     animation[Anim_MercenaryRing] = PictureFactory::mapMentatAnimationToMercenary(animation[Anim_OrdosRing].get());
+    SDL_Log("GFX INIT: mentat remap animations done");
     // DuneCity: Neutral mentat — load Chani animation frames from Tornie.PAK if present
     {
+        // Double an RGBA surface using SDL_BlitScaled (avoids the legacy
+        // 8-bit palette scaler path that crashes on 32-bit surfaces).
+        auto doubleRGBASurface = [](SDL_Surface* src) -> sdl2::surface_ptr {
+            if (!src) return nullptr;
+            sdl2::surface_ptr dst{ SDL_CreateRGBSurface(0, src->w * 2, src->h * 2,
+                src->format->BitsPerPixel,
+                src->format->Rmask, src->format->Gmask,
+                src->format->Bmask, src->format->Amask) };
+            if (!dst) return nullptr;
+            SDL_SetSurfaceBlendMode(src, SDL_BLENDMODE_NONE);
+            SDL_BlitScaled(src, nullptr, dst.get(), nullptr);
+            return dst;
+        };
+
         auto loadChaniAnim = [&](const std::string& prefix, int nFrames, bool bPingPong) -> std::unique_ptr<Animation> {
             auto anim = std::make_unique<Animation>();
             bool ok = true;
@@ -2538,7 +2560,16 @@ GFXManager::GFXManager() {
                 if (!pFileManager->exists(name)) { ok = false; break; }
                 auto surf = LoadPNG_RW(pFileManager->openFile(name).get());
                 if (!surf) { ok = false; break; }
-                anim->addFrame(std::move(surf), true, false); // bDoublePic=true
+                // Chani PNGs are 32-bit RGBA — the legacy Scaler path assumes
+                // 8-bit paletted surfaces and crashes on src->format->palette->colors
+                // (null for RGBA). Use SDL_BlitScaled to double RGBA frames instead.
+                if (surf->format->BitsPerPixel >= 24) {
+                    auto doubled = doubleRGBASurface(surf.get());
+                    if (!doubled) { ok = false; break; }
+                    anim->addFrame(std::move(doubled), false, false);
+                } else {
+                    anim->addFrame(std::move(surf), true, false); // bDoublePic=true (8-bit path)
+                }
             }
             if (!ok) return nullptr;
             if (bPingPong) {
@@ -2566,6 +2597,7 @@ GFXManager::GFXManager() {
     }
     animation[Anim_NeutralShoulder] = PictureFactory::mapMentatAnimationToNeutral(animation[Anim_OrdosShoulder].get());
     animation[Anim_NeutralRing] = PictureFactory::mapMentatAnimationToNeutral(animation[Anim_OrdosRing].get());
+    SDL_Log("GFX INIT: Neutral mentat animations done");
 
     animation[Anim_BeneEyes] = menshpm->getAnimation(0,4,true,true);
     if(animation[Anim_BeneEyes] != nullptr) {
@@ -2577,6 +2609,7 @@ GFXManager::GFXManager() {
         animation[Anim_BeneMouth]->setPalette(benePalette);
         animation[Anim_BeneMouth]->setFrameRate(5.0);
     }
+    SDL_Log("GFX INIT: Bene Gesserit animations done");
     // the remaining animation are loaded on demand to save some loading time
 
     // load map choice pieces

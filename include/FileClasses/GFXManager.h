@@ -209,6 +209,7 @@ typedef enum {
     Picture_AdvancedWindTrap,
     Picture_RocketTrike,
     Picture_LauncherNeutral,    ///< DuneCity: light red-tinted Launcher build-menu icon for HOUSE_NEUTRAL
+    Picture_PalaceNeutral,      ///< DuneCity: Neutral Palace ability icon (Trike & Quad spawn)
     NUM_SMALLDETAILPICS
 } SmallDetailPics_Enum;
 

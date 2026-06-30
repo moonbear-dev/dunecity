@@ -31,7 +31,7 @@
 #include <misc/exceptions.h>
 #include <misc/format.h>
 
-#include <sys/stat.h>
+#include <filesystem>
 
 #include <sand.h>
 
@@ -381,8 +381,7 @@ void MapChoice::loadINI() {
     std::string campaignDir = ModManager::instance().getActiveCampaignDir();
     if (!campaignDir.empty()) {
         std::string modPath = campaignDir + "/" + filename;
-        struct stat st;
-        if (stat(modPath.c_str(), &st) == 0) {
+        if (std::filesystem::exists(modPath)) {
             SDL_RWops* rw = SDL_RWFromFile(modPath.c_str(), "rb");
             if (rw) {
                 pRegionINI = std::make_unique<INIFile>(rw);

@@ -136,20 +136,28 @@ MentatMenu::MentatMenu(int newHouse)
 
         case HOUSE_NEUTRAL: {
             anim = pGFXManager->getAnimation(Anim_NeutralEyes);
-            eyesAnim.setAnimation(anim);
-            windowWidget.addWidget(&eyesAnim,Point(32,160),eyesAnim.getMinimumSize());
+            if (anim) {
+                eyesAnim.setAnimation(anim);
+                windowWidget.addWidget(&eyesAnim,Point(32,160),eyesAnim.getMinimumSize());
+            }
 
             anim = pGFXManager->getAnimation(Anim_NeutralMouth);
-            mouthAnim.setAnimation(anim);
-            windowWidget.addWidget(&mouthAnim,Point(32,192),mouthAnim.getMinimumSize());
+            if (anim) {
+                mouthAnim.setAnimation(anim);
+                windowWidget.addWidget(&mouthAnim,Point(32,192),mouthAnim.getMinimumSize());
+            }
 
             anim = pGFXManager->getAnimation(Anim_NeutralRing);
-            specialAnim.setAnimation(anim);
-            specialAnim.getAnimation()->setCurrentFrameNumber(specialAnim.getAnimation()->getNumberOfFrames()-1);
-            windowWidget.addWidget(&specialAnim,Point(178,289),specialAnim.getMinimumSize());
+            if (anim) {
+                specialAnim.setAnimation(anim);
+                specialAnim.getAnimation()->setCurrentFrameNumber(specialAnim.getAnimation()->getNumberOfFrames()-1);
+                windowWidget.addWidget(&specialAnim,Point(178,289),specialAnim.getMinimumSize());
+            }
 
             anim = pGFXManager->getAnimation(Anim_NeutralShoulder);
-            shoulderAnim.setAnimation(anim);
+            if (anim) {
+                shoulderAnim.setAnimation(anim);
+            }
             // don't add shoulderAnim, draw it in DrawSpecificStuff
         } break;
 

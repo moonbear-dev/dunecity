@@ -114,7 +114,7 @@ protected:
                 } break;
 
                 case HOUSE_NEUTRAL: {
-                    picID = Picture_Quad;
+                    picID = Picture_PalaceNeutral;
                 } break;
 
                 default: {

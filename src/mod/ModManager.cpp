@@ -25,7 +25,7 @@
 
 #include <SDL.h>
 
-#include <sys/stat.h>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <cstdint>
@@ -242,8 +242,7 @@ std::string ModManager::getActiveCampaignDir() const {
     if (!initialized || activeMod == VANILLA_MOD_NAME) return "";
 
     auto isDir = [](const std::string& path) {
-        struct stat st;
-        return stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode);
+        return std::filesystem::is_directory(path);
     };
 
     // Check user-config mod path first

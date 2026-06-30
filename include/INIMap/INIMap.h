@@ -32,7 +32,7 @@
 #include <string>
 #include <memory>
 
-#include <sys/stat.h>
+#include <filesystem>
 
 
 class INIMap {
@@ -51,8 +51,7 @@ public:
             std::string campaignDir = ModManager::instance().getActiveCampaignDir();
             if (!campaignDir.empty()) {
                 std::string modPath = campaignDir + "/" + this->mapname;
-                struct stat st;
-                if (stat(modPath.c_str(), &st) == 0) {
+                if (std::filesystem::exists(modPath)) {
                     SDL_RWops* rw = SDL_RWFromFile(modPath.c_str(), "rb");
                     if (rw) {
                         inifile = std::make_unique<INIFile>(rw);

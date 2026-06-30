@@ -300,6 +300,8 @@ bool Palace::spawnNeutralUnits() {
         Quad* pQuad = static_cast<Quad*>(getOwner()->createUnit(Unit_Quad));
         Coord spot = currentGameMap->findDeploySpot(pQuad, getLocation(), currentGame->randomGen, getDestination(), getStructureSize());
         pQuad->deploy(spot);
+        // DuneCity: spawned units start in Hunt mode (player can change)
+        pQuad->doSetAttackMode(HUNT);
     }
 
     if(getOwner() == pLocalHouse) {

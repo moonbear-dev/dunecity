@@ -631,6 +631,13 @@ MapEditorInterface::MapEditorInterface(MapEditor* pMapEditor)
     editorModeUnits_EliteLauncher.setOnClick(std::bind(&MapEditorInterface::onUnitButton, this, Unit_EliteLauncher));
     editorModeUnits_HBoxRocketTrike.addWidget(&editorModeUnits_EliteLauncher);
 
+    editorModeUnits_HBoxRocketTrike.addWidget(HSpacer::create(2));
+
+    editorModeUnits_EliteSiegeTank.setToggleButton(true);
+    editorModeUnits_EliteSiegeTank.setTooltipText(resolveItemName(Unit_EliteSiegeTank));
+    editorModeUnits_EliteSiegeTank.setOnClick(std::bind(&MapEditorInterface::onUnitButton, this, Unit_EliteSiegeTank));
+    editorModeUnits_HBoxRocketTrike.addWidget(&editorModeUnits_EliteSiegeTank);
+
     editorModeUnits_HBoxRocketTrike.addWidget(Spacer::create());
 
     editorModeUnits_VBox.addWidget(VSpacer::create(2));
@@ -1164,6 +1171,7 @@ void MapEditorInterface::onUnitButton(int unitType) {
     editorModeUnits_Raider.setToggleState( (unitType == Unit_RaiderTrike) );
     editorModeUnits_RocketTrike.setToggleState( (unitType == Unit_RocketTrike) );
     editorModeUnits_EliteLauncher.setToggleState( (unitType == Unit_EliteLauncher) );
+    editorModeUnits_EliteSiegeTank.setToggleState( (unitType == Unit_EliteSiegeTank) );
     editorModeUnits_Quad.setToggleState( (unitType == Unit_Quad) );
     editorModeUnits_Tank.setToggleState( (unitType == Unit_Tank) );
     editorModeUnits_SiegeTank.setToggleState( (unitType == Unit_SiegeTank) );
@@ -1412,6 +1420,8 @@ void MapEditorInterface::changeInterfaceColor(HOUSETYPE newHouse) {
     editorModeUnits_Launcher.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Launcher, newHouse));
     // DuneCity: Elite Launcher uses the Launcher editor icon
     editorModeUnits_EliteLauncher.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Launcher, newHouse));
+    // DuneCity: Elite Siege Tank uses the Siege Tank editor icon
+    editorModeUnits_EliteSiegeTank.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_SiegeTank, newHouse));
     editorModeUnits_Devastator.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Devastator, newHouse));
     editorModeUnits_SonicTank.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_SonicTank, newHouse));
     editorModeUnits_Deviator.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Deviator, newHouse));

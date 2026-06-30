@@ -64,6 +64,7 @@
 #include <units/Harvester.h>
 #include <units/Launcher.h>
 #include <units/EliteLauncher.h>
+#include <units/EliteSiegeTank.h>
 #include <units/MCV.h>
 #include <units/Ornithopter.h>
 #include <units/Quad.h>
@@ -855,6 +856,7 @@ ObjectBase* ObjectBase::createObject(int itemID, House* Owner, bool byScenario) 
         case Unit_Soldier:                  newObject = new Soldier(Owner); break;
         case Unit_Launcher:                 newObject = new Launcher(Owner); break;
         case Unit_EliteLauncher:            newObject = new EliteLauncher(Owner); break;
+        case Unit_EliteSiegeTank:           newObject = new EliteSiegeTank(Owner); break;
         case Unit_MCV:                      newObject = new MCV(Owner); break;
         case Unit_Ornithopter:              newObject = new Ornithopter(Owner); break;
         case Unit_Quad:                     newObject = new Quad(Owner); break;
@@ -941,6 +943,7 @@ ObjectBase* ObjectBase::loadObject(InputStream& stream, int itemID, Uint32 objec
         case Unit_Soldier:                  newObject = new Soldier(stream); break;
         case Unit_Launcher:                 newObject = new Launcher(stream); break;
         case Unit_EliteLauncher:            newObject = new EliteLauncher(stream); break;
+        case Unit_EliteSiegeTank:           newObject = new EliteSiegeTank(stream); break;
         case Unit_MCV:                      newObject = new MCV(stream); break;
         case Unit_Ornithopter:              newObject = new Ornithopter(stream); break;
         case Unit_Quad:                     newObject = new Quad(stream); break;

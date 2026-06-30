@@ -209,6 +209,7 @@ typedef enum {
     Picture_AdvancedWindTrap,
     Picture_RocketTrike,
     Picture_LauncherNeutral,    ///< DuneCity: light red-tinted Launcher build-menu icon for HOUSE_NEUTRAL
+    Picture_EliteSiegeTank,     ///< DuneCity: Elite Siege Tank build-menu icon (loaded from EliteSiegeTankIcon.png or falls back to HTANK.WSA)
     Picture_PalaceNeutral,      ///< DuneCity: Neutral Palace ability icon (Trike & Quad spawn)
     NUM_SMALLDETAILPICS
 } SmallDetailPics_Enum;

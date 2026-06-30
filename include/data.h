@@ -117,12 +117,13 @@ typedef enum {
     Unit_AmbientHelicopter = 51,      ///< DuneCity: Ambient city helicopter (non-combat, spawned by Airport)
     Unit_RocketTrike = 52,            ///< DuneCity: Rocket Trike (Neutral only, trooper rockets, light factory)
     Unit_EliteLauncher = 53,           ///< DuneCity: Elite Launcher (Neutral only, Heavy Factory, House IX prereq)
-    Unit_ExtLastID = 53,
+    Unit_EliteSiegeTank = 55,          ///< DuneCity: Elite Siege Tank (Atreides/Harkonnen/Ordos via Tornie mod, Heavy Factory, House IX prereq)
+    Unit_ExtLastID = 55,
 
     // Additional extended structures after units (isStructure handles non-contiguous range)
     Structure_AdvancedWindTrap = 54,  ///< DuneCity: Advanced Windtrap (500 credits, -300 power, 3x3)
 
-    ItemID_LastID = 54,
+    ItemID_LastID = 55,
 
     Num_ItemID
 } ItemID_enum;
@@ -163,7 +164,7 @@ typedef enum {
     \param itemID   the ID of the item (e.g. Unit_Harvester)
     \return true if it is an unit, false otherwise
 */
-inline bool isUnit(int itemID) { return (itemID >= Unit_FirstID && itemID <= Unit_LastID) || (itemID >= Unit_AmbientAirplane && itemID <= Unit_ExtLastID); }
+inline bool isUnit(int itemID) { return (itemID >= Unit_FirstID && itemID <= Unit_LastID) || (itemID >= Unit_AmbientAirplane && itemID <= Unit_ExtLastID && itemID != Structure_AdvancedWindTrap); }
 
 /**
     This function determines if the specified itemID is a structure or not.

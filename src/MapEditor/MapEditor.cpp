@@ -204,6 +204,7 @@ void MapEditor::setMap(const MapData& mapdata, const MapInfo& newMapInfo) {
     choam[Unit_Harvester] = 4;
     choam[Unit_Launcher] = 5;
     choam[Unit_EliteLauncher] = 5;
+    choam[Unit_EliteSiegeTank] = 5;
     choam[Unit_MCV] = 2;
     choam[Unit_Ornithopter] = 0;  // Disabled by default (can build from factory but not purchase from starport)
     choam[Unit_Quad] = 5;
@@ -1765,6 +1766,7 @@ void MapEditor::drawMap(ScreenBorder* pScreenborder, bool bCompleteMap) {
             case Unit_RaiderTrike:      objectPicBase = ObjPic_Trike;                                                                                           break;
             case Unit_RocketTrike:      objectPicBase = ObjPic_RocketTrike;                                                                                     break;
             case Unit_EliteLauncher:    objectPicBase = ObjPic_Tank_Base;       objectPicGun = ObjPic_Launcher_Gun;     gunOffset = launcherTurretOffset;       break;
+            case Unit_EliteSiegeTank:   objectPicBase = ObjPic_Siegetank_Base;  objectPicGun = ObjPic_Siegetank_Gun;    gunOffset = siegeTankTurretOffset;      break;
             case Unit_Trooper:          objectPicBase = ObjPic_Trooper;         framesX = 4;    framesY = 3;                                                    break;
             case Unit_Special:          objectPicBase = ObjPic_Devastator_Base; objectPicGun = ObjPic_Devastator_Gun;   gunOffset = devastatorTurretOffset;     break;
             case Unit_Infantry:         objectPicBase = ObjPic_Infantry;         framesX = 4;    framesY = 4;                                                   break;

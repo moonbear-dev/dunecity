@@ -1932,6 +1932,21 @@ GFXManager::GFXManager() {
         SDL_Log("RocketTrikeIconMask.png found — mask companion for RocketTrikeIcon is available");
     }
 
+    // Elite Siege Tank: prefer EliteSiegeTankIcon.png (sidebar slot), fall back to SiegeTank portrait.
+    if (pFileManager->exists("EliteSiegeTankIcon.png")) {
+        auto iconSurf = LoadPNG_RW(pFileManager->openFile("EliteSiegeTankIcon.png").get());
+        if (iconSurf) {
+            auto tex = convertSurfaceToTexture(iconSurf.get());
+            if (tex) {
+                SDL_SetTextureBlendMode(tex.get(), SDL_BLENDMODE_BLEND);
+                smallDetailPicTex[Picture_EliteSiegeTank] = std::move(tex);
+            }
+        }
+    }
+    if (!smallDetailPicTex[Picture_EliteSiegeTank]) {
+        smallDetailPicTex[Picture_EliteSiegeTank] = extractSmallDetailPic("HTANK.WSA");
+    }
+
     // unused: FARTR.WSA, FHARK.WSA, FORDOS.WSA
 
 

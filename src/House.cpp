@@ -692,6 +692,7 @@ StructureBase* House::placeStructure(Uint32 builderID, int itemID, int xPos, int
         case (Structure_Slab1): {
             // Slabs are no normal buildings
             currentGameMap->getTile(xPos, yPos)->setType(Terrain_Slab);
+            currentGameMap->getTile(xPos, yPos)->setRoad(false);
             currentGameMap->getTile(xPos, yPos)->setOwner(getHouseID());
             currentGameMap->viewMap(getHouseID(), xPos, yPos, currentGame->objectData.data[Structure_Slab1][houseID].viewrange);
     //      currentGameMap->getTile(xPos, yPos)->clearTerrain();
@@ -748,6 +749,7 @@ StructureBase* House::placeStructure(Uint32 builderID, int itemID, int xPos, int
                         return;
 
                     t.setType(Terrain_Slab);
+                    t.setRoad(false);
                     t.setOwner(houseID);
                     currentGameMap->viewMap(getHouseID(), t.getLocation().x, t.getLocation().y, currentGame->objectData.data[Structure_Slab4][houseID].viewrange);
                     //pTile->clearTerrain();

@@ -495,6 +495,18 @@ if(APPLE)
         COMMENT "Copying data and config files into app bundle Resources"
     )
 
+    # Copy mods directory into the app bundle
+    if(EXISTS "${CMAKE_SOURCE_DIR}/mods")
+        add_custom_command(
+            TARGET dunecity
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${CMAKE_SOURCE_DIR}/mods"
+                "${BUNDLE_RESOURCES_DIR}/mods"
+            COMMENT "Copying mods into app bundle Resources"
+        )
+    endif()
+
     # Copy imported Micropolis-derived zone sprites into the bundle so they
     # are found by getDuneLegacyDataDir() + "imported_sprites/..." at runtime.
     set(IMPORTED_SPRITES_SRC "${CMAKE_SOURCE_DIR}/imported_sprites")
@@ -545,6 +557,18 @@ else()
             "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/config/"
         COMMENT "Copying config template files to build output"
     )
+
+    # Copy mods directory next to the binary for non-bundle builds
+    if(EXISTS "${CMAKE_SOURCE_DIR}/mods")
+        add_custom_command(
+            TARGET dunecity
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${CMAKE_SOURCE_DIR}/mods"
+                "${CMAKE_BINARY_DIR}/bin/mods"
+            COMMENT "Copying mods to build output"
+        )
+    endif()
 
     # Copy imported zone sprites next to the binary for non-bundle builds
     set(IMPORTED_SPRITES_SRC "${CMAKE_SOURCE_DIR}/imported_sprites")
@@ -633,6 +657,14 @@ if(WIN32)
             DESTINATION .
         )
     endif()
+
+    # Install mods directory (Windows)
+    if(EXISTS "${CMAKE_SOURCE_DIR}/mods")
+        install(
+            DIRECTORY "${CMAKE_SOURCE_DIR}/mods/"
+            DESTINATION mods
+        )
+    endif()
 elseif(NOT APPLE)
     # Linux: use FHS structure
     install(
@@ -640,6 +672,14 @@ elseif(NOT APPLE)
         DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}
         FILES_MATCHING PATTERN "*.*"
     )
+
+    # Install mods directory (Linux)
+    if(EXISTS "${CMAKE_SOURCE_DIR}/mods")
+        install(
+            DIRECTORY "${CMAKE_SOURCE_DIR}/mods/"
+            DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/mods
+        )
+    endif()
 endif()
 
 # Install imported sprite assets (Micropolis-derived civic/zone PNGs).

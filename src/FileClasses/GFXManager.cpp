@@ -1698,17 +1698,22 @@ GFXManager::GFXManager() {
     smallDetailPicTex[Picture_MCV] = extractSmallDetailPic("MCV.WSA");
     smallDetailPicTex[Picture_Ornithopter] = extractSmallDetailPic("ORNI.WSA");
     smallDetailPicTex[Picture_Palace] = extractSmallDetailPic("PALACE.WSA");
-    // DuneCity: Neutral Palace ability icon (Trike & Quad combo)
+    // DuneCity: Neutral Palace ability icon (Trike & Quad spawn action button).
+    // This is separate from the building icon (Picture_Palace) which uses
+    // vanilla PALACE.WSA for all houses.
     if (pFileManager->exists("PalaceTrikeAndQuadIcon.png")) {
         auto iconSurf = LoadPNG_RW(pFileManager->openFile("PalaceTrikeAndQuadIcon.png").get());
         if (iconSurf) {
             auto tex = convertSurfaceToTexture(iconSurf.get());
             if (tex) {
                 SDL_SetTextureBlendMode(tex.get(), SDL_BLENDMODE_BLEND);
-                smallDetailPicTex[Picture_Palace] = std::move(tex);
-                SDL_Log("Loaded Neutral Palace icon from PalaceTrikeAndQuadIcon.png");
+                smallDetailPicTex[Picture_PalaceNeutral] = std::move(tex);
+                SDL_Log("Loaded Neutral Palace ability icon from PalaceTrikeAndQuadIcon.png");
             }
         }
+    }
+    if (!smallDetailPicTex[Picture_PalaceNeutral]) {
+        smallDetailPicTex[Picture_PalaceNeutral] = extractSmallDetailPic("PALACE.WSA");
     }
     // Quad: the neutral Palace activation ability (PalaceInterface) uses
     // Picture_Quad. Prefer the standalone QuadIcon.png in data/ — it ships at
@@ -2131,18 +2136,14 @@ GFXManager::GFXManager() {
     uiGraphic[UI_MentatBackground][HOUSE_FREMEN] = PictureFactory::mapMentatSurfaceToFremen(uiGraphic[UI_MentatBackground][HOUSE_ATREIDES].get());
     uiGraphic[UI_MentatBackground][HOUSE_SARDAUKAR] = PictureFactory::mapMentatSurfaceToSardaukar(uiGraphic[UI_MentatBackground][HOUSE_HARKONNEN].get());
     uiGraphic[UI_MentatBackground][HOUSE_MERCENARY] = PictureFactory::mapMentatSurfaceToMercenary(uiGraphic[UI_MentatBackground][HOUSE_ORDOS].get());
-    // DuneCity: Neutral mentat portrait — use HeraldNeu.png (Chani / neutral herald)
-    // if present, otherwise fall back to Ordos mentat recoloured to neutral palette.
-    // TODO: Investigate Dune II house-selection intro CPS for canonical Chani portrait.
-    if (pFileManager->exists("HeraldNeu.png")) {
-        auto heraldSurf = LoadPNG_RW(pFileManager->openFile("HeraldNeu.png").get());
-        if (heraldSurf) {
-            uiGraphic[UI_MentatBackground][HOUSE_NEUTRAL] = Scaler::defaultDoubleSurface(heraldSurf.get());
-            SDL_Log("Loaded Neutral mentat background from HeraldNeu.png");
-        }
-    }
-    if (!uiGraphic[UI_MentatBackground][HOUSE_NEUTRAL]) {
-        uiGraphic[UI_MentatBackground][HOUSE_NEUTRAL] = PictureFactory::mapMentatSurfaceToNeutral(uiGraphic[UI_MentatBackground][HOUSE_ORDOS].get());
+    // DuneCity: Neutral mentat background — MENTATM.CPS (Chani portrait)
+    if (pFileManager->exists("MENTATM.CPS")) {
+        uiGraphic[UI_MentatBackground][HOUSE_NEUTRAL] =
+            Scaler::defaultDoubleSurface(LoadCPS_RW(pFileManager->openFile("MENTATM.CPS").get()).get());
+    } else {
+        // fallback: remap from Ordos
+        uiGraphic[UI_MentatBackground][HOUSE_NEUTRAL] =
+            PictureFactory::mapMentatSurfaceToNeutral(uiGraphic[UI_MentatBackground][HOUSE_ORDOS].get());
     }
 
     uiGraphic[UI_MentatBackgroundBene][HOUSE_HARKONNEN] = Scaler::defaultDoubleSurface(LoadCPS_RW(pFileManager->openFile("MENTATM.CPS").get()).get());
@@ -2492,12 +2493,16 @@ GFXManager::GFXManager() {
     animation[Anim_MercenaryMouth] = PictureFactory::mapMentatAnimationToMercenary(animation[Anim_OrdosMouth].get());
     animation[Anim_MercenaryShoulder] = PictureFactory::mapMentatAnimationToMercenary(animation[Anim_OrdosShoulder].get());
     animation[Anim_MercenaryRing] = PictureFactory::mapMentatAnimationToMercenary(animation[Anim_OrdosRing].get());
-    // House Neutral uses the Ordos (female) mentat shape remapped to neutral's
-    // own grey house colour.
-    animation[Anim_NeutralEyes] = PictureFactory::mapMentatAnimationToNeutral(animation[Anim_OrdosEyes].get());
-    animation[Anim_NeutralMouth] = PictureFactory::mapMentatAnimationToNeutral(animation[Anim_OrdosMouth].get());
-    animation[Anim_NeutralShoulder] = PictureFactory::mapMentatAnimationToNeutral(animation[Anim_OrdosShoulder].get());
-    animation[Anim_NeutralRing] = PictureFactory::mapMentatAnimationToNeutral(animation[Anim_OrdosRing].get());
+    // DuneCity: Neutral mentat animations from MENSHPM.SHP (Chani)
+    animation[Anim_NeutralEyes] = menshpm->getAnimation(0,4,true,true);
+    animation[Anim_NeutralEyes]->setFrameRate(0.5);
+    animation[Anim_NeutralMouth] = menshpm->getAnimation(5,9,true,true,true);
+    animation[Anim_NeutralMouth]->setFrameRate(5.0);
+    animation[Anim_NeutralShoulder] = menshpm->getAnimation(10,10,true,true);
+    animation[Anim_NeutralShoulder]->setFrameRate(1.0);
+    animation[Anim_NeutralRing] = menshpm->getAnimation(11,14,true,true,true);
+    animation[Anim_NeutralRing]->setNumLoops(1);
+    animation[Anim_NeutralRing]->setFrameRate(6.0);
 
     animation[Anim_BeneEyes] = menshpm->getAnimation(0,4,true,true);
     if(animation[Anim_BeneEyes] != nullptr) {

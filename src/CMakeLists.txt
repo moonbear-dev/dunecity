@@ -650,6 +650,11 @@ if(WIN32)
         FILES "${DATA_DIR}/Tornie_AdvancedWindtrap_gfx.png"
         DESTINATION .
     )
+    # Install Neutral mentat assets (MENTATM.CPS background, MENSHPM.SHP animations)
+    install(
+        FILES "${DATA_DIR}/MENTATM.CPS" "${DATA_DIR}/MENSHPM.SHP"
+        DESTINATION .
+    )
     # Install Tornie.PAK (bundled Neutral-house art assets)
     if(EXISTS "${DATA_DIR}/Tornie.PAK")
         install(

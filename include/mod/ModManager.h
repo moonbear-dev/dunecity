@@ -203,6 +203,7 @@ public:
      * Same config files as vanilla, but mod.ini sets `Enables City Mode = true`.
      */
     void seedDunecityFromDefaults();
+    void seedTornieFromDefaults();
 
     /**
      * \return true if the dunecity mod is missing required files or has

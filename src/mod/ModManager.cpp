@@ -85,7 +85,12 @@ void ModManager::initialize() {
     if (!modExists(DUNECITY_MOD_NAME) || dunecityNeedsReseed()) {
         seedDunecityFromDefaults();
     }
-    
+
+    // Seed Tornie mod if not present
+    if (!modExists("Tornie")) {
+        seedTornieFromDefaults();
+    }
+
     // Load active mod from file
     loadActiveMod();
     
@@ -812,6 +817,31 @@ void ModManager::seedDunecityFromDefaults() {
     writeModInfo(dunecityPath, info);
 
     SDL_Log("ModManager: Dunecity mod seeded successfully");
+}
+
+void ModManager::seedTornieFromDefaults() {
+    SDL_Log("ModManager: Seeding Tornie mod from bundled install...");
+
+    static const char* TORNIE_MOD_NAME = "Tornie";
+    std::string tornie_dst = getModPath(TORNIE_MOD_NAME);
+    std::string tornie_src = getDuneLegacyDataDir() + "/mods/Tornie";
+
+    // Check bundled source exists
+    if (!existsFile(tornie_src + "/" + MOD_INI_FILE) &&
+        !existsFile(tornie_src + "/ObjectData.ini")) {
+        SDL_Log("ModManager: Warning - bundled Tornie mod not found at %s", tornie_src.c_str());
+        return;
+    }
+
+    // Recursively copy bundled mods/Tornie -> user mods/Tornie
+    try {
+        std::filesystem::copy(tornie_src, tornie_dst,
+            std::filesystem::copy_options::recursive |
+            std::filesystem::copy_options::skip_existing);
+        SDL_Log("ModManager: Tornie mod seeded successfully from %s", tornie_src.c_str());
+    } catch (const std::exception& e) {
+        SDL_Log("ModManager: Warning - Tornie mod seed failed: %s", e.what());
+    }
 }
 
 bool ModManager::dunecityNeedsReseed() const {

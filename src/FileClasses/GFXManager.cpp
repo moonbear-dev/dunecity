@@ -3093,7 +3093,6 @@ sdl2::surface_ptr GFXManager::generateWindtrapAnimationFrames(SDL_Surface* windt
 
 
 sdl2::surface_ptr GFXManager::generateAdvancedWindtrapAnimationFrames(SDL_Surface* basePic) const {
-    int windtrapColorQ = 255 / ((NUM_WINDTRAP_ANIMATIONS / 2) - 2);
     int fw = basePic->w;
     int fh = basePic->h;
 
@@ -3110,22 +3109,28 @@ sdl2::surface_ptr GFXManager::generateAdvancedWindtrapAnimationFrames(SDL_Surfac
         SDL_BlitSurface(basePic, nullptr, returnPic.get(), &dst);
     }
 
-    // Detect the "light pixel": scan for brightest blue-dominant pixel
+    // Detect the "gem pixel": find the darkest non-transparent pixel (smallest R+G+B sum)
     int lightX = -1, lightY = -1;
     {
         SDL_LockSurface(basePic);
-        for (int y = 0; y < fh && lightX < 0; y++) {
-            for (int x = 0; x < fw && lightX < 0; x++) {
+        int minBrightness = 999;
+        for (int y = 0; y < fh; y++) {
+            for (int x = 0; x < fw; x++) {
                 Uint8* p = (Uint8*)basePic->pixels + y * basePic->pitch + x * basePic->format->BytesPerPixel;
                 Uint8 r, g, b, a;
                 SDL_GetRGBA(*(Uint32*)p, basePic->format, &r, &g, &b, &a);
-                if (b > 180 && b > (int)r + 40 && b > (int)g + 40 && a > 128) {
-                    lightX = x; lightY = y;
+                if (a > 128) {
+                    int brightness = (int)r + (int)g + (int)b;
+                    if (brightness < minBrightness) {
+                        minBrightness = brightness;
+                        lightX = x;
+                        lightY = y;
+                    }
                 }
             }
         }
         SDL_UnlockSurface(basePic);
-        if (lightX < 0) { lightX = fw / 4; lightY = fh / 4; }
+        if (lightX < 0) { lightX = fw / 2; lightY = fh / 2; }
     }
 
     // Animation frames
@@ -3134,15 +3139,21 @@ sdl2::surface_ptr GFXManager::generateAdvancedWindtrapAnimationFrames(SDL_Surfac
     for (int i = 0; i < NUM_WINDTRAP_ANIMATIONS; i++) {
         SDL_BlitSurface(basePic, nullptr, returnPic.get(), &dest);
 
-        // Compute windtrap cycle color (same math as vanilla)
+        // Compute pink/magenta pulse color
         SDL_Color wc;
+        float pulse;
         if (i < NUM_WINDTRAP_ANIMATIONS / 2) {
-            int val = i * windtrapColorQ;
-            wc = { (Uint8)std::min(80, val), (Uint8)std::min(80, val), (Uint8)std::min(255, val), 255 };
+            pulse = (float)i / (NUM_WINDTRAP_ANIMATIONS / 2);  // 0→1
         } else {
-            int val = (i - NUM_WINDTRAP_ANIMATIONS / 2) * windtrapColorQ;
-            wc = { (Uint8)std::max(0, 80 - val), (Uint8)std::max(0, 80 - val), (Uint8)std::max(0, 255 - val), 255 };
+            pulse = 1.0f - (float)(i - NUM_WINDTRAP_ANIMATIONS / 2) / (NUM_WINDTRAP_ANIMATIONS / 2);  // 1→0
         }
+        // Pink: R=200..255, G=0..80, B=160..220
+        wc = {
+            (Uint8)(200 + (int)(55 * pulse)),
+            (Uint8)(int)(80 * pulse),
+            (Uint8)(160 + (int)(60 * pulse)),
+            255
+        };
 
         // Overdraw the light pixel (3×3 block) with cycle color
         Uint32 lightCol = SDL_MapRGBA(returnPic->format, wc.r, wc.g, wc.b, 255);

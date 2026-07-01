@@ -24,6 +24,8 @@ ENTRIES = [
     "RocketTrikeMask.png",
     "Tornie_AdvancedWindtrap_gfx.png",
     "Tornie_AdvancedWindtrap_icon.png",
+    "Tornie_SpiceRed.png",
+    "Tornie_SpiceGreen.png",
 ]
 
 def main():

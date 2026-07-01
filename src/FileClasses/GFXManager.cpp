@@ -296,7 +296,7 @@ GFXManager::GFXManager() {
     // DuneCity: Flame Tank (Tornie mod) — palette-indexed 8-frame strip from Tornie.PAK.
     // House tinting uses luminance-based remap: each red palette index is remapped to
     // the house anchor colour scaled by relative luminance.
-    if(ModManager::instance().getActiveModName() == "Tornie" && pFileManager->exists("FlameTank.png")) {
+    if(pFileManager->exists("FlameTank.png")) {
         auto ftRaw = LoadPNG_RW(pFileManager->openFile("FlameTank.png").get());
         if(ftRaw) {
             SDL_Surface* raw = ftRaw.get();
@@ -339,20 +339,45 @@ GFXManager::GFXManager() {
                     }
 
                     objPic[ObjPic_FlameTank][h][0] = std::move(copy);
+
+                    // Convert palette surface to RGBA and make black pixels
+                    // (palette index 2 = background) fully transparent.
+                    SDL_Surface* palSurf = objPic[ObjPic_FlameTank][h][0].get();
+                    if(palSurf) {
+                        sdl2::surface_ptr rgba{ SDL_ConvertSurfaceFormat(palSurf, SDL_PIXELFORMAT_RGBA32, 0) };
+                        if(rgba) {
+                            SDL_LockSurface(rgba.get());
+                            Uint32* pix = static_cast<Uint32*>(rgba->pixels);
+                            for(int i = 0; i < rgba->w * rgba->h; ++i) {
+                                Uint8 r, g, b, a;
+                                SDL_GetRGBA(pix[i], rgba->format, &r, &g, &b, &a);
+                                if(r == 0 && g == 0 && b == 0) {
+                                    pix[i] = SDL_MapRGBA(rgba->format, 0, 0, 0, 0);
+                                }
+                            }
+                            SDL_UnlockSurface(rgba.get());
+                            objPic[ObjPic_FlameTank][h][0] = std::move(rgba);
+                        }
+                    }
+
+                    // Scale RGBA surface for zoom levels
                     for(int z = 1; z < NUM_ZOOMLEVEL; z++) {
                         SDL_Surface* src0 = objPic[ObjPic_FlameTank][h][0].get();
                         if(!src0) continue;
-                        sdl2::surface_ptr zs{SDL_CreateRGBSurface(0, src0->w*(z+1), src0->h*(z+1),
-                            src0->format->BitsPerPixel, 0,0,0,0)};
-                        if(zs && src0->format->palette) {
-                            SDL_SetPaletteColors(zs->format->palette, src0->format->palette->colors, 0, src0->format->palette->ncolors);
-                            SDL_BlitScaled(src0, nullptr, zs.get(), nullptr);
-                            objPic[ObjPic_FlameTank][h][z] = std::move(zs);
+                        sdl2::surface_ptr dst{ SDL_CreateRGBSurface(0,
+                            src0->w * (z+1), src0->h * (z+1),
+                            src0->format->BitsPerPixel,
+                            src0->format->Rmask, src0->format->Gmask,
+                            src0->format->Bmask, src0->format->Amask) };
+                        if(dst) {
+                            SDL_BlitScaled(src0, nullptr, dst.get(), nullptr);
+                            objPic[ObjPic_FlameTank][h][z] = std::move(dst);
                         }
                     }
                 }
             }
         }
+        SDL_Log("GFXManager: FlameTank sprite loaded OK");
     }
 
     // DuneCity: the Neutral Launcher reuses the standard Launcher body (tank
@@ -1659,6 +1684,7 @@ GFXManager::GFXManager() {
                                      || id == ObjPic_AdvancedWindTrap
                                      || id == ObjPic_CornerFlag
                                      || id == ObjPic_Star
+                                     || id == ObjPic_FlameTank
                                      // RocketTrike is truecolor only when the
                                      // data/RocketTrike.png override is loaded
                                      // (32-bit); the SHP fallback stays 8-bit.

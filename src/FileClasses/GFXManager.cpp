@@ -1363,49 +1363,6 @@ GFXManager::GFXManager() {
                     }
                 }
 
-                // Draw house-colour cross/stars at top-left AND top-right of each
-                // house's AdvancedWindTrap sprite so it's identifiable in-game.
-                {
-                    const SDL_Color houseStarColor[NUM_HOUSES] = {
-                        {180,  20,  20, 255},   // HOUSE_HARKONNEN
-                        { 20,  80, 180, 255},   // HOUSE_ATREIDES
-                        { 20, 160,  20, 255},   // HOUSE_ORDOS
-                        {200, 140,  20, 255},   // HOUSE_FREMEN
-                        { 80,  80, 180, 255},   // HOUSE_SARDAUKAR
-                        {200, 140,  20, 255},   // HOUSE_MERCENARY
-                        {128, 128, 128, 255},   // HOUSE_NEUTRAL (grey)
-                    };
-                    // Cross arm length per zoom: z0→5, z1→9, z2→13
-                    const int starSize[NUM_ZOOMLEVEL] = {5, 9, 13};
-                    const int inset = 2;
-
-                    for (int h = 0; h < NUM_HOUSES; h++) {
-                        for (int z = 0; z < NUM_ZOOMLEVEL; z++) {
-                            auto* surf = objPic[ObjPic_AdvancedWindTrap][h][z].get();
-                            if (!surf) continue;
-
-                            const int sz = starSize[z];
-                            const int mid = sz / 2;
-                            const int frameW = surf->w / NUM_WINDTRAP_ANIMATIONS_PER_ROW;
-                            const Uint32 col = SDL_MapRGBA(surf->format,
-                                houseStarColor[h].r, houseStarColor[h].g,
-                                houseStarColor[h].b, 255);
-
-                            // Top-left star
-                            SDL_Rect hBar = {inset, inset + mid, sz, 1};
-                            SDL_FillRect(surf, &hBar, col);
-                            SDL_Rect vBar = {inset + mid, inset, 1, sz};
-                            SDL_FillRect(surf, &vBar, col);
-
-                            // Top-right star (mirrored at right edge of first frame)
-                            int rightX = frameW - inset - sz;
-                            SDL_Rect hBar2 = {rightX, inset + mid, sz, 1};
-                            SDL_FillRect(surf, &hBar2, col);
-                            SDL_Rect vBar2 = {rightX + mid, inset, 1, sz};
-                            SDL_FillRect(surf, &vBar2, col);
-                        }
-                    }
-                }
             } else {
                 SDL_Log("Super power plant sprite not found; AdvancedWindTrap will fall back to Windtrap art");
                 SDL_Surface* fallback = objPic[ObjPic_Windtrap][HOUSE_HARKONNEN][0].get();

@@ -878,18 +878,25 @@ ObjectBase* ObjectBase::createObject(int itemID, House* Owner, bool byScenario) 
                 case HOUSE_HARKONNEN:       newObject = new Devastator(Owner); break;
                 case HOUSE_ATREIDES:        newObject = new SonicTank(Owner); break;
                 case HOUSE_ORDOS:           newObject = new Deviator(Owner); break;
-                case HOUSE_FREMEN:
                 case HOUSE_SARDAUKAR:
+                    // Sardaukar: always random SonicTank or Devastator (default and Tornie mod)
+                    if(currentGame->randomGen.randBool()) {
+                        newObject = new SonicTank(Owner);
+                    } else {
+                        newObject = new Devastator(Owner);
+                    }
+                    break;
+                case HOUSE_FREMEN:
                 case HOUSE_MERCENARY: {
                     if (ModManager::instance().getActiveModName() == "Tornie") {
-                        // Tornie mod: Mercenary Devastator and Fremen SonicTank both replaced by Deviator
+                        // Tornie mod: Fremen and Mercenary specials use Deviator
                         newObject = new Deviator(Owner);
                     } else {
-                        // Default: randomly Deviator OR Launcher
-                        if (currentGame->randomGen.randBool()) {
-                            newObject = new Deviator(Owner);
+                        // Default: random SonicTank or Devastator (original behaviour)
+                        if(currentGame->randomGen.randBool()) {
+                            newObject = new SonicTank(Owner);
                         } else {
-                            newObject = new Launcher(Owner);
+                            newObject = new Devastator(Owner);
                         }
                     }
                 } break;

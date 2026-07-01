@@ -2574,7 +2574,11 @@ GFXManager::GFXManager() {
                     if (!doubled) { ok = false; break; }
                     anim->addFrame(std::move(doubled), false, false);
                 } else {
-                    anim->addFrame(std::move(surf), true, false); // bDoublePic=true (8-bit path)
+                    // 8-bit with custom quantized palette — force NN to avoid
+                    // Scale2x palette-index comparison producing tiling garbage
+                    auto doubled = Scaler::doubleSurfaceNN(surf.get());
+                    if (!doubled) { ok = false; break; }
+                    anim->addFrame(std::move(doubled), false, false);
                 }
             }
             if (!ok) return nullptr;

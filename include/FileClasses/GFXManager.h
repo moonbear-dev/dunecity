@@ -129,8 +129,8 @@ typedef enum {
     ObjPic_AdvancedWindTrap,  ///< DuneCity: custom super power plant sprite
     ObjPic_CornerFlag,        ///< DuneCity: animated decorative flag at map corners
     ObjPic_FlameTank,         ///< DuneCity: Flame Tank sprite (Tornie mod, 8-dir palette-indexed strip from Tornie.PAK)
-    ObjPic_DeviatorCustom,    ///< DuneCity: Tornie Deviator sprite (RGBA strip from Tornie.PAK)
-    ObjPic_EliteSiegeTankCustom, ///< DuneCity: Tornie Elite Siege Tank sprite (RGBA strip from Tornie.PAK)
+    ObjPic_DeviatorCustom,       ///< DuneCity: Tornie Deviator sprite (8-bit indexed strip from Tornie.PAK)
+    ObjPic_EliteSiegeTankCustom, ///< DuneCity: Tornie Elite Siege Tank sprite (8-bit indexed strip from Tornie.PAK)
     NUM_OBJPICS
 } ObjPic_enum;
 

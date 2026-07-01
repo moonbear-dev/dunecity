@@ -26,6 +26,11 @@ static FILE* crashLogFile = nullptr;
 static const char* crashLogPath = nullptr;
 static void* registeredGame = nullptr;
 
+#ifdef _WIN32
+// Forward declaration - defined at end of file
+static void WriteMiniDump(EXCEPTION_POINTERS* ExceptionInfo);
+#endif
+
 /**
  * Get current timestamp as string
  * Signal-safe: uses static buffer, no allocations

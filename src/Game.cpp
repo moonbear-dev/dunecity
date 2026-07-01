@@ -4763,8 +4763,8 @@ void Game::drawCornerFlags() {
     if (!flagTex) return;
 
     const int zoomedTileSize = world2zoomedWorld(TILESIZE);
-    // Advance through 3 animation frames at ~8 game cycles each.
-    const int frame = (gameCycleCount / 8) % 3;
+    // Advance through 2 animation frames at ~8 game cycles each.
+    const int frame = (gameCycleCount / 8) % 2;
 
     const int mapW = currentGameMap->getSizeX();
     const int mapH = currentGameMap->getSizeY();
@@ -4779,8 +4779,9 @@ void Game::drawCornerFlags() {
     for (const auto& c : corners) {
         const int screenX = screenborder->world2screenX(c[0] * TILESIZE);
         const int screenY = screenborder->world2screenY(c[1] * TILESIZE);
-        SDL_Rect src = { frame * zoomedTileSize, 0, zoomedTileSize, zoomedTileSize };
-        SDL_Rect dst = { screenX, screenY, zoomedTileSize, zoomedTileSize };
+        const int flagPx = 7 * (currentZoomlevel + 1);
+        SDL_Rect src = { frame * flagPx, 0, flagPx, flagPx };
+        SDL_Rect dst = { screenX, screenY, flagPx, flagPx };
         SDL_RenderCopy(renderer, flagTex, &src, &dst);
     }
 }

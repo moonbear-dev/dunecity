@@ -9,6 +9,8 @@
 #include <mmath.h>
 
 #include <GUI/ObjectInterfaces/WindTrapInterface.h>
+#include <Definitions.h>
+#include <misc/DrawingRectHelper.h>
 
 AdvancedWindTrap::AdvancedWindTrap(House* newOwner) : StructureBase(newOwner) {
     AdvancedWindTrap::init();
@@ -29,10 +31,10 @@ void AdvancedWindTrap::init() {
 
     graphicID = ObjPic_AdvancedWindTrap;
     graphic = pGFXManager->getObjPic(graphicID, getOwner()->getHouseID());
-    numImagesX = NUM_WINDTRAP_ANIMATIONS_PER_ROW;
-    numImagesY = (2 + NUM_WINDTRAP_ANIMATIONS + NUM_WINDTRAP_ANIMATIONS_PER_ROW - 1) / NUM_WINDTRAP_ANIMATIONS_PER_ROW;
-    firstAnimFrame = 2;
-    lastAnimFrame = 2 + NUM_WINDTRAP_ANIMATIONS - 1;
+    numImagesX = 3;  // actual atlas width (3 identical frames); was incorrectly NUM_WINDTRAP_ANIMATIONS_PER_ROW
+    numImagesY = 1;
+    firstAnimFrame = 0;
+    lastAnimFrame = 2;
 }
 
 AdvancedWindTrap::~AdvancedWindTrap() = default;
@@ -42,7 +44,7 @@ bool AdvancedWindTrap::update() {
 
     if(bResult) {
         if(justPlacedTimer <= 0) {
-            curAnimFrame = 2 + ((currentGame->getGameCycleCount()/8) % NUM_WINDTRAP_ANIMATIONS);
+            curAnimFrame = (currentGame->getGameCycleCount()/8) % 3;
         }
 
         auto* citySim = currentGame->getCitySimulation();
@@ -52,6 +54,36 @@ bool AdvancedWindTrap::update() {
     }
 
     return bResult;
+}
+
+void AdvancedWindTrap::blitToScreen() {
+    // Draw the building via the base class (structure sprite + smoke)
+    StructureBase::blitToScreen();
+
+    if (fogged) return;
+
+    // Draw animated house-colored flags at top-left and bottom-right corners
+    SDL_Texture* flagTex = pGFXManager->getZoomedObjPic(ObjPic_CornerFlag, getOwner()->getHouseID(), currentZoomlevel);
+    if (!flagTex) return;
+
+    const int flagPx = 7 * (currentZoomlevel + 1);
+    const int flagFrame = (currentGame->getGameCycleCount() / STRUCTURE_ANIMATIONTIMER) % 2;
+
+    // Building screen rect (same calculation as StructureBase::blitToScreen)
+    SDL_Rect buildDest = calcSpriteDrawingRect(graphic[currentZoomlevel],
+                                                screenborder->world2screenX(lround(realX)),
+                                                screenborder->world2screenY(lround(realY)),
+                                                numImagesX, numImagesY);
+
+    SDL_Rect flagSrc = { flagFrame * flagPx, 0, flagPx, flagPx };
+
+    // Top-left corner
+    SDL_Rect tlDst = { buildDest.x, buildDest.y, flagPx, flagPx };
+    SDL_RenderCopy(renderer, flagTex, &flagSrc, &tlDst);
+
+    // Bottom-right corner
+    SDL_Rect brDst = { buildDest.x + buildDest.w - flagPx, buildDest.y + buildDest.h - flagPx, flagPx, flagPx };
+    SDL_RenderCopy(renderer, flagTex, &flagSrc, &brDst);
 }
 
 void AdvancedWindTrap::setHealth(FixPoint newHealth) {

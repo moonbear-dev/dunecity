@@ -177,7 +177,7 @@ static const Coord objPicTiles[] {
     { 1, 1 },   // ObjPic_Hospital (single cell, 2x2 footprint, auto-placed on residential)
     { 1, 1 },   // ObjPic_Church   (single cell, 2x2 footprint, auto-placed on residential)
     { NUM_WINDTRAP_ANIMATIONS_PER_ROW, (2+NUM_WINDTRAP_ANIMATIONS+NUM_WINDTRAP_ANIMATIONS_PER_ROW-1)/NUM_WINDTRAP_ANIMATIONS_PER_ROW },   // ObjPic_AdvancedWindTrap (windtrap-style animation atlas)
-    { 3, 1 },   // ObjPic_CornerFlag (3 animation frames; 1x1 footprint)
+    { 2, 1 },   // ObjPic_CornerFlag (2 animation frames from Tornie_CornerFlagNew.png; 7x7 each)
 };
 
 
@@ -1363,61 +1363,8 @@ GFXManager::GFXManager() {
                     }
                 }
 
-                // Zone-colour corner markers: 3 stacked rectangles at top-left and bottom-right
-                // of every animation frame. Colors = three palette shades of the building's house.
-                {
-                    const int numFrameRows = (2 + NUM_WINDTRAP_ANIMATIONS + NUM_WINDTRAP_ANIMATIONS_PER_ROW - 1)
-                                             / NUM_WINDTRAP_ANIMATIONS_PER_ROW;
-
-                    for (int h = 0; h < NUM_HOUSES; h++) {
-                        for (int z = 0; z < NUM_ZOOMLEVEL; z++) {
-                            auto* surf = objPic[ObjPic_AdvancedWindTrap][h][z].get();
-                            if (!surf) continue;
-
-                            const int fw = surf->w / NUM_WINDTRAP_ANIMATIONS_PER_ROW;
-                            const int fh = surf->h / numFrameRows;
-                            const int scale = std::max(1, fw / (3 * D2_TILESIZE)); // 1/2/3 for z=0/1/2
-
-                            const int markerW  = 4 * scale;
-                            const int markerH  = 3 * scale;
-                            const int gap      = 1 * scale;
-                            const int inset    = 2 * scale;
-                            const int totalH   = 3 * markerH + 2 * gap;
-
-                            SDL_Color c1 = palette[houseToPaletteIndex[h] + 1];
-                            SDL_Color c2 = palette[houseToPaletteIndex[h] + 2];
-                            SDL_Color c3 = palette[houseToPaletteIndex[h] + 3];
-                            Uint32 col1 = SDL_MapRGBA(surf->format, c1.r, c1.g, c1.b, 255);
-                            Uint32 col2 = SDL_MapRGBA(surf->format, c2.r, c2.g, c2.b, 255);
-                            Uint32 col3 = SDL_MapRGBA(surf->format, c3.r, c3.g, c3.b, 255);
-
-                            for (int row = 0; row < numFrameRows; row++) {
-                                for (int col = 0; col < NUM_WINDTRAP_ANIMATIONS_PER_ROW; col++) {
-                                    int fx = col * fw;
-                                    int fy = row * fh;
-
-                                    // Top-left: three stacked rectangles
-                                    SDL_Rect tl0 = { fx + inset, fy + inset, markerW, markerH };
-                                    SDL_Rect tl1 = { fx + inset, fy + inset + markerH + gap, markerW, markerH };
-                                    SDL_Rect tl2 = { fx + inset, fy + inset + 2*(markerH + gap), markerW, markerH };
-                                    SDL_FillRect(surf, &tl0, col1);
-                                    SDL_FillRect(surf, &tl1, col2);
-                                    SDL_FillRect(surf, &tl2, col3);
-
-                                    // Bottom-right: three stacked rectangles
-                                    int brX = fx + fw - inset - markerW;
-                                    int brY = fy + fh - inset - totalH;
-                                    SDL_Rect br0 = { brX, brY, markerW, markerH };
-                                    SDL_Rect br1 = { brX, brY + markerH + gap, markerW, markerH };
-                                    SDL_Rect br2 = { brX, brY + 2*(markerH + gap), markerW, markerH };
-                                    SDL_FillRect(surf, &br0, col1);
-                                    SDL_FillRect(surf, &br1, col2);
-                                    SDL_FillRect(surf, &br2, col3);
-                                }
-                            }
-                        }
-                    }
-                }
+                // Zone-colour corner markers removed — replaced by animated ObjPic_CornerFlag
+                // drawn at runtime in AdvancedWindTrap::blitToScreen().
 
             } else {
                 SDL_Log("Super power plant sprite not found; AdvancedWindTrap will fall back to Windtrap art");
@@ -1477,100 +1424,73 @@ GFXManager::GFXManager() {
     } // end city-sprite loading scope (binDir, srcDirEnv, scaleRGBASurface)
 
     // ----- DuneCity corner flag sprite -----
-    // Tornie_CornerFlag.png: 48x16 RGBA strip with 3 animation frames (each 16x16).
-    // Displayed at the 4 map corner tiles; no gameplay footprint.
+    // Tornie_CornerFlagNew.png: 14x7 RGBA strip with 2 animation frames (each 7x7).
+    // Used at map corners (Game::drawCornerFlags) and AdvancedWindTrap building corners.
+    // Per-house tinting: remap source Harkonnen colors to each house's palette shades.
     {
-        const int numFrames = 3;
-        const int frameW = D2_TILESIZE;
-        const int frameH = D2_TILESIZE;
-        const int atlasW = numFrames * frameW;
-        sdl2::surface_ptr flagAtlas{ SDL_CreateRGBSurface(0, atlasW, frameH,
-            SCREEN_BPP, RMASK, GMASK, BMASK, AMASK) };
-        if (flagAtlas) {
-            SDL_FillRect(flagAtlas.get(), nullptr, SDL_MapRGBA(flagAtlas->format, 0, 0, 0, 0));
-        }
+        const int numFrames = 2;
+        const int frameSize = 7;
 
         sdl2::surface_ptr flagSrc;
-        if (pFileManager->exists("Tornie_CornerFlag.png")) {
-            flagSrc = LoadPNG_RW(pFileManager->openFile("Tornie_CornerFlag.png").get());
+        if (pFileManager->exists("Tornie_CornerFlagNew.png")) {
+            flagSrc = LoadPNG_RW(pFileManager->openFile("Tornie_CornerFlagNew.png").get());
         }
 
-        if (flagAtlas && flagSrc) {
-            // PNG is already a 3-frame atlas (48x16); blit it directly, scaling if needed.
-            SDL_SetSurfaceBlendMode(flagSrc.get(), SDL_BLENDMODE_NONE);
-            const int srcFrameW = flagSrc->w / numFrames;
-            for (int f = 0; f < numFrames; ++f) {
-                SDL_Rect srcR{ f * srcFrameW, 0, srcFrameW, flagSrc->h };
-                SDL_Rect dstR{ f * frameW, 0, frameW, frameH };
-                SDL_BlitScaled(flagSrc.get(), &srcR, flagAtlas.get(), &dstR);
-            }
-        } else if (flagAtlas) {
-            // Programmatic fallback: grey pole + cloth waving in 3 positions.
-            const Uint32 transparent = SDL_MapRGBA(flagAtlas->format, 0, 0, 0, 0);
-            const Uint32 poleColor   = SDL_MapRGBA(flagAtlas->format, 120, 120, 120, 255);
-            const Uint32 flagColor   = SDL_MapRGBA(flagAtlas->format, 155, 155, 165, 255);
-            const Uint32 flagHigh    = SDL_MapRGBA(flagAtlas->format, 185, 185, 200, 255);
+        if (flagSrc) {
+            sdl2::surface_ptr flagRGBA{ SDL_ConvertSurfaceFormat(flagSrc.get(), SDL_PIXELFORMAT_RGBA32, 0) };
+            if (!flagRGBA) flagRGBA = std::move(flagSrc);
 
-            auto setPixel = [&](SDL_Surface* s, int x, int y, Uint32 col) {
-                if (x < 0 || x >= s->w || y < 0 || y >= s->h) return;
-                Uint32* p = reinterpret_cast<Uint32*>(static_cast<Uint8*>(s->pixels) + y * s->pitch + x * 4);
-                *p = col;
-            };
+            // Source Harkonnen colors (exact match)
+            const Uint32 srcLight = SDL_MapRGBA(flagRGBA->format, 214, 65, 48, 255);
+            const Uint32 srcDark  = SDL_MapRGBA(flagRGBA->format, 153, 44, 32, 255);
+            const Uint32 srcBlack = SDL_MapRGBA(flagRGBA->format, 0, 0, 0, 255);
+            const Uint32 dstPole  = SDL_MapRGBA(flagRGBA->format, 30, 30, 30, 255);
 
-            // y-offset for flag cloth top edge per frame: raised, level, lowered
-            const int flagTopY[3] = { 1, 2, 3 };
-            const int flagHeight = 7;
+            for (int h = 0; h < NUM_HOUSES; h++) {
+                SDL_Color cLight = palette[houseToPaletteIndex[h] + 0];
+                SDL_Color cDark  = palette[houseToPaletteIndex[h] + 2];
+                Uint32 dstLight = SDL_MapRGBA(flagRGBA->format, cLight.r, cLight.g, cLight.b, 255);
+                Uint32 dstDark  = SDL_MapRGBA(flagRGBA->format, cDark.r, cDark.g, cDark.b, 255);
 
-            for (int f = 0; f < numFrames; ++f) {
-                const int ox = f * frameW;
-                // Pole
-                for (int y = 0; y < frameH; ++y) {
-                    setPixel(flagAtlas.get(), ox + 0, y, poleColor);
-                    setPixel(flagAtlas.get(), ox + 1, y, poleColor);
-                }
-                // Flag cloth
-                const int topY = flagTopY[f];
-                for (int row = 0; row < flagHeight; ++row) {
-                    const int y = topY + row;
-                    if (y < 0 || y >= frameH) continue;
-                    const Uint32 col = (row == 0 || row == flagHeight - 1) ? flagColor : flagHigh;
-                    for (int col_x = 2; col_x <= 12; ++col_x) {
-                        setPixel(flagAtlas.get(), ox + col_x, y, col);
-                    }
-                    // Taper tip on last 2 cols for middle rows only
-                    if (row >= 2 && row <= flagHeight - 3) {
-                        setPixel(flagAtlas.get(), ox + 13, y, flagColor);
+                // Zoom 0: tinted 14x7 atlas (2 frames × 7x7)
+                sdl2::surface_ptr atlas{ SDL_CreateRGBSurface(0, numFrames * frameSize, frameSize,
+                    flagRGBA->format->BitsPerPixel,
+                    flagRGBA->format->Rmask, flagRGBA->format->Gmask,
+                    flagRGBA->format->Bmask, flagRGBA->format->Amask) };
+                if (!atlas) continue;
+                SDL_FillRect(atlas.get(), nullptr, SDL_MapRGBA(atlas->format, 0, 0, 0, 0));
+
+                SDL_LockSurface(flagRGBA.get());
+                SDL_LockSurface(atlas.get());
+                for (int y = 0; y < frameSize && y < flagRGBA->h; y++) {
+                    const Uint32* srcRow = reinterpret_cast<const Uint32*>(
+                        static_cast<const Uint8*>(flagRGBA->pixels) + y * flagRGBA->pitch);
+                    Uint32* dstRow = reinterpret_cast<Uint32*>(
+                        static_cast<Uint8*>(atlas->pixels) + y * atlas->pitch);
+                    for (int x = 0; x < numFrames * frameSize && x < flagRGBA->w; x++) {
+                        Uint32 px = srcRow[x];
+                        if (px == srcLight)      dstRow[x] = dstLight;
+                        else if (px == srcDark)  dstRow[x] = dstDark;
+                        else if (px == srcBlack) dstRow[x] = dstPole;
+                        else                     dstRow[x] = px;
                     }
                 }
-            }
-            (void)transparent;
-        }
+                SDL_UnlockSurface(atlas.get());
+                SDL_UnlockSurface(flagRGBA.get());
 
-        if (flagAtlas) {
-            // scaleRGBASurface lambda is only in scope inside the city-sprite block above;
-            // replicate the scale logic here using SDL_BlitScaled into a fresh RGBA surface.
-            auto scaleFlag = [](SDL_Surface* src, int factor) -> sdl2::surface_ptr {
-                if (!src || factor <= 1) return sdl2::surface_ptr{};
-                sdl2::surface_ptr dst{ SDL_CreateRGBSurface(0, src->w * factor, src->h * factor,
-                    src->format->BitsPerPixel,
-                    src->format->Rmask, src->format->Gmask, src->format->Bmask, src->format->Amask) };
-                if (!dst) return dst;
-                SDL_SetSurfaceBlendMode(src, SDL_BLENDMODE_NONE);
-                SDL_BlitScaled(src, nullptr, dst.get(), nullptr);
-                return dst;
-            };
+                objPic[ObjPic_CornerFlag][h][0] = std::move(atlas);
 
-            objPic[ObjPic_CornerFlag][HOUSE_HARKONNEN][0] = std::move(flagAtlas);
-            objPic[ObjPic_CornerFlag][HOUSE_HARKONNEN][1] = scaleFlag(objPic[ObjPic_CornerFlag][HOUSE_HARKONNEN][0].get(), 2);
-            objPic[ObjPic_CornerFlag][HOUSE_HARKONNEN][2] = scaleFlag(objPic[ObjPic_CornerFlag][HOUSE_HARKONNEN][0].get(), 3);
-
-            for (int h = 1; h < NUM_HOUSES; h++) {
-                for (int z = 0; z < NUM_ZOOMLEVEL; z++) {
-                    if (objPic[ObjPic_CornerFlag][HOUSE_HARKONNEN][z]) {
-                        objPic[ObjPic_CornerFlag][h][z] = sdl2::surface_ptr{
-                            SDL_ConvertSurface(objPic[ObjPic_CornerFlag][HOUSE_HARKONNEN][z].get(),
-                                               objPic[ObjPic_CornerFlag][HOUSE_HARKONNEN][z]->format, 0)
-                        };
+                // Zoom 1 (2x) and zoom 2 (3x): nearest-neighbor scale
+                for (int z = 1; z < NUM_ZOOMLEVEL; z++) {
+                    const int factor = z + 1;
+                    auto* src = objPic[ObjPic_CornerFlag][h][0].get();
+                    sdl2::surface_ptr scaled{ SDL_CreateRGBSurface(0, src->w * factor, src->h * factor,
+                        src->format->BitsPerPixel,
+                        src->format->Rmask, src->format->Gmask, src->format->Bmask, src->format->Amask) };
+                    if (scaled) {
+                        SDL_SetSurfaceBlendMode(src, SDL_BLENDMODE_NONE);
+                        SDL_BlitScaled(src, nullptr, scaled.get(), nullptr);
+                        objPic[ObjPic_CornerFlag][h][z] = std::move(scaled);
                     }
                 }
             }

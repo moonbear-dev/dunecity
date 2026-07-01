@@ -41,8 +41,8 @@ bool AdvancedWindTrap::update() {
     bool bResult = StructureBase::update();
 
     if(bResult) {
-        if(justPlacedTimer <= 0 || curAnimFrame != 0) {
-            curAnimFrame = 2 + ((currentGame->getGameCycleCount()/24) % NUM_WINDTRAP_ANIMATIONS);
+        if(justPlacedTimer <= 0) {
+            curAnimFrame = 2 + ((currentGame->getGameCycleCount()/8) % NUM_WINDTRAP_ANIMATIONS);
         }
 
         auto* citySim = currentGame->getCitySimulation();

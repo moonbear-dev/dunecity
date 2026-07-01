@@ -823,3 +823,31 @@ void Map::createSpiceField(Coord location, int radius, bool centerIsThickSpice) 
         }
     }
 }
+
+void Map::createRedSpiceField(Coord location, int radius) const {
+    Coord offset;
+    for(offset.x = -radius; offset.x <= radius; offset.x++) {
+        for(offset.y = -radius; offset.y <= radius; offset.y++) {
+            const auto coord = location + offset;
+            const auto pTile = currentGameMap->getTile_internal(coord.x, coord.y);
+            if (!pTile) continue;
+            if(pTile->isSand() && (distanceFrom(location, coord) <= radius)) {
+                pTile->setType(Terrain_RedSpice);
+            }
+        }
+    }
+}
+
+void Map::createGreenSpiceField(Coord location, int radius) const {
+    Coord offset;
+    for(offset.x = -radius; offset.x <= radius; offset.x++) {
+        for(offset.y = -radius; offset.y <= radius; offset.y++) {
+            const auto coord = location + offset;
+            const auto pTile = currentGameMap->getTile_internal(coord.x, coord.y);
+            if (!pTile) continue;
+            if(pTile->isSand() && (distanceFrom(location, coord) <= radius)) {
+                pTile->setType(Terrain_GreenSpice);
+            }
+        }
+    }
+}

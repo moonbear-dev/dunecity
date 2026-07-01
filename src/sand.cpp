@@ -535,6 +535,10 @@ Uint32 getColorByTerrainType(int terrainType) {
         case Terrain_SpiceBloom:    color = COLOR_BLOOM;       break;
         case Terrain_SpecialBloom:  color = COLOR_BLOOM;       break;
         case Terrain_Slab:          color = COLOR_ROCK;        break;
+        case Terrain_RedSpice:      color = COLOR_RGB(139,0,0);   break;  // dark red
+        case Terrain_GreenSpice:    color = COLOR_RGB(0,100,0);   break;  // dark green
+        case Terrain_RedSpiceBloom: color = COLOR_BLOOM;       break;
+        case Terrain_GreenSpiceBloom: color = COLOR_BLOOM;     break;
         default:                    color = COLOR_ROCK;        break;
     }
 

@@ -12,8 +12,10 @@
     #include <windows.h>
     #include <dbghelp.h>
     #include <shellapi.h>
+    #include <Shlobj.h>
     #pragma comment(lib, "dbghelp.lib")
     #pragma comment(lib, "shlwapi.lib")
+    #pragma comment(lib, "shell32.lib")
 #else
     #include <execinfo.h>  // For backtrace (POSIX)
     #include <unistd.h>
@@ -300,6 +302,7 @@ static LONG WINAPI VectoredExceptionHandler(PEXCEPTION_POINTERS ExceptionInfo) {
 }
 
 static PVOID vectoredHandlerHandle = nullptr;
+static LPTOP_LEVEL_EXCEPTION_FILTER prevFilter = nullptr;
 #endif
 
 /**
@@ -340,7 +343,7 @@ void installCrashHandlers(const char* logPath) {
     // Install vectored exception handler (runs BEFORE std::terminate)
     vectoredHandlerHandle = AddVectoredExceptionHandler(1, VectoredExceptionHandler);
     // Backup unhandled exception filter
-    prevFilter = SetUnhandledExceptionFilter(UnhandledExceptionFilter);
+    prevFilter = SetUnhandledExceptionFilter(DuneCityUnhandledExceptionFilter);
     SDL_Log("Windows crash handlers installed (VEH + UEF)");
 #endif
 
@@ -439,7 +442,7 @@ static void WriteMiniDump(EXCEPTION_POINTERS* ExceptionInfo) {
 }
 
 // Backup: unhandled exception filter (catches what VEH + CRT miss)
-static LONG WINAPI UnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo) {
+static LONG WINAPI DuneCityUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo) {
     FILE* f = crashLogFile;
     if(!f && crashLogPath) {
         f = fopen(crashLogPath, "a");
@@ -472,6 +475,6 @@ static LONG WINAPI UnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo) 
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-static LPTOP_LEVEL_EXCEPTION_FILTER prevFilter = nullptr;
+// prevFilter declared above near vectoredHandlerHandle
 #endif
 

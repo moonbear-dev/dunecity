@@ -139,7 +139,11 @@ typedef enum {
     Terrain_Spice,
     Terrain_ThickSpice,
     Terrain_SpiceBloom,
-    Terrain_SpecialBloom
+    Terrain_SpecialBloom,
+    Terrain_RedSpice,       ///< Tornie: red spice (same gather rate, +25% credits at refinery)
+    Terrain_GreenSpice,     ///< Tornie: green spice (+30% faster gather, same credits)
+    Terrain_RedSpiceBloom,  ///< Tornie: red spice bloom
+    Terrain_GreenSpiceBloom ///< Tornie: green spice bloom
 } TERRAINTYPE;
 
 typedef enum {

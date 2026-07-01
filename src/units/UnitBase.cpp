@@ -255,7 +255,7 @@ bool UnitBase::attack() {
 
                 secondaryWeaponTimer = 15;
 
-                if(attackPos && getItemID() != Unit_SonicTank && currentGameMap->getTile(attackPos)->isSpiceBloom()) {
+                if(attackPos && getItemID() != Unit_SonicTank && (currentGameMap->getTile(attackPos)->isSpiceBloom() || currentGameMap->getTile(attackPos)->isRedSpiceBloom() || currentGameMap->getTile(attackPos)->isGreenSpiceBloom())) {
                     setDestination(location);
                     forced = false;
                     attackPos.invalidate();
@@ -283,7 +283,7 @@ bool UnitBase::attack() {
                 playAttackSound();
                 secondaryWeaponTimer = -1;
 
-                if(attackPos && getItemID() != Unit_SonicTank && currentGameMap->getTile(attackPos)->isSpiceBloom()) {
+                if(attackPos && getItemID() != Unit_SonicTank && (currentGameMap->getTile(attackPos)->isSpiceBloom() || currentGameMap->getTile(attackPos)->isRedSpiceBloom() || currentGameMap->getTile(attackPos)->isGreenSpiceBloom())) {
                     setDestination(location);
                     forced = false;
                     attackPos.invalidate();
@@ -366,6 +366,10 @@ void UnitBase::deploy(const Coord& newLocation) {
                     setHealth(0);
                     setVisible(VIS_ALL, false);
                 }
+            } else if(currentGameMap->getTile(location)->isRedSpiceBloom()) {
+                currentGameMap->getTile(location)->triggerRedSpiceBloom(getOwner());
+            } else if(currentGameMap->getTile(location)->isGreenSpiceBloom()) {
+                currentGameMap->getTile(location)->triggerGreenSpiceBloom(getOwner());
             } else if(currentGameMap->getTile(location)->isSpecialBloom()){
                 currentGameMap->getTile(location)->triggerSpecialBloom(getOwner());
             }

@@ -100,6 +100,10 @@ void GroundUnit::checkPos() {
                 setHealth(0);
                 setVisible(VIS_ALL, false);
             }
+        } else if(pTile->isRedSpiceBloom()) {
+            pTile->triggerRedSpiceBloom(getOwner());
+        } else if(pTile->isGreenSpiceBloom()) {
+            pTile->triggerGreenSpiceBloom(getOwner());
         } else if(pTile->isSpecialBloom()){
             pTile->triggerSpecialBloom(getOwner());
         }

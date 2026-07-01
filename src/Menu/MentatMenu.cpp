@@ -144,7 +144,7 @@ MentatMenu::MentatMenu(int newHouse)
             anim = pGFXManager->getAnimation(Anim_NeutralMouth);
             if (anim) {
                 mouthAnim.setAnimation(anim);
-                windowWidget.addWidget(&mouthAnim,Point(128,240),mouthAnim.getMinimumSize());
+                windowWidget.addWidget(&mouthAnim,Point(288,262),mouthAnim.getMinimumSize());
             }
 
             anim = pGFXManager->getAnimation(Anim_NeutralRing);

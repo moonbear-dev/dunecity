@@ -20,6 +20,7 @@
 #include <FileClasses/TextManager.h>
 
 #include <globals.h>
+#include <mod/ModManager.h>
 
 #include <SoundPlayer.h>
 #include <Map.h>
@@ -324,6 +325,13 @@ void BuilderBase::updateBuildList()
                               || itemID2Add == Structure_Stadium
                               || itemID2Add == Structure_Airport);
         if (isCityOnly && !currentGame->isCitySimEnabled()) {
+            removeItem(buildList, iter, itemID2Add);
+            continue;
+        }
+
+        // AdvancedWindTrap is exclusive to the Tornie mod.
+        if (itemID2Add == Structure_AdvancedWindTrap
+            && ModManager::instance().getActiveModName() != "Tornie") {
             removeItem(buildList, iter, itemID2Add);
             continue;
         }

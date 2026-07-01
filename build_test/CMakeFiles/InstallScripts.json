@@ -1,8 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"/Users/stefanclaw/development/dunecity/build_test/cmake_install.cmake",
-		"/Users/stefanclaw/development/dunecity/build_test/src/cmake_install.cmake"
-	],
-	"Parallel" : false
-}

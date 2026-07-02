@@ -55,15 +55,21 @@ MentatMenu::MentatMenu(int newHouse)
     switch(house) {
         case HOUSE_HARKONNEN: {
             anim = pGFXManager->getAnimation(Anim_HarkonnenEyes);
-            eyesAnim.setAnimation(anim);
-            windowWidget.addWidget(&eyesAnim,Point(64,176),eyesAnim.getMinimumSize());
+            if (anim && anim->getNumberOfFrames() > 0) {
+                eyesAnim.setAnimation(anim);
+                windowWidget.addWidget(&eyesAnim,Point(64,176),eyesAnim.getMinimumSize());
+            }
 
             anim = pGFXManager->getAnimation(Anim_HarkonnenMouth);
-            mouthAnim.setAnimation(anim);
-            windowWidget.addWidget(&mouthAnim,Point(64,208),mouthAnim.getMinimumSize());
+            if (anim && anim->getNumberOfFrames() > 0) {
+                mouthAnim.setAnimation(anim);
+                windowWidget.addWidget(&mouthAnim,Point(64,208),mouthAnim.getMinimumSize());
+            }
 
             anim = pGFXManager->getAnimation(Anim_HarkonnenShoulder);
-            shoulderAnim.setAnimation(anim);
+            if (anim && anim->getNumberOfFrames() > 0) {
+                shoulderAnim.setAnimation(anim);
+            }
             // don't add shoulderAnim, draw it in DrawSpecificStuff
         } break;
 

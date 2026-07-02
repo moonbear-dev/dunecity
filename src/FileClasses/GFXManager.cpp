@@ -465,12 +465,29 @@ GFXManager::GFXManager() {
     }
 
     // DuneCity: Tornie Elite Siege Tank custom sprite — palette-indexed 8-frame strip.
+    // Tiles must match the vanilla SiegeTank (same frame count/dimensions) so blitToScreen
+    // picks up the correct frame offsets.  Uses ibmPalette (not benePalette) because the
+    // sprite is authored against IBM.PAL indices just like all other vehicle sprites.
     if(pFileManager->exists("Tornie_EliteSiegeTank.png")) {
         auto estRaw = LoadPNG_RW(pFileManager->openFile("Tornie_EliteSiegeTank.png").get());
         if(estRaw && estRaw->format->BitsPerPixel == 8) {
-            benePalette.applyToSurface(estRaw.get());
+            ibmPalette.applyToSurface(estRaw.get());
             objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][0] = std::move(estRaw);
-            SDL_Log("GFXManager: Loaded Tornie_EliteSiegeTank.png (palette-indexed)");
+            // Generate zoom levels 1 and 2 so getZoomedObjPic never throws on
+            // a null HOUSE_HARKONNEN[z] entry for this custom sprite.
+            for (int z = 1; z < NUM_ZOOMLEVELS; z++) {
+                SDL_Surface* src = objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][0].get();
+                if (!src) break;
+                auto scaled = Scaler::defaultDoubleSurface(src);
+                if (z == 1) {
+                    objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][1] = std::move(scaled);
+                } else {
+                    // zoom 2: double again from zoom 1
+                    SDL_Surface* src1 = objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][1].get();
+                    if (src1) objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][2] = Scaler::defaultDoubleSurface(src1);
+                }
+            }
+            SDL_Log("GFXManager: Loaded Tornie_EliteSiegeTank.png (palette-indexed, all zoom levels)");
         } else if(estRaw) {
             SDL_Log("GFXManager WARNING: Tornie_EliteSiegeTank.png is not 8-bit palette-indexed (%d bpp), skipped",
                     estRaw->format->BitsPerPixel);
@@ -2635,6 +2652,11 @@ GFXManager::GFXManager() {
     uiGraphic[UI_MapChoiceScreen][HOUSE_ATREIDES] = PicFactory->createMapChoiceScreen(HOUSE_ATREIDES);
     uiGraphic[UI_MapChoiceScreen][HOUSE_ORDOS] = PicFactory->createMapChoiceScreen(HOUSE_ORDOS);
     uiGraphic[UI_MapChoiceScreen][HOUSE_FREMEN] = PicFactory->createMapChoiceScreen(HOUSE_FREMEN);
+    // Restore IBM.PAL orange at 192-207 so Fremen campaign banner uses house colour,
+    // not the Rebels grey that Custom_IBM.pal writes at those indices.
+    if (uiGraphic[UI_MapChoiceScreen][HOUSE_FREMEN] && uiGraphic[UI_MapChoiceScreen][HOUSE_FREMEN]->format->palette) {
+        ibmPalette.applyToSurface(uiGraphic[UI_MapChoiceScreen][HOUSE_FREMEN].get(), PALCOLOR_FREMEN, PALCOLOR_FREMEN + 15);
+    }
     uiGraphic[UI_MapChoiceScreen][HOUSE_SARDAUKAR] = PicFactory->createMapChoiceScreen(HOUSE_SARDAUKAR);
     uiGraphic[UI_MapChoiceScreen][HOUSE_MERCENARY] = PicFactory->createMapChoiceScreen(HOUSE_MERCENARY);
     uiGraphic[UI_MapChoiceScreen][HOUSE_NEUTRAL] = PicFactory->createMapChoiceScreen(HOUSE_NEUTRAL);

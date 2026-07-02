@@ -1,65 +1,50 @@
-# Bug Fix Report: Cursor + Neutral Herald
+## Build: success
 
-## Bug 1: Cursor disappearing on campaign start (ALL houses)
+Release build completed without errors. Pre-existing warnings only (Widget operator=, dylib versions).
 
-### Root Cause
+## Files changed
 
-Three compounding issues in `src/CursorManager.cpp`:
+### Headers
+- `include/DataTypes.h` — added `HOUSE_REBELS = 7`, NUM_HOUSES now 8
+- `include/Colors.h` — added `PALCOLOR_REBELS 192`
+- `include/globals.h` — extended `houseToPaletteIndex[]` (8 entries) and `houseChar[]` (+`'R'`)
+- `include/structures/Palace.h` — added `spawnRebelsUnits()` declaration
 
-**1. Static cache not cleared on cleanup.**
-`CursorManager::cleanup()` nulled the instance pointers and reset `initialized = false`, but left the static `CursorCache` holding the old `SDL_Cursor*` objects. On the next `initialize()` call (new game), `cache.normal != nullptr` caused cursor *creation* to be skipped — the old SDL cursor pointers were reused without being recreated from fresh surfaces. On platforms where SDL cursor objects are backed by platform-specific resources (Windows D3D11), these stale pointers can become invisible after a renderer or window lifecycle event.
+### Source
+- `src/sand.cpp` — added "Rebels" to `getHouseByName()` and `getHouseNameByNumber()` arrays
+- `src/FileClasses/SFXManager.cpp` — added `HOUSE_REBELS` case in `loadEnglishVoice()` switch (uses Harkonnen voice prefix "H")
+- `src/FileClasses/GFXManager.cpp` — Tornie Custom_IBM.pal palette override (entries 192-199); HeraldRebels.png loading with fallback to Neutral remap; Rebels mentat background (reuses Neutral style); Herald_Grey for Rebels
+- `src/FileClasses/TextManager.cpp` — added `HOUSE_REBELS` fallthrough to `HOUSE_NEUTRAL` in mission text switch; added to Ordos/Mercenary/Neutral mentat group
+- `src/structures/Palace.cpp` — added `HOUSE_REBELS` case in `doSpecialWeapon()` + `spawnRebelsUnits()` (spawns 1-2 Sonic Tanks in HUNT mode); added `#include <units/SonicTank.h>`
+- `src/ObjectBase.cpp` — added `HOUSE_REBELS` case for Unit_Special: creates SonicTank (matches palace ability)
+- `src/Menu/MapChoice.cpp` — added `HOUSE_REBELS` case ("REB") + default to campaign region switch
+- `src/MapEditor/MapEditor.cpp` — added HOUSE_REBELS to default player lists (v1/v2 and loadMap)
+- `src/Menu/CustomGamePlayers.cpp` — skip HOUSE_REBELS in house dropdown loop (AI-only, not player-selectable)
 
-**2. `SDL_ShowCursor(SDL_ENABLE)` was inside `if (normalCursor)`.**
-If `SDL_CreateColorCursor` failed (e.g. on a platform that can't handle a paletted cursor surface), `normalCursor` would be null and `SDL_ShowCursor(SDL_ENABLE)` would never be called. The cursor would stay hidden even though the OS default cursor was usable.
+### Data
+- `mods/Tornie/ObjectData.ini` — added Rebels-specific tech entries:
+  - `Builder(R) = Invalid` for Deviator (disabled)
+  - `Builder(R) = Heavy Factory` + `TechLevel(R) = 6` for Sonic Tank (enabled)
+  - `Builder(R) = Heavy Factory` + `TechLevel(R) = 9` for Elite Siege Tank (enabled)
+  - `TechLevel(R) = 8` for Flame Tank
 
-**3. No factored-out `clear()` on `CursorCache`.**
-The destructor freed cursors correctly, but there was no way to reset the cache mid-session from `cleanup()`. Adding `clear()` lets `cleanup()` invalidate the cache without requiring program exit.
+### Auto-applied by linter
+- `src/sand.cpp` — `HOUSE_REBELS` case added to `getHouseSpiceFraction()` switch
+- `src/Menu/CustomGamePlayers.cpp` — "Rebels" section added to `boundHousesOnMap` parsing; Player8 support added
 
-### Files Changed
+## What works
+- Compiles cleanly (Release, no new warnings)
+- HOUSE_REBELS (index 7) is fully wired into house name/number resolution, palette mapping, voice loading, object data parsing, herald graphics, mentat background, palace special weapon, map editor placement, campaign text, mentat entries, and Unit_Special creation
+- Rebels excluded from human player house picker (AI-only)
+- Tornie mod gates: Custom_IBM.pal palette override and HeraldRebels.png loading are conditional on active mod being "Tornie"
+- All switch statements on HOUSETYPE audited and HOUSE_REBELS cases added where needed
 
-`src/CursorManager.cpp`
+## What is untested
+- In-game Rebels AI behavior (requires a map with Rebels house placed)
+- HeraldRebels.png actual rendering (file exists in data/, palette-indexed)
+- Custom_IBM.pal grey palette range appearance in-game
+- Palace sonic tank spawning behavior
+- Map editor Rebels player placement and saving/loading
+- Network/multiplayer with Rebels house on map
 
-- Added `CursorCache::clear()` method that frees all SDL cursor objects and nulls pointers.
-- `CursorManager::cleanup()` now calls `getCursorCache().clear()` so `initialize()` always recreates cursors from current GFXManager surfaces on the next game start. Prevents stale SDL_Cursor* reuse.
-- Moved `SDL_ShowCursor(SDL_ENABLE)` outside the `if (normalCursor)` block in `initialize()` so it is called unconditionally — if cursor image creation fails, the OS default cursor is still shown.
-
----
-
-## Bug 2: Neutral herald/banner missing in campaign house-choice info screen
-
-### Root Cause
-
-Two related gaps in HOUSE_NEUTRAL support:
-
-**1. `createMentatHouseChoiceQuestion()` had no HOUSE_NEUTRAL case.**
-The switch in `PictureFactory::createMentatHouseChoiceQuestion()` covered HARKONNEN, ATREIDES, ORDOS, FREMEN, SARDAUKAR, MERCENARY but fell through to `default: break` for HOUSE_NEUTRAL. This left `pQuestionPart2` as `nullptr`. The very next line unconditionally called `SDL_SetColorKey(pQuestionPart2.get(), SDL_TRUE, 0)` — a null-pointer dereference and crash.
-
-**2. `GFXManager::loadUIGraphics()` never populated `UI_MentatHouseChoiceInfoQuestion[HOUSE_NEUTRAL]`.**
-Without the entry, `getUIGraphic(UI_MentatHouseChoiceInfoQuestion, HOUSE_NEUTRAL)` fell back to a colour-remapped copy of the HOUSE_HARKONNEN banner (via the generic remap path in `getUIGraphicSurface`), showing the wrong emblem with wrong colours.
-
-### Files Changed
-
-**`src/FileClasses/PictureFactory.cpp`**
-- Added `case HOUSE_NEUTRAL` in `createMentatHouseChoiceQuestion()`: reuses the Ordos banner slot from the sprite sheet, then remaps Ordos green palette entries to the neutral grey palette range via `mapSurfaceColorRange(pOrdosPart.get(), PALCOLOR_ORDOS, PALCOLOR_NEUTRAL)`. Matches the same colour-remap pattern used by `createHeraldNeu()`. No new PNG asset required.
-- Added a null-guard after the switch: if `pQuestionPart2` is still null (future-proofing for unknown house IDs), a blank 208×48 transparent surface is created rather than crashing.
-
-**`src/FileClasses/GFXManager.cpp`**
-- Added `uiGraphic[UI_MentatHouseChoiceInfoQuestion][HOUSE_NEUTRAL] = PicFactory->createMentatHouseChoiceQuestion(HOUSE_NEUTRAL, benePalette);` immediately after the MERCENARY entry, so the texture is properly cached and `getUIGraphic` returns it directly without falling back to the remapped-Harkonnen path.
-
----
-
-## Test Results
-
-```
-All tests passed (1119 assertions in 315 test cases)
-```
-
-315 passing, 0 failing.
-
----
-
-## Remaining Concerns
-
-**Cursor (Windows):** The fix addresses static-cache invalidation by always recreating cursors on game start. This adds a small one-time cost per game session (a handful of `SDL_CreateColorCursor` calls). The root cause — SDL cursor objects becoming invalid after renderer teardown on Windows D3D backends — is resolved by forcing recreation, but cannot be verified without a Windows build.
-
-**Neutral herald appearance:** The grey-remapped Ordos banner is a functional stand-in matching the pattern used elsewhere in the codebase. If a designer wants a distinct "Neutral" house name graphic (like Fremen/Sardaukar/Mercenary have their custom PNGs), placing a `Neutral.png` (104×24 px, same format as the others) in the game data directory is the upgrade path. `createMentatHouseChoiceQuestion` can then be extended to load it.
+## PUSH_REQUIRED: next version

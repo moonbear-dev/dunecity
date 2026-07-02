@@ -308,6 +308,7 @@ typedef enum
     HOUSE_SARDAUKAR =  4,
     HOUSE_MERCENARY =  5,
     HOUSE_NEUTRAL   =  6,
+    HOUSE_REBELS    =  7,
     NUM_HOUSES
 } HOUSETYPE;
 

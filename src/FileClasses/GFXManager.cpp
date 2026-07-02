@@ -237,6 +237,23 @@ GFXManager::GFXManager() {
     // open bene palette
     Palette benePalette = LoadPalette_RW(pFileManager->openFile("BENE.PAL").get());
 
+    // Tornie mod: load Custom_IBM.pal to replace palette entries 192-199 with rebels grey
+    if (ModManager::instance().getActiveModName() == "Tornie" && pFileManager->exists("Custom_IBM.pal")) {
+        auto palRw = pFileManager->openFile("Custom_IBM.pal");
+        std::vector<Uint8> palData(768);
+        SDL_RWread(palRw.get(), palData.data(), 1, 768);
+        // Apply entries 192-199 (6-bit VGA → 8-bit)
+        for (int i = 192; i < 200; ++i) {
+            SDL_Color c;
+            c.r = static_cast<Uint8>(std::min(255, static_cast<int>(palData[i*3+0]) * 4));
+            c.g = static_cast<Uint8>(std::min(255, static_cast<int>(palData[i*3+1]) * 4));
+            c.b = static_cast<Uint8>(std::min(255, static_cast<int>(palData[i*3+2]) * 4));
+            c.a = 255;
+            palette[i] = c;
+        }
+        SDL_Log("GFX INIT: Tornie Custom_IBM.pal applied (rebels grey range 192-199)");
+    }
+
     //create PictureFactory
     std::unique_ptr<PictureFactory> PicFactory = std::make_unique<PictureFactory>();
 
@@ -2510,6 +2527,10 @@ GFXManager::GFXManager() {
         }
     }
 
+    // HOUSE_REBELS mentat background — reuse neutral mentat style
+    uiGraphic[UI_MentatBackground][HOUSE_REBELS] =
+        PictureFactory::mapMentatSurfaceToNeutral(uiGraphic[UI_MentatBackground][HOUSE_ORDOS].get());
+
     uiGraphic[UI_MentatBackgroundBene][HOUSE_HARKONNEN] = Scaler::defaultDoubleSurface(LoadCPS_RW(pFileManager->openFile("MENTATM.CPS").get()).get());
     if(uiGraphic[UI_MentatBackgroundBene][HOUSE_HARKONNEN] != nullptr) {
         benePalette.applyToSurface(uiGraphic[UI_MentatBackgroundBene][HOUSE_HARKONNEN].get());
@@ -2522,6 +2543,7 @@ GFXManager::GFXManager() {
     uiGraphic[UI_MentatHouseChoiceInfoQuestion][HOUSE_FREMEN] = PicFactory->createMentatHouseChoiceQuestion(HOUSE_FREMEN, benePalette);
     uiGraphic[UI_MentatHouseChoiceInfoQuestion][HOUSE_MERCENARY] = PicFactory->createMentatHouseChoiceQuestion(HOUSE_MERCENARY, benePalette);
     uiGraphic[UI_MentatHouseChoiceInfoQuestion][HOUSE_NEUTRAL] = PicFactory->createMentatHouseChoiceQuestion(HOUSE_NEUTRAL, benePalette);
+    uiGraphic[UI_MentatHouseChoiceInfoQuestion][HOUSE_REBELS] = PicFactory->createMentatHouseChoiceQuestion(HOUSE_REBELS, benePalette);
 
     uiGraphic[UI_MentatYes][HOUSE_HARKONNEN] = Scaler::defaultDoubleSurface(mentat->getPicture(0).get());
     uiGraphic[UI_MentatYes_Pressed][HOUSE_HARKONNEN] = Scaler::defaultDoubleSurface(mentat->getPicture(1).get());
@@ -2559,6 +2581,22 @@ GFXManager::GFXManager() {
         uiGraphic[UI_Herald_ColoredLarge][HOUSE_MERCENARY] = Scaler::defaultDoubleSurface(uiGraphic[UI_Herald_Colored][HOUSE_MERCENARY].get());
         uiGraphic[UI_Herald_Colored][HOUSE_NEUTRAL] = PicFactory->createHeraldNeu(uiGraphic[UI_Herald_Colored][HOUSE_ORDOS].get());
         uiGraphic[UI_Herald_ColoredLarge][HOUSE_NEUTRAL] = Scaler::defaultDoubleSurface(uiGraphic[UI_Herald_Colored][HOUSE_NEUTRAL].get());
+
+        // HOUSE_REBELS herald
+        if (ModManager::instance().getActiveModName() == "Tornie" && pFileManager->exists("HeraldRebels.png")) {
+            auto pRebels = LoadPNG_RW(pFileManager->openFile("HeraldRebels.png").get());
+            if (pRebels) {
+                if (pRebels->format->BitsPerPixel == 8)
+                    benePalette.applyToSurface(pRebels.get());
+                uiGraphic[UI_Herald_Colored][HOUSE_REBELS] = std::move(pRebels);
+            }
+        }
+        if (!uiGraphic[UI_Herald_Colored][HOUSE_REBELS]) {
+            // Fallback: remap Neutral herald to rebels palette
+            uiGraphic[UI_Herald_Colored][HOUSE_REBELS] =
+                mapSurfaceColorRange(uiGraphic[UI_Herald_Colored][HOUSE_NEUTRAL].get(), PALCOLOR_NEUTRAL, PALCOLOR_REBELS);
+        }
+        uiGraphic[UI_Herald_ColoredLarge][HOUSE_REBELS] = Scaler::defaultDoubleSurface(uiGraphic[UI_Herald_Colored][HOUSE_REBELS].get());
     }
 
     uiGraphic[UI_Herald_Grey][HOUSE_HARKONNEN] = PicFactory->createGreyHouseChoice(uiGraphic[UI_Herald_Colored][HOUSE_HARKONNEN].get());
@@ -2568,6 +2606,9 @@ GFXManager::GFXManager() {
     uiGraphic[UI_Herald_Grey][HOUSE_SARDAUKAR] = PicFactory->createGreyHouseChoice(uiGraphic[UI_Herald_Colored][HOUSE_SARDAUKAR].get());
     uiGraphic[UI_Herald_Grey][HOUSE_MERCENARY] = PicFactory->createGreyHouseChoice(uiGraphic[UI_Herald_Colored][HOUSE_MERCENARY].get());
     uiGraphic[UI_Herald_Grey][HOUSE_NEUTRAL] = PicFactory->createGreyHouseChoice(uiGraphic[UI_Herald_Colored][HOUSE_NEUTRAL].get());
+    if (uiGraphic[UI_Herald_Colored][HOUSE_REBELS]) {
+        uiGraphic[UI_Herald_Grey][HOUSE_REBELS] = PicFactory->createGreyHouseChoice(uiGraphic[UI_Herald_Colored][HOUSE_REBELS].get());
+    }
 
     uiGraphic[UI_Herald_ArrowLeft][HOUSE_HARKONNEN] = LoadPNG_RW(pFileManager->openFile("ArrowLeft.png").get());
     uiGraphic[UI_Herald_ArrowLeftLarge][HOUSE_HARKONNEN] = Scaler::defaultDoubleSurface(uiGraphic[UI_Herald_ArrowLeft][HOUSE_HARKONNEN].get());
@@ -2771,12 +2812,31 @@ GFXManager::GFXManager() {
         }
     }
 
-    uiGraphic[UI_MapEditor_Pen1x1][HOUSE_HARKONNEN] = LoadPNG_RW(pFileManager->openFile("MapEditorPen1x1.png").get());
-    SDL_SetColorKey(uiGraphic[UI_MapEditor_Pen1x1][HOUSE_HARKONNEN].get(), SDL_TRUE, 0);
-    uiGraphic[UI_MapEditor_Pen3x3][HOUSE_HARKONNEN] = LoadPNG_RW(pFileManager->openFile("MapEditorPen3x3.png").get());
-    SDL_SetColorKey(uiGraphic[UI_MapEditor_Pen3x3][HOUSE_HARKONNEN].get(), SDL_TRUE, 0);
-    uiGraphic[UI_MapEditor_Pen5x5][HOUSE_HARKONNEN] = LoadPNG_RW(pFileManager->openFile("MapEditorPen5x5.png").get());
-    SDL_SetColorKey(uiGraphic[UI_MapEditor_Pen5x5][HOUSE_HARKONNEN].get(), SDL_TRUE, 0);
+    // Brush-size pen buttons — scale each down by 20px from native 31×31 → 11×11.
+    {
+        const int penIds[] = { UI_MapEditor_Pen1x1, UI_MapEditor_Pen3x3, UI_MapEditor_Pen5x5 };
+        const char* penFiles[] = { "MapEditorPen1x1.png", "MapEditorPen3x3.png", "MapEditorPen5x5.png" };
+        for (int i = 0; i < 3; i++) {
+            auto raw = LoadPNG_RW(pFileManager->openFile(penFiles[i]).get());
+            if (raw && raw->w > 20 && raw->h > 20) {
+                int newW = raw->w - 20;
+                int newH = raw->h - 20;
+                sdl2::surface_ptr scaled{ SDL_CreateRGBSurface(0, newW, newH,
+                    raw->format->BitsPerPixel,
+                    raw->format->Rmask, raw->format->Gmask, raw->format->Bmask, raw->format->Amask) };
+                if (scaled) {
+                    if (raw->format->palette && scaled->format->palette)
+                        SDL_SetPaletteColors(scaled->format->palette, raw->format->palette->colors, 0, raw->format->palette->ncolors);
+                    SDL_BlitScaled(raw.get(), nullptr, scaled.get(), nullptr);
+                    SDL_SetColorKey(scaled.get(), SDL_TRUE, 0);
+                    uiGraphic[penIds[i]][HOUSE_HARKONNEN] = std::move(scaled);
+                }
+            } else if (raw) {
+                SDL_SetColorKey(raw.get(), SDL_TRUE, 0);
+                uiGraphic[penIds[i]][HOUSE_HARKONNEN] = std::move(raw);
+            }
+        }
+    }
 
     // DuneCity: map-editor icons for SimCity-style buildings exposed when the
     // city mod is active. Zone atlases are a single 2x2-tile frame each, so

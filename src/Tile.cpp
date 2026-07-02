@@ -345,10 +345,9 @@ void Tile::blitGround(int xPos, int yPos) {
                     ? ObjPic_TerrainRedSpice : ObjPic_TerrainGreenSpice;
                 SDL_Texture* customTex = pGFXManager->getZoomedObjPic(customObjPic, currentZoomlevel);
                 if (customTex) {
-                    // Bloom is at column 16 in the 17-column strip, row 0
-                    SDL_Rect sandSrc = { TerrainTile_Sand * zoomed_tilesize, 0, zoomed_tilesize, zoomed_tilesize };
-                    SDL_RenderCopy(renderer, sprite[currentZoomlevel], &sandSrc, &drawLocation);
-                    SDL_Rect bloomSrc = { 16 * zoomed_tilesize, 0, zoomed_tilesize, zoomed_tilesize };
+                    // Bloom is at column 16, row 1 in the 17×2 strip (row 0 col 16 is empty).
+                    // The bloom tile is pre-composited on sand, so no separate sand base needed.
+                    SDL_Rect bloomSrc = { 16 * zoomed_tilesize, 1 * zoomed_tilesize, zoomed_tilesize, zoomed_tilesize };
                     SDL_RenderCopy(renderer, customTex, &bloomSrc, &drawLocation);
                 } else {
                     const auto bloomIndexX = TerrainTile_SpiceBloom % NUM_TERRAIN_TILES_X;

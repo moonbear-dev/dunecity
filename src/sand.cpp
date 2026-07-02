@@ -466,6 +466,7 @@ HOUSETYPE getHouseByName(const std::string& name) {
     else if(lowerName == "sardaukar")    return HOUSE_SARDAUKAR;
     else if(lowerName == "mercenary")    return HOUSE_MERCENARY;
     else if(lowerName == "neutral")      return HOUSE_NEUTRAL;
+    else if(lowerName == "rebels")       return HOUSE_REBELS;
     else                                return HOUSE_INVALID;
 }
 
@@ -482,7 +483,8 @@ std::string getHouseNameByNumber(HOUSETYPE house) {
                                                             "Fremen",
                                                             "Sardaukar",
                                                             "Mercenary",
-                                                            "Neutral"
+                                                            "Neutral",
+                                                            "Rebels"
                                                    };
         return houseName[house];
     } else {
@@ -692,6 +694,7 @@ FixPoint getDeviateWeakness(HOUSETYPE house) {
             case HOUSE_SARDAUKAR:   return 0.04_fix;
             case HOUSE_MERCENARY:   return 0.50_fix;
             case HOUSE_NEUTRAL:     return 0.50_fix;
+            case HOUSE_REBELS:      return 0.50_fix;
             default:                return 0.00_fix;
         }
     }

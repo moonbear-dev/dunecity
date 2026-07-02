@@ -34,6 +34,7 @@
 #include <units/Saboteur.h>
 #include <units/Trike.h>
 #include <units/Quad.h>
+#include <units/SonicTank.h>
 
 #include <GUI/ObjectInterfaces/PalaceInterface.h>
 
@@ -127,6 +128,12 @@ void Palace::doSpecialWeapon() {
 
         case HOUSE_NEUTRAL: {
             if(spawnNeutralUnits()) {
+                specialWeaponTimer = getMaxSpecialWeaponTimer();
+            }
+        } break;
+
+        case HOUSE_REBELS: {
+            if(spawnRebelsUnits()) {
                 specialWeaponTimer = getMaxSpecialWeaponTimer();
             }
         } break;
@@ -306,6 +313,23 @@ bool Palace::spawnNeutralUnits() {
 
     if(getOwner() == pLocalHouse) {
         currentGame->addToNewsTicker(_("Neutral raiders deployed"));
+    }
+
+    return true;
+}
+
+bool Palace::spawnRebelsUnits() {
+    int numSonic = 1 + (currentGame->randomGen.rand(0, 1));  // 1 or 2
+
+    for (int i = 0; i < numSonic; i++) {
+        SonicTank* pSonic = static_cast<SonicTank*>(getOwner()->createUnit(Unit_SonicTank));
+        Coord spot = currentGameMap->findDeploySpot(pSonic, getLocation(), currentGame->randomGen, getDestination(), getStructureSize());
+        pSonic->deploy(spot);
+        pSonic->doSetAttackMode(HUNT);
+    }
+
+    if(getOwner() == pLocalHouse) {
+        currentGame->addToNewsTicker(_("Rebels sonic tanks deployed"));
     }
 
     return true;

@@ -1538,6 +1538,8 @@ void MapEditorInterface::changeInterfaceColor(HOUSETYPE newHouse) {
     editorModeUnits_Devastator.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Devastator, newHouse));
     editorModeUnits_SonicTank.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_SonicTank, newHouse));
     editorModeUnits_Deviator.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Deviator, newHouse));
+    // Rebels: Deviator is disallowed; it is still visible in the panel but Builder(R)=Invalid prevents placing
+    // (unit visibility in editor follows ObjectData Builder rules at placement time)
     editorModeUnits_Saboteur.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Saboteur, newHouse));
     editorModeUnits_Sandworm.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Sandworm, newHouse));
     editorModeUnits_SpecialUnit.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_SpecialUnit, newHouse));

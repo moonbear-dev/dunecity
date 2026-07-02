@@ -327,7 +327,8 @@ void MentatMenu::drawSpecificStuff() {
     Point shoulderPos;
     switch(house) {
         case HOUSE_HARKONNEN:
-        case HOUSE_SARDAUKAR: {
+        case HOUSE_SARDAUKAR:
+        case HOUSE_REBELS: {
             shoulderPos = Point(256,209) + getPosition();
         } break;
 

@@ -90,7 +90,8 @@ int BriefingMenu::showMenu()
         {
             switch(house) {
                 case HOUSE_HARKONNEN:
-                case HOUSE_SARDAUKAR: {
+                case HOUSE_SARDAUKAR:
+                case HOUSE_REBELS: {
                     musicPlayer->changeMusic(MUSIC_WIN_H);
                 } break;
 
@@ -111,7 +112,8 @@ int BriefingMenu::showMenu()
         {
             switch(house) {
                 case HOUSE_HARKONNEN:
-                case HOUSE_SARDAUKAR: {
+                case HOUSE_SARDAUKAR:
+                case HOUSE_REBELS: {
                     musicPlayer->changeMusic(MUSIC_LOSE_H);
                 } break;
 
@@ -132,7 +134,8 @@ int BriefingMenu::showMenu()
         {
             switch(house) {
                 case HOUSE_HARKONNEN:
-                case HOUSE_SARDAUKAR: {
+                case HOUSE_SARDAUKAR:
+                case HOUSE_REBELS: {
                     musicPlayer->changeMusic(MUSIC_BRIEFING_H);
                 } break;
 

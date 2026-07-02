@@ -1066,6 +1066,22 @@ int main(int argc, char *argv[]) {
 
                 palette = LoadPalette_RW(pFileManager->openFile("IBM.PAL").get());
 
+                // Tornie mod: load Custom_IBM.pal to replace palette entries 192-199 with rebels grey
+                if (ModManager::instance().getActiveModName() == "Tornie" && pFileManager->exists("Custom_IBM.pal")) {
+                    auto palRw = pFileManager->openFile("Custom_IBM.pal");
+                    std::vector<Uint8> palData(768);
+                    SDL_RWread(palRw.get(), palData.data(), 1, 768);
+                    for (int i = 192; i < 200; ++i) {
+                        SDL_Color c;
+                        c.r = std::min(255, (int)palData[i*3+0] * 4);
+                        c.g = std::min(255, (int)palData[i*3+1] * 4);
+                        c.b = std::min(255, (int)palData[i*3+2] * 4);
+                        c.a = 255;
+                        palette[i] = c;
+                    }
+                    SDL_Log("Tornie Custom_IBM.pal applied (rebels grey range 192-199)");
+                }
+
                 SDL_Log("Setting video mode...");
                 setVideoMode(currentDisplayIndex);
                 

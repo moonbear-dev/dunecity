@@ -960,6 +960,10 @@ ObjectBase* ObjectBase::createObject(int itemID, House* Owner, bool byScenario) 
                         newObject = new EliteLauncher(Owner);
                     }
                     break;
+                case HOUSE_REBELS:
+                    // Rebels Unit_Special: SonicTank (matches palace ability)
+                    newObject = new SonicTank(Owner);
+                    break;
                 default:    /* should never be reached */  break;
             }
         } break;

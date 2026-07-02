@@ -120,6 +120,10 @@ void SFXManager::loadEnglishVoice() {
                 HouseString = "A";
                 HouseNameChunk = getChunkFromFile("NNEU.VOC", "ANEU.VOC");
                 break; // Neutral house name call - NNEU.VOC is the dedicated Neutral sound
+            case HOUSE_REBELS:
+                HouseString = "H";
+                HouseNameChunk = getChunkFromFile(HouseString + "HARK.VOC");
+                break; // Rebels uses Harkonnen voice
             default:
                 break;
         }

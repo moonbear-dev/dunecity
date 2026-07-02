@@ -40,6 +40,7 @@ HouseChoiceInfoMenu::HouseChoiceInfoMenu(int newHouse) : MentatMenu(HOUSE_INVALI
         case HOUSE_SARDAUKAR:   anim = pGFXManager->getAnimation(Anim_SardaukarPlanet); break;
         case HOUSE_MERCENARY:   anim = pGFXManager->getAnimation(Anim_MercenaryPlanet); break;
         case HOUSE_NEUTRAL:     anim = pGFXManager->getAnimation(Anim_NeutralPlanet); break;
+        case HOUSE_REBELS:      anim = pGFXManager->getAnimation(Anim_HarkonnenPlanet); break;
         default: {
             THROW(std::invalid_argument, "HouseChoiceInfoMenu::HouseChoiceInfoMenu(): Invalid house id '%d'.", newHouse);
         } break;

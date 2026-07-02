@@ -669,7 +669,8 @@ void INIMapLoader::loadUnits()
                     case HOUSE_FREMEN:
                     case HOUSE_SARDAUKAR:
                     case HOUSE_MERCENARY:
-                    case HOUSE_NEUTRAL: {
+                    case HOUSE_NEUTRAL:
+                    case HOUSE_REBELS: {
                         if(nextSpecialUnitIsSonicTank[houseID] == true && pGame->objectData.data[Unit_SonicTank][houseID].enabled) {
                             itemID = Unit_SonicTank;
                             nextSpecialUnitIsSonicTank[houseID] = !pGame->objectData.data[Unit_Devastator][houseID].enabled;

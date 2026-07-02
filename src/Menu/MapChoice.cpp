@@ -430,6 +430,8 @@ void MapChoice::loadINI() {
                 case HOUSE_SARDAUKAR:   key = "SAR"; break;
                 case HOUSE_MERCENARY:   key = "MER"; break;
                 case HOUSE_NEUTRAL:     key = "NEU"; break;
+                case HOUSE_REBELS:      key = "REB"; break;
+                default:                              break;
             }
 
             std::string strValue = RegionINI.getStringValue(strSection,key);

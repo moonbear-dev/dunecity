@@ -62,6 +62,7 @@ void TextManager::loadData() {
     mentatStrings[HOUSE_ATREIDES] = std::make_unique<MentatTextFile>(pFileManager->openFile("MENTATA." + _("LanguageFileExtension")).get());
     mentatStrings[HOUSE_ORDOS] = std::make_unique<MentatTextFile>(pFileManager->openFile("MENTATO." + _("LanguageFileExtension")).get());
     mentatStrings[HOUSE_NEUTRAL] = std::make_unique<MentatTextFile>(pFileManager->openFile("MENTATH." + _("LanguageFileExtension")).get());
+    mentatStrings[HOUSE_REBELS] = std::make_unique<MentatTextFile>(pFileManager->openFile("MENTATH." + _("LanguageFileExtension")).get());
 }
 
 std::string TextManager::getBriefingText(unsigned int mission, unsigned int texttype, int house) const {
@@ -482,6 +483,7 @@ std::string TextManager::getBriefingText(unsigned int mission, unsigned int text
 
         } break;
 
+        case HOUSE_REBELS:
         case HOUSE_NEUTRAL: {
             switch(texttype) {
                 case MISSION_DESCRIPTION: {
@@ -580,7 +582,8 @@ std::vector<MentatTextFile::MentatEntry> TextManager::getAllMentatEntries(int ho
 
         case HOUSE_ORDOS:
         case HOUSE_MERCENARY:
-        case HOUSE_NEUTRAL: {
+        case HOUSE_NEUTRAL:
+        case HOUSE_REBELS: {
             for(unsigned int i = 0; i <  mentatStrings[HOUSE_ORDOS]->getNumEntries(); i++) {
                 if(mentatStrings[HOUSE_ORDOS]->getMentatEntry(i).techLevel <= techLevel) {
                     mentatEntries.push_back(mentatStrings[HOUSE_ORDOS]->getMentatEntry(i));

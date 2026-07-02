@@ -117,19 +117,27 @@ MentatMenu::MentatMenu(int newHouse)
 
         case HOUSE_FREMEN: {
             anim = pGFXManager->getAnimation(Anim_FremenEyes);
-            eyesAnim.setAnimation(anim);
-            windowWidget.addWidget(&eyesAnim,Point(80,160),eyesAnim.getMinimumSize());
+            if (anim && anim->getNumberOfFrames() > 0) {
+                eyesAnim.setAnimation(anim);
+                windowWidget.addWidget(&eyesAnim,Point(80,160),eyesAnim.getMinimumSize());
+            }
 
             anim = pGFXManager->getAnimation(Anim_FremenMouth);
-            mouthAnim.setAnimation(anim);
-            windowWidget.addWidget(&mouthAnim,Point(80,192),mouthAnim.getMinimumSize());
+            if (anim && anim->getNumberOfFrames() > 0) {
+                mouthAnim.setAnimation(anim);
+                windowWidget.addWidget(&mouthAnim,Point(80,192),mouthAnim.getMinimumSize());
+            }
 
             anim = pGFXManager->getAnimation(Anim_FremenBook);
-            specialAnim.setAnimation(anim);
-            windowWidget.addWidget(&specialAnim,Point(145,305),specialAnim.getMinimumSize());
+            if (anim && anim->getNumberOfFrames() > 0) {
+                specialAnim.setAnimation(anim);
+                windowWidget.addWidget(&specialAnim,Point(145,305),specialAnim.getMinimumSize());
+            }
 
             anim = pGFXManager->getAnimation(Anim_FremenShoulder);
-            shoulderAnim.setAnimation(anim);
+            if (anim && anim->getNumberOfFrames() > 0) {
+                shoulderAnim.setAnimation(anim);
+            }
             // don't add shoulderAnim, draw it in DrawSpecificStuff
         } break;
 

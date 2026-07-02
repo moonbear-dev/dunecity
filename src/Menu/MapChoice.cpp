@@ -390,7 +390,35 @@ void MapChoice::loadINI() {
         }
     }
     if (!pRegionINI) {
-        pRegionINI = std::make_unique<INIFile>(pFileManager->openFile(filename).get());
+        // Items #11, #12, #13 of Tornie 1.0.242: per-house campaign-crash policy.
+        //   #11 Harkonnen (REGIONH.INI): must crash when Tornie is active
+        //      (the mod is responsible for providing it). Outside Tornie the
+        //      campaign is simply unavailable — do not throw, return early
+        //      with a sentinel so the UI shows no region map instead of
+        //      aborting the game.
+        //   #12 Fremen (REGIONF.INI): same policy as Harkonnen.
+        //   #13 Neutral (REGIONN.INI): always crash if the file is missing
+        //      or unreadable, regardless of which mod is active. The Neutral
+        //      campaign is core to the mod and any failure here is a real bug.
+        const bool isHarkonnen = (house == HOUSE_HARKONNEN) || (house == HOUSE_SARDAUKAR);
+        const bool isFremen    = (house == HOUSE_FREMEN);
+        const bool isNeutral   = (house == HOUSE_NEUTRAL);
+        const bool isTornieActive = (ModManager::instance().getActiveModName() == "Tornie");
+
+        const bool shouldCrash = isNeutral
+                              || (isTornieActive && (isHarkonnen || isFremen));
+
+        if(shouldCrash) {
+            // Re-throw: surface the missing file as a hard failure.
+            pRegionINI = std::make_unique<INIFile>(pFileManager->openFile(filename).get());
+        } else {
+            // Harkonnen or Fremen outside the Tornie mod: campaign is unavailable.
+            // Skip the rest of loadINI — callers that touch group[] / piecePosition[]
+            // will see zeroed state, which is the correct "no campaign" presentation.
+            SDL_Log("MapChoice: %s not found and Tornie mod is inactive — campaign unavailable for this house",
+                    filename.c_str());
+            return;
+        }
     }
     INIFile& RegionINI = *pRegionINI;
 
@@ -416,7 +444,7 @@ void MapChoice::loadINI() {
         piecePosition[i].y *= 2;
     }
 
-    for(int i=1; i<=8; i++) {
+    for(int i=1; i<=9; i++) {
         std::string strSection = "GROUP" + std::to_string(i);
 
         // read new regions

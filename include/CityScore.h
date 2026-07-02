@@ -7,6 +7,7 @@
 #ifndef CITYSCORE_H
 #define CITYSCORE_H
 
+#include <algorithm>
 #include <cstdint>
 #include <string>
 #include <vector>

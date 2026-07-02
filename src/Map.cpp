@@ -242,21 +242,19 @@ void Map::damage(Uint32 damagerID, House* damagerOwner, const Coord& realPos, Ui
                         } else if(bulletID == Bullet_Sonic) {
                             pUnit->handleDamage(lround(damage), damagerID, damagerOwner);
                         } else if(bulletID == Bullet_Flame) {
-                            // Flame Tank: no aircraft damage, no self-damage, instakill light infantry, 2x vs troopers
-                            if(!pUnit->isAFlyingUnit()) {
-                                // Self-damage immunity: skip if the unit being damaged is the attacker.
-                                if(pUnit->getObjectID() == damagerID) {
-                                    // Flame Tank cannot damage itself.
+                            // Flame Tank: no aircraft damage, instakill light infantry, 2x vs troopers.
+                            // Item #6 of Tornie 1.0.242: Flame Tank is immune to its own AOE — skip the shooter
+                            // and any other unit owned by the same house. (The bullet path-damage hits every
+                            // tile in a 3/4 tile radius along its trajectory, which catches the firing tank.)
+                            if(!pUnit->isAFlyingUnit() && pUnit->getOwner() != damagerOwner) {
+                                int flameDmg = lround(damage);
+                                int uid = pUnit->getItemID();
+                                if(uid == Unit_Infantry || uid == Unit_Soldier) {
+                                    pUnit->handleDamage(lround(pUnit->getHealth()), damagerID, damagerOwner);
+                                } else if(uid == Unit_Trooper || uid == Unit_Troopers) {
+                                    pUnit->handleDamage(flameDmg * 2, damagerID, damagerOwner);
                                 } else {
-                                    int flameDmg = lround(damage);
-                                    int uid = pUnit->getItemID();
-                                    if(uid == Unit_Infantry || uid == Unit_Soldier) {
-                                        pUnit->handleDamage(lround(pUnit->getHealth()), damagerID, damagerOwner);
-                                    } else if(uid == Unit_Trooper || uid == Unit_Troopers) {
-                                        pUnit->handleDamage(flameDmg * 2, damagerID, damagerOwner);
-                                    } else {
-                                        pUnit->handleDamage(flameDmg, damagerID, damagerOwner);
-                                    }
+                                    pUnit->handleDamage(flameDmg, damagerID, damagerOwner);
                                 }
                             }
                         } else {

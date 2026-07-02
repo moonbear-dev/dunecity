@@ -78,5 +78,10 @@ void FlameTank::destroy() {
 }
 
 void FlameTank::playAttackSound() {
-    soundPlayer->playSoundAt(Sound_Sonic, location);
+    // Item #14 of Tornie 1.0.242: use the same attack sound as the Siege Tank
+    // (was previously Sound_Sonic). Impact sound is intentionally silent —
+    // see Bullet.cpp destroy() where Bullet_Flame falls through to the
+    // default "do nothing" branch and no Sound_ExplosionGas/ExplosionLarge
+    // is triggered.
+    soundPlayer->playSoundAt(Sound_ExplosionSmall, location);
 }

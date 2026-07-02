@@ -35,7 +35,7 @@
 ReinforcementsWindow::ReinforcementsWindow(MapEditor* pMapEditor, HOUSETYPE currentHouse)
  : Window(0,0,0,0), pMapEditor(pMapEditor), house(currentHouse), reinforcements(pMapEditor->getReinforcements()) {
 
-    color = SDL2RGB(palette[houseToPaletteIndex[house]+3]);
+    color = SDL2RGB(getHouseSDLColor(house));
 
     // set up window
     SDL_Texture *pBackground = pGFXManager->getUIGraphic(UI_NewMapWindow);

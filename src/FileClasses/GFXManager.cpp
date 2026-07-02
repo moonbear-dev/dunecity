@@ -482,7 +482,7 @@ GFXManager::GFXManager() {
     if(pFileManager->exists("Tornie_SpiceRed.png")) {
         auto surf = LoadPNG_RW(pFileManager->openFile("Tornie_SpiceRed.png").get());
         if(surf && surf->format->BitsPerPixel == 8) {
-            benePalette.applyToSurface(surf.get());
+            ibmPalette.applyToSurface(surf.get()); // terrain tiles use IBM.PAL indices, not BENE.PAL
             objPic[ObjPic_TerrainRedSpice][HOUSE_HARKONNEN][0] = std::move(surf);
             for (int h = 1; h < NUM_HOUSES; h++) {
                 objPic[ObjPic_TerrainRedSpice][h][0] = sdl2::surface_ptr{
@@ -499,7 +499,7 @@ GFXManager::GFXManager() {
     if(pFileManager->exists("Tornie_SpiceGreen.png")) {
         auto surf = LoadPNG_RW(pFileManager->openFile("Tornie_SpiceGreen.png").get());
         if(surf && surf->format->BitsPerPixel == 8) {
-            benePalette.applyToSurface(surf.get());
+            ibmPalette.applyToSurface(surf.get()); // terrain tiles use IBM.PAL indices, not BENE.PAL
             objPic[ObjPic_TerrainGreenSpice][HOUSE_HARKONNEN][0] = std::move(surf);
             for (int h = 1; h < NUM_HOUSES; h++) {
                 objPic[ObjPic_TerrainGreenSpice][h][0] = sdl2::surface_ptr{

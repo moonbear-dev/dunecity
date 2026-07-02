@@ -104,4 +104,12 @@ EXTERN bool debug;                                      ///< is set for debuggin
 static const int houseToPaletteIndex[NUM_HOUSES] = { PALCOLOR_HARKONNEN, PALCOLOR_ATREIDES, PALCOLOR_ORDOS, PALCOLOR_FREMEN, PALCOLOR_SARDAUKAR, PALCOLOR_MERCENARY, PALCOLOR_NEUTRAL, PALCOLOR_REBELS };    ///< the base colors for the different houses
 static const char houseChar[] = { 'H', 'A', 'O', 'F', 'S', 'M', 'N', 'R' };   ///< character for each house
 
+/// Returns the SDL_Color for the given house at palette offset.
+/// Fremen (PALCOLOR_FREMEN=192) is overridden by Custom_IBM.pal with rebels grey;
+/// use ibmPalette for Fremen so the editor shows the correct vanilla orange colour.
+inline SDL_Color getHouseSDLColor(int house, int offset = 3) {
+    const Palette& pal = (house == HOUSE_FREMEN) ? ibmPalette : palette;
+    return pal[houseToPaletteIndex[house] + offset];
+}
+
 #endif //GLOBALS_H

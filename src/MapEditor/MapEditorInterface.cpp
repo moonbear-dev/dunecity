@@ -52,7 +52,7 @@
 MapEditorInterface::MapEditorInterface(MapEditor* pMapEditor)
  : Window(0,0,0,0), pMapEditor(pMapEditor), radarView(pMapEditor) {
     house = HOUSE_HARKONNEN;
-    color = SDL2RGB(palette[houseToPaletteIndex[house] + 3]);
+    color = SDL2RGB(getHouseSDLColor(house, 3));
 
     currentTerrainType = -1;
     currentTerrainPenSize = -1;
@@ -1431,7 +1431,7 @@ static void addTopLeftStar(SDL_Surface* surf, SDL_Color c) {
 
 void MapEditorInterface::changeInterfaceColor(HOUSETYPE newHouse) {
     house = newHouse;
-    color = SDL2RGB(palette[houseToPaletteIndex[newHouse] + 3]);
+    color = SDL2RGB(getHouseSDLColor(newHouse, 3));
 
     terrainButton.setTextColor(color);
     structuresButton.setTextColor(color);
@@ -1495,7 +1495,7 @@ void MapEditorInterface::changeInterfaceColor(HOUSETYPE newHouse) {
     editorModeStructs_Starport.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Starport, newHouse));
     editorModeStructs_Palace.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Palace, newHouse));
     {
-        SDL_Color hc = palette[houseToPaletteIndex[newHouse] + 3];
+        SDL_Color hc = getHouseSDLColor(newHouse, 3);
         auto starred = makeStarredSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_AdvancedWindTrap, newHouse), hc);
         if (starred) addTopLeftStar(starred.get(), hc);
         editorModeStructs_AdvancedWindTrap.setSymbol(std::move(starred));
@@ -1517,7 +1517,7 @@ void MapEditorInterface::changeInterfaceColor(HOUSETYPE newHouse) {
     editorModeUnits_Raider.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Raider, newHouse));
     // No dedicated UI_MapEditor_RocketTrike graphic exists; reuse the plain Trike icon with house-color star.
     {
-        SDL_Color hc = palette[houseToPaletteIndex[newHouse] + 3];
+        SDL_Color hc = getHouseSDLColor(newHouse, 3);
         editorModeUnits_RocketTrike.setSymbol(makeStarredSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Trike, newHouse), hc));
     }
     editorModeUnits_Quad.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Quad, newHouse));
@@ -1526,12 +1526,12 @@ void MapEditorInterface::changeInterfaceColor(HOUSETYPE newHouse) {
     editorModeUnits_Launcher.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Launcher, newHouse));
     // DuneCity: Elite Launcher uses the Launcher editor icon with house-color star
     {
-        SDL_Color hc = palette[houseToPaletteIndex[newHouse] + 3];
+        SDL_Color hc = getHouseSDLColor(newHouse, 3);
         editorModeUnits_EliteLauncher.setSymbol(makeStarredSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Launcher, newHouse), hc));
     }
     // DuneCity: Elite Siege Tank uses the Siege Tank editor icon with house-color star
     {
-        SDL_Color hc = palette[houseToPaletteIndex[newHouse] + 3];
+        SDL_Color hc = getHouseSDLColor(newHouse, 3);
         editorModeUnits_EliteSiegeTank.setSymbol(makeStarredSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_SiegeTank, newHouse), hc));
     }
     editorModeUnits_FlameTank.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_FlameTank, newHouse));

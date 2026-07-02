@@ -1986,6 +1986,7 @@ GFXManager::GFXManager() {
     if (pFileManager->exists("NeutralLauncherIcon.png")) {
         auto iconSurf = LoadPNG_RW(pFileManager->openFile("NeutralLauncherIcon.png").get());
         if (iconSurf) {
+            if (iconSurf->format->palette) { palette.applyToSurface(iconSurf.get()); }
             auto tex = convertSurfaceToTexture(iconSurf.get());
             if (tex) {
                 SDL_SetTextureBlendMode(tex.get(), SDL_BLENDMODE_BLEND);
@@ -2020,6 +2021,7 @@ GFXManager::GFXManager() {
     if (pFileManager->exists("PalaceTrikeAndQuadIcon.png")) {
         auto iconSurf = LoadPNG_RW(pFileManager->openFile("PalaceTrikeAndQuadIcon.png").get());
         if (iconSurf) {
+            if (iconSurf->format->palette) { palette.applyToSurface(iconSurf.get()); }
             auto tex = convertSurfaceToTexture(iconSurf.get());
             if (tex) {
                 SDL_SetTextureBlendMode(tex.get(), SDL_BLENDMODE_BLEND);
@@ -2218,6 +2220,7 @@ GFXManager::GFXManager() {
         if (pFileManager->exists("Tornie_AdvancedWindtrap_icon.png")) {
             auto iconSurf = LoadPNG_RW(pFileManager->openFile("Tornie_AdvancedWindtrap_icon.png").get());
             if (iconSurf) {
+                if (iconSurf->format->palette) { palette.applyToSurface(iconSurf.get()); }
                 auto tex = convertSurfaceToTexture(iconSurf.get());
                 if (tex) {
                     SDL_SetTextureBlendMode(tex.get(), SDL_BLENDMODE_BLEND);
@@ -2237,6 +2240,7 @@ GFXManager::GFXManager() {
     if (pFileManager->exists("RocketTrikeIcon.png")) {
         auto iconSurf = LoadPNG_RW(pFileManager->openFile("RocketTrikeIcon.png").get());
         if (iconSurf) {
+            if (iconSurf->format->palette) { palette.applyToSurface(iconSurf.get()); }
             auto tex = convertSurfaceToTexture(iconSurf.get());
             if (tex) {
                 SDL_SetTextureBlendMode(tex.get(), SDL_BLENDMODE_BLEND);
@@ -2272,6 +2276,7 @@ GFXManager::GFXManager() {
     if (pFileManager->exists("FlameTankIcon.png")) {
         auto iconSurf = LoadPNG_RW(pFileManager->openFile("FlameTankIcon.png").get());
         if (iconSurf) {
+            if (iconSurf->format->palette) { palette.applyToSurface(iconSurf.get()); }
             auto tex = convertSurfaceToTexture(iconSurf.get());
             if (tex) {
                 SDL_SetTextureBlendMode(tex.get(), SDL_BLENDMODE_BLEND);

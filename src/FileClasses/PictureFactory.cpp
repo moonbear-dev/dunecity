@@ -1201,6 +1201,53 @@ std::unique_ptr<Animation> PictureFactory::mapMentatAnimationToNeutral(Animation
     return newAnimation;
 }
 
+sdl2::surface_ptr PictureFactory::mapMentatSurfaceToRebels(SDL_Surface* harkonnenMentat) {
+    // Rebels mentat is the Harkonnen portrait (the bearded man) recoloured
+    // to the Rebels grey palette (PALCOLOR_REBELS = 192). The user wanted
+    // the same face as the vanilla Harkonnen briefing, just in the Rebels
+    // faction colours. We use the same remap as Sardaukar (also Harkonnen
+    // -> grey) but with the Rebels grey range so it matches Custom_IBM.pal
+    // entries 192-199.
+    auto mappedSurface = mapSurfaceColorRange(harkonnenMentat, PALCOLOR_HARKONNEN, PALCOLOR_REBELS);
+
+    Uint8 colorMap[256];
+    for(int i = 0; i < 256; i++) {
+        colorMap[i] = i;
+    }
+
+    // Best-effort remap of skin/flesh tones (Dune 2 palette ~54, 56-58, 199-202)
+    // to the Rebels grey range so the face doesn't read as warm Harkonnen
+    // skin against a grey robe. The grey we pick is slightly lighter than
+    // the base PALCOLOR_REBELS so the face stays visible.
+    colorMap[54] = PALCOLOR_REBELS + 4;
+    colorMap[56] = PALCOLOR_REBELS + 4;
+    colorMap[57] = PALCOLOR_REBELS + 5;
+    colorMap[58] = PALCOLOR_REBELS + 5;
+    colorMap[121] = PALCOLOR_REBELS + 3;
+    colorMap[199] = PALCOLOR_REBELS + 2;
+    colorMap[200] = PALCOLOR_REBELS + 3;
+    colorMap[201] = PALCOLOR_REBELS + 3;
+    colorMap[202] = PALCOLOR_REBELS + 5;
+
+    mapColor(mappedSurface.get(), colorMap);
+
+    return mappedSurface;
+}
+
+std::unique_ptr<Animation> PictureFactory::mapMentatAnimationToRebels(Animation* harkonnenAnimation) {
+    auto newAnimation = std::make_unique<Animation>();
+    if (!harkonnenAnimation) return newAnimation;
+
+    for(const sdl2::surface_ptr& pSurface : harkonnenAnimation->getFrames()) {
+        newAnimation->addFrame(mapMentatSurfaceToRebels(pSurface.get()));
+    }
+
+    newAnimation->setFrameDurationTime(harkonnenAnimation->getFrameDurationTime());
+    newAnimation->setNumLoops(harkonnenAnimation->getLoopsLeft());
+
+    return newAnimation;
+}
+
 sdl2::surface_ptr PictureFactory::mapMentatSurfaceToFremen(SDL_Surface* fremenMentat) {
     sdl2::surface_ptr mappedSurface{ mapSurfaceColorRange(fremenMentat, PALCOLOR_ATREIDES, PALCOLOR_FREMEN) };
 

@@ -2617,9 +2617,14 @@ GFXManager::GFXManager() {
         }
     }
 
-    // HOUSE_REBELS mentat background — reuse neutral mentat style
+    // HOUSE_REBELS mentat background — use the Harkonnen portrait (the
+    // bearded man) recoloured to the Rebels grey palette. The user
+    // explicitly asked for "Harkonnen mentor with Rebels house colours",
+    // so we remap Harkonnen->Rebels instead of using the Ordos/Neutral
+    // portrait (which was the buggy default and produced a double-face
+    // visual artefact when stacked with the underlying Harkonnen layer).
     uiGraphic[UI_MentatBackground][HOUSE_REBELS] =
-        PictureFactory::mapMentatSurfaceToNeutral(uiGraphic[UI_MentatBackground][HOUSE_ORDOS].get());
+        PictureFactory::mapMentatSurfaceToRebels(uiGraphic[UI_MentatBackground][HOUSE_HARKONNEN].get());
 
     uiGraphic[UI_MentatBackgroundBene][HOUSE_HARKONNEN] = Scaler::defaultDoubleSurface(LoadCPS_RW(pFileManager->openFile("MENTATM.CPS").get()).get());
     if(uiGraphic[UI_MentatBackgroundBene][HOUSE_HARKONNEN] != nullptr) {
@@ -2673,6 +2678,7 @@ GFXManager::GFXManager() {
         uiGraphic[UI_Herald_ColoredLarge][HOUSE_NEUTRAL] = Scaler::defaultDoubleSurface(uiGraphic[UI_Herald_Colored][HOUSE_NEUTRAL].get());
 
         // HOUSE_REBELS herald
+        // Try the explicit HeraldRebels.png first if the mod ships one.
         if (ModManager::instance().getActiveModName() == "Tornie" && pFileManager->exists("HeraldRebels.png")) {
             auto pRebels = LoadPNG_RW(pFileManager->openFile("HeraldRebels.png").get());
             if (pRebels) {
@@ -2682,9 +2688,27 @@ GFXManager::GFXManager() {
             }
         }
         if (!uiGraphic[UI_Herald_Colored][HOUSE_REBELS]) {
-            // Fallback: remap Neutral herald to rebels palette
-            uiGraphic[UI_Herald_Colored][HOUSE_REBELS] =
-                mapSurfaceColorRange(uiGraphic[UI_Herald_Colored][HOUSE_NEUTRAL].get(), PALCOLOR_NEUTRAL, PALCOLOR_REBELS);
+            // Fallback: assemble a Sonic Tank herald (Tank_Base + Sonictank_Gun),
+            // matching the Map Editor Sonic Tank icon pattern. This gives Rebels
+            // a distinctive silhouette (turret with sonic cannon) instead of
+            // looking like a Neutral colour-shift.
+            // The combinePictures is a one-direction 8-frame tank on a 16-px grid,
+            // so the result is centred at the right offset for a herald (which is
+            // typically 24-30 px on each axis inside the 83x91 frame).
+            if (objPic[ObjPic_Tank_Base][HOUSE_HARKONNEN][0] && objPic[ObjPic_Sonictank_Gun][HOUSE_HARKONNEN][0]) {
+                sdl2::surface_ptr pSonicHerald{combinePictures(
+                    getSubFrame(objPic[ObjPic_Tank_Base][HOUSE_HARKONNEN][0].get(), 0, 0, 8, 1).get(),
+                    getSubFrame(objPic[ObjPic_Sonictank_Gun][HOUSE_HARKONNEN][0].get(), 0, 0, 8, 1).get(),
+                    3, 1)};
+                if (pSonicHerald) {
+                    uiGraphic[UI_Herald_Colored][HOUSE_REBELS] = std::move(pSonicHerald);
+                }
+            }
+            // Last-resort fallback: remap Neutral herald to Rebels palette
+            if (!uiGraphic[UI_Herald_Colored][HOUSE_REBELS]) {
+                uiGraphic[UI_Herald_Colored][HOUSE_REBELS] =
+                    mapSurfaceColorRange(uiGraphic[UI_Herald_Colored][HOUSE_NEUTRAL].get(), PALCOLOR_NEUTRAL, PALCOLOR_REBELS);
+            }
         }
         uiGraphic[UI_Herald_ColoredLarge][HOUSE_REBELS] = Scaler::defaultDoubleSurface(uiGraphic[UI_Herald_Colored][HOUSE_REBELS].get());
     }
@@ -3186,7 +3210,29 @@ SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned in
                                        objPic[ObjPic_ConstructionYard][HOUSE_HARKONNEN][z]->format, 0)
                 };
             } else {
-                THROW(std::runtime_error, "GFXManager::getZoomedObjPic(): Unit Picture with ID %u is not loaded!", id);
+                // Tornie-exclusive unit sprites: fall back to vanilla closest-match
+                // (Deviator / Flame Tank / Sonic / Elite Siege don't have a vanilla
+                // equivalent, but we can render something rather than crash the whole
+                // scenario load. Siege tank is the closest generic heavy unit.)
+                static const unsigned int tornieUnitIds[] = {
+                    ObjPic_DeviatorCustom,
+                    ObjPic_FlameTank,
+                    ObjPic_Sonictank_Gun,
+                    ObjPic_EliteSiegeTankCustom,
+                };
+                bool isTornieUnit = false;
+                for(auto cid : tornieUnitIds) {
+                    if(id == cid) { isTornieUnit = true; break; }
+                }
+                if(isTornieUnit && objPic[ObjPic_Siegetank_Gun][HOUSE_HARKONNEN][z]) {
+                    SDL_Log("GFXManager::getZoomedObjPic(): Tornie unit sprite ID %u not loaded, falling back to Siegetank_Gun (placeholder)", id);
+                    objPic[id][HOUSE_HARKONNEN][z] = sdl2::surface_ptr{
+                        SDL_ConvertSurface(objPic[ObjPic_Siegetank_Gun][HOUSE_HARKONNEN][z].get(),
+                                           objPic[ObjPic_Siegetank_Gun][HOUSE_HARKONNEN][z]->format, 0)
+                    };
+                } else {
+                    THROW(std::runtime_error, "GFXManager::getZoomedObjPic(): Unit Picture with ID %u is not loaded!", id);
+                }
             }
         }
 

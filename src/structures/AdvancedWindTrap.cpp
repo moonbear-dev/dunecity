@@ -35,8 +35,17 @@ void AdvancedWindTrap::init() {
     // is used as-is — no cycling between frames. House tint is not applied
     // to the building body; only the two tiny corner flags (top-left +
     // bottom-right) are drawn, and they're hardcoded to Harkonnen red as
-    // a generic "house-color switching" marker (see blitToScreen()).
-    numImagesX = 1;
+    graphicID = ObjPic_AdvancedWindTrap;
+
+    // DuneCity 1.0.255: per-house static frame strip layout.
+    // numImagesX = 9 (= NUM_HOUSES + 1 reserved empty slot). Frame 0
+    // is the Harkonnen tint baked into the source PNG; frames
+    // 1..7 are auto-tinted per-house via getZoomedObjPic through
+    // houseToPaletteIndex[house]. Frame 7 (HOUSE_REBELS) reads
+    // Custom_IBM.PAL at palette indices 192–198 (reb grey). Frame 8
+    // (0-indexed = "frame 9 if you start at 1") is intentionally
+    // empty so future art can fill it without breaking the layout.
+    numImagesX = 9;
     numImagesY = 1;
     firstAnimFrame = 0;
     lastAnimFrame = 0;

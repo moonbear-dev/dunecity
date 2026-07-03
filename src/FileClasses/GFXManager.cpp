@@ -177,7 +177,7 @@ static const Coord objPicTiles[] {
     { 4, 1 },   // ObjPic_Airport (4 frame slots, all identical; 3x3 footprint)
     { 1, 1 },   // ObjPic_Hospital (single cell, 2x2 footprint, auto-placed on residential)
     { 1, 1 },   // ObjPic_Church   (single cell, 2x2 footprint, auto-placed on residential)
-    { 1, 1 },   // ObjPic_AdvancedWindTrap (Tornie super power plant, 3x3 footprint, single static frame — the previous NUM_WINDTRAP_ANIMATIONS_PER_ROW layout caused the engine's animation cycle to read past the real atlas into grey out-of-bounds cells and to render the editor palette icon as the vanilla Windtrap animation's first frame)
+    { 9, 1 },   // ObjPic_AdvancedWindTrap (Tornie super power plant, 3x3 footprint; per-house static frame strip 9 wide. Frames 0..7 = one per house (HARKONNEN..REBELS); frame 8 is intentionally empty (0-indexed; "frame 9 if you start at 1") so the slot exists for future art passes per user spec.)
     { 2, 1 },   // ObjPic_CornerFlag (2 animation frames from Tornie_CornerFlagNew.png; 7x7 each)
     { 8, 1 },   // ObjPic_FlameTank (8-dir palette-indexed strip from Tornie.PAK)
     { 8, 1 },   // ObjPic_DeviatorCustom (8-dir palette-indexed strip from Tornie.PAK)
@@ -1460,12 +1460,15 @@ GFXManager::GFXManager() {
 
             const int frameW = 3 * D2_TILESIZE;
             const int frameH = 3 * D2_TILESIZE;
-            // Single static frame. Previous code built a 3-frame atlas
-            // (144x48) with 3 identical blits of a 48x48 source. The engine's
-            // animation cycle (curAnimFrame 0..2) then read past the real
-            // atlas into grey out-of-bounds cells. Now 1 frame × 1 row —
-            // matches the {1, 1} atlas declaration on the line above.
-            const int numFrames = 1;
+            // DuneCity 1.0.255: per-house static frame strip.
+            // numFrames = 9 (= NUM_HOUSES + 1 reserved empty slot).
+            // Frame 0 holds the Harkonnen tint; frames 1..7 are
+            // auto-tinted per-house via getZoomedObjPic through
+            // houseToPaletteIndex[house]; frame 7 (HOUSE_REBELS)
+            // reads Custom_IBM.PAL at palette indices 192–198
+            // (reb grey); frame 8 is intentionally empty so
+            // future art can fill it without breaking the layout.
+            const int numFrames = 9;
             const int atlasW = numFrames * frameW;
             const int atlasH = frameH;
             sdl2::surface_ptr atlas{ SDL_CreateRGBSurface(0, atlasW, atlasH,
@@ -1475,14 +1478,12 @@ GFXManager::GFXManager() {
             }
 
             sdl2::surface_ptr superSrc;
-            // DuneCity 1.0.254: load a single static PNG for Advanced
-            // Windtrap tiles. No animation frames, no per-house
-            // tint variants, no 4-frame fallback path — the user's
-            // supplied 48×48 image is THE tile; we render it
-            // unchanged for every house. The corner-flag blit block
-            // (further down) is also dropped: the same 48×48 PNG is
-            // used both as the on-map tile and as the corner flag,
-            // with no per-house recolouring.
+            // DuneCity 1.0.255: load the user-supplied 48x48 PNG as the
+            // Harkonnen frame (frame 0) of the per-house strip. Frames
+            // 1..7 are generated automatically by getZoomedObjPic
+            // through houseToPaletteIndex[house]. Frame 8 is reserved
+            // empty. The same single static PNG is the canonical
+            // tile for every house.
             if (pFileManager->exists("Tornie_AdvancedWindtrap_gfx.png")) {
                 auto gfxSurf = LoadPNG_RW(pFileManager->openFile("Tornie_AdvancedWindtrap_gfx.png").get());
                 if (gfxSurf) {
@@ -1506,10 +1507,11 @@ GFXManager::GFXManager() {
                 }
             }
 
-            // DuneCity 1.0.251: blit source as a single frame into a 48×48 atlas.
-            // The atlas is exactly numImagesX * frameW = 1 * 48 = 48 wide. Using
-            // SDL_BlitScaled with explicit src=full source rect clamps safely to
-            // dst bounds — no OOB read.
+            // DuneCity 1.0.255: blit the loaded source as frame 0 (Harkonnen).
+            // Frames 1..7 are auto-tinted per-house via getZoomedObjPic;
+            // frame 8 stays empty. Use SDL_BlitScaled with an explicit full-
+            // source rect so a smaller source clamps safely into the
+            // atlas-bound slot.
             if (atlas && superSrc) {
                 SDL_SetSurfaceBlendMode(superSrc.get(), SDL_BLENDMODE_NONE);
                 SDL_Rect srcRect = { 0, 0, superSrc->w, superSrc->h };
@@ -1520,8 +1522,10 @@ GFXManager::GFXManager() {
                 objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][1] = scaleRGBASurface(objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0].get(), 2);
                 objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][2] = scaleRGBASurface(objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0].get(), 3);
 
-                // DuneCity 1.0.251: removed per-house building-body tint. Each
-                // house's atlas is a deep copy of the Harkonnen one, unmodulated.
+                // DuneCity 1.0.255: per-house deep copy of the per-house frame
+                // strip. getZoomedObjPic applies houseToPaletteIndex[house]
+                // tint on demand; for HOUSE_REBELS that tint reads from
+                // Custom_IBM.PAL at indices 192–198 (reb grey).
                 for (int h = 1; h < NUM_HOUSES; h++) {
                     for (int z = 0; z < NUM_ZOOMLEVEL; z++) {
                         if (objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][z]) {

@@ -121,9 +121,12 @@ void SFXManager::loadEnglishVoice() {
                 HouseNameChunk = getChunkFromFile("NNEU.VOC", "ANEU.VOC");
                 break; // Neutral house name call - NNEU.VOC is the dedicated Neutral sound
             case HOUSE_REBELS:
-                HouseString = "H";
-                HouseNameChunk = getChunkFromFile(HouseString + "HARK.VOC");
-                break; // Rebels uses Harkonnen voice
+                HouseString = "R";
+                HouseNameChunk = getChunkFromFile(HouseString + "REBELS.VOC", HouseString + "ATRE.VOC");
+                break; // DuneCity 1.0.253: Rebels uses its own R-prefixed voice set
+                       // (R*.VOC, copied from Harkonnen for now as a placeholder
+                       // until dedicated Rebels voice samples are recorded). Falls
+                       // back to ATRE.VOC if no R-prefix file is found.
             default:
                 break;
         }

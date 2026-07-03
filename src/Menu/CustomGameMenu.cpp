@@ -445,12 +445,18 @@ void CustomGameMenu::onMapListSelectionChange(bool bInteractive)
     if(inimap.hasSection("Fremen")) numPlayers++;
     if(inimap.hasSection("Mercenary")) numPlayers++;
     if(inimap.hasSection("Sardaukar")) numPlayers++;
+    // DuneCity 1.0.253: include Neutral + Rebels so 8-team maps count
+    // correctly in the load-game dropdown.
+    if(inimap.hasSection("Neutral")) numPlayers++;
+    if(inimap.hasSection("Rebels")) numPlayers++;
     if(inimap.hasSection("Player1")) numPlayers++;
     if(inimap.hasSection("Player2")) numPlayers++;
     if(inimap.hasSection("Player3")) numPlayers++;
     if(inimap.hasSection("Player4")) numPlayers++;
     if(inimap.hasSection("Player5")) numPlayers++;
     if(inimap.hasSection("Player6")) numPlayers++;
+    if(inimap.hasSection("Player7")) numPlayers++;
+    if(inimap.hasSection("Player8")) numPlayers++;
 
     mapPropertyPlayers.setText(std::to_string(numPlayers));
 

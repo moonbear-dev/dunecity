@@ -319,6 +319,9 @@ void LoadMapWindow::onMapListSelectionChange(bool bInteractive)
     if(inimap.hasSection("Mercenary")) numPlayers++;
     if(inimap.hasSection("Sardaukar")) numPlayers++;
     if(inimap.hasSection("Neutral")) numPlayers++;
+    // DuneCity 1.0.253: include Rebels + Player8 so 8-team maps show
+    // correctly in the map editor's load-map dropdown.
+    if(inimap.hasSection("Rebels")) numPlayers++;
     if(inimap.hasSection("Player1")) numPlayers++;
     if(inimap.hasSection("Player2")) numPlayers++;
     if(inimap.hasSection("Player3")) numPlayers++;
@@ -326,6 +329,7 @@ void LoadMapWindow::onMapListSelectionChange(bool bInteractive)
     if(inimap.hasSection("Player5")) numPlayers++;
     if(inimap.hasSection("Player6")) numPlayers++;
     if(inimap.hasSection("Player7")) numPlayers++;
+    if(inimap.hasSection("Player8")) numPlayers++;
 
     mapPropertyPlayers.setText(std::to_string(numPlayers));
 

@@ -47,6 +47,7 @@ def resolve_entry(name):
 ENTRIES = [
     "FlameTank.png",
     "FlameTankIcon.png",
+    "EliteSiegeTankIcon.png",
     "HeraldNeu.png",
     "HeraldNeuMask.png",
     "NeutralLauncherIcon.png",

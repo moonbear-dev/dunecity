@@ -2800,10 +2800,15 @@ GFXManager::GFXManager() {
         const char* penFiles[] = { "MapEditorPen1x1.png", "MapEditorPen3x3.png", "MapEditorPen5x5.png" };
         for (int i = 0; i < 3; i++) {
             auto raw = LoadPNG_RW(pFileManager->openFile(penFiles[i]).get());
-            if (raw && raw->w > 20 && raw->h > 20) {
-                int newW = raw->w - 20;
-                int newH = raw->h - 20;
-                sdl2::surface_ptr scaled{ SDL_CreateRGBSurface(0, newW, newH,
+            if (raw) {
+                // DuneCity 1.0.252: dropped the '-20' shrink. Original code
+                // (raw->w - 20, raw->h - 20) was scaling the brush icon
+                // DOWN by ~58% (a 48x48 source became 28x28) so the
+                // button symbol didn't match the actual brush cell count
+                // (the user reported "brush tile size it's not supposed
+                // to take this size"). The full source dimensions are
+                // used so the icon accurately reflects the brush size.
+                sdl2::surface_ptr scaled{ SDL_CreateRGBSurface(0, raw->w, raw->h,
                     raw->format->BitsPerPixel,
                     raw->format->Rmask, raw->format->Gmask, raw->format->Bmask, raw->format->Amask) };
                 if (scaled) {
@@ -2813,9 +2818,6 @@ GFXManager::GFXManager() {
                     SDL_SetColorKey(scaled.get(), SDL_TRUE, 0);
                     uiGraphic[penIds[i]][HOUSE_HARKONNEN] = std::move(scaled);
                 }
-            } else if (raw) {
-                SDL_SetColorKey(raw.get(), SDL_TRUE, 0);
-                uiGraphic[penIds[i]][HOUSE_HARKONNEN] = std::move(raw);
             }
         }
     }

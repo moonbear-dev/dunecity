@@ -177,7 +177,7 @@ static const Coord objPicTiles[] {
     { 4, 1 },   // ObjPic_Airport (4 frame slots, all identical; 3x3 footprint)
     { 1, 1 },   // ObjPic_Hospital (single cell, 2x2 footprint, auto-placed on residential)
     { 1, 1 },   // ObjPic_Church   (single cell, 2x2 footprint, auto-placed on residential)
-    { 9, 1 },   // ObjPic_AdvancedWindTrap (Tornie super power plant, 3x3 footprint; per-house static frame strip 9 wide. Frames 0..7 = one per house (HARKONNEN..REBELS); frame 8 is intentionally empty (0-indexed; "frame 9 if you start at 1") so the slot exists for future art passes per user spec.)
+    { 1, 1 },   // ObjPic_AdvancedWindTrap (DuneCity 1.0.254 single-static-PNG layout — the 1.0.255 numImagesX=9 strip caused out-of-bounds blit because the texture is a 10×7 frame sheet from generateAdvancedWindtrapAnimationFrames, not 9 cells; reverted in 1.0.259 per 'out of bounding of Advanced Powerplant' user report)
     { 2, 1 },   // ObjPic_CornerFlag (2 animation frames from Tornie_CornerFlagNew.png; 7x7 each)
     { 8, 1 },   // ObjPic_FlameTank (8-dir palette-indexed strip from Tornie.PAK)
     { 8, 1 },   // ObjPic_DeviatorCustom (8-dir palette-indexed strip from Tornie.PAK)
@@ -1440,15 +1440,20 @@ GFXManager::GFXManager() {
 
             const int frameW = 3 * D2_TILESIZE;
             const int frameH = 3 * D2_TILESIZE;
-            // DuneCity 1.0.255: per-house static frame strip.
-            // numFrames = 9 (= NUM_HOUSES + 1 reserved empty slot).
-            // Frame 0 holds the Harkonnen tint; frames 1..7 are
-            // auto-tinted per-house via getZoomedObjPic through
-            // houseToPaletteIndex[house]; frame 7 (HOUSE_REBELS)
-            // reads Custom_IBM.PAL at palette indices 192–198
-            // (reb grey); frame 8 is intentionally empty so
-            // future art can fill it without breaking the layout.
-            const int numFrames = 9;
+            // DuneCity 1.0.259: revert numFrames=1 (single static PNG).
+            // The 1.0.255 per-house strip (numFrames=9) was inconsistent
+            // with the texture generated downstream by
+            // generateAdvancedWindtrapAnimationFrames() which always
+            // produces a 10×7 frame sheet. With numFrames=9 the
+            // 432×48 atlas was passed to a 10×7 generator producing
+            // 480×336, but the structure's numImagesX=9 expected a
+            // 9-cell-wide strip in the 480×336 texture, so
+            // calcSpriteSourceRect read at 53.33 px/cell instead of
+            // 48 — out-of-bounds, hence the 1.0.258 crash. The
+            // generator takes the first 48×48 cell of the atlas and
+            // produces a canonical 10×7 frame sheet for it; the
+            // structure reads that sheet as a single 1×1 cell.
+            const int numFrames = 1;
             const int atlasW = numFrames * frameW;
             const int atlasH = frameH;
             sdl2::surface_ptr atlas{ SDL_CreateRGBSurface(0, atlasW, atlasH,

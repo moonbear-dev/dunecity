@@ -229,9 +229,9 @@ MapSettingsWindow::MapSettingsWindow(MapEditor* pMapEditor, HOUSETYPE currentHou
     techLevelDropDownBox.addEntry(_("Level 3:  Light Factory, Quad"),3);
     techLevelDropDownBox.addEntry(_("Level 4:  2x2 Concrete, Wall, Heavy Factory, Tank, Harvester, MCV"),4);
     techLevelDropDownBox.addEntry(_("Level 5:  Gun Turret, Hightech Factory, Rapair Yard, Launcher, Carryall"),5);
-    techLevelDropDownBox.addEntry(_("Level 6:  Starport, Rocket Turret, Siege Tank"),6);
+    techLevelDropDownBox.addEntry(_("Level 6:  Starport, Rocket Turret, Advanced Windtrap, Siege Tank"),6);
     techLevelDropDownBox.addEntry(_("Level 7:  House IX, Sonic Tank/Deviator/Devastator, Ornithopter"),7);
-    techLevelDropDownBox.addEntry(_("Level 8:  Palace, Fremen, Saboteur"),8);
+    techLevelDropDownBox.addEntry(_("Level 8:  Flame Tank"),8);
     techLevelDropDownBox.setSelectedItem(mapInfo.techLevel > 0 ? mapInfo.techLevel-1 : 7);
     techLevelDropDownBox.setVisible( (pMapEditor->getMapVersion() >= 2) );
     techLevelHBox.addWidget(&techLevelDropDownBox);

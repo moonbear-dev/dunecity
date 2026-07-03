@@ -409,35 +409,15 @@ GFXManager::GFXManager() {
     // no-ops so the autoloaded ObjPic_DeviatorCustom stays null.
     (void)0;
 
-    // DuneCity: Tornie Elite Siege Tank custom sprite — palette-indexed 8-frame strip.
-    // Tiles must match the vanilla SiegeTank (same frame count/dimensions) so blitToScreen
-    // picks up the correct frame offsets.  Uses ibmPalette (not benePalette) because the
-    // sprite is authored against IBM.PAL indices just like all other vehicle sprites.
-    if(pFileManager->exists("Tornie_EliteSiegeTank.png")) {
-        auto estRaw = LoadPNG_RW(pFileManager->openFile("Tornie_EliteSiegeTank.png").get());
-        if(estRaw && estRaw->format->BitsPerPixel == 8) {
-            ibmPalette.applyToSurface(estRaw.get());
-            objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][0] = std::move(estRaw);
-            // Generate zoom levels 1 and 2 so getZoomedObjPic never throws on
-            // a null HOUSE_HARKONNEN[z] entry for this custom sprite.
-            for (int z = 1; z < NUM_ZOOMLEVEL; z++) {
-                SDL_Surface* src = objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][0].get();
-                if (!src) break;
-                auto scaled = Scaler::defaultDoubleSurface(src);
-                if (z == 1) {
-                    objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][1] = std::move(scaled);
-                } else {
-                    // zoom 2: double again from zoom 1
-                    SDL_Surface* src1 = objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][1].get();
-                    if (src1) objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][2] = Scaler::defaultDoubleSurface(src1);
-                }
-            }
-            SDL_Log("GFXManager: Loaded Tornie_EliteSiegeTank.png (palette-indexed, all zoom levels)");
-        } else if(estRaw) {
-            SDL_Log("GFXManager WARNING: Tornie_EliteSiegeTank.png is not 8-bit palette-indexed (%d bpp), skipped",
-                    estRaw->format->BitsPerPixel);
-        }
-    }
+    // DuneCity 1.0.255: Elite Siege Tank custom Tornie sprite loader disabled.
+    // Per user spec 'elite siege tank tiles same but for siege tank tiles
+    // and base tiles too' (the previous out-of-band handled Deviator; this
+    // commit does the same for Elite Siege Tank). Vanilla SiegeTank-derived
+    // body/gun sprites are used instead, just like the regular Siege Tank
+    // and the Construction Yard base (which were already vanilla in the
+    // engine code path). Other mods that ship a custom Elite Siege Tank
+    // override can reinstate the loader by removing this guard.
+    (void)0;
 
     // DuneCity: Tornie custom spice terrain strips — palette-indexed 17×2 tile grids.
     // Terrain is not house-tinted, so copy to all houses to prevent mapSurfaceColorRange.

@@ -400,34 +400,14 @@ GFXManager::GFXManager() {
         SDL_Log("GFXManager: FlameTank sprite loaded OK");
     }
 
-    // DuneCity: Tornie Deviator custom sprite — palette-indexed 8-frame strip.
-    // Loaded into HOUSE_HARKONNEN only; the house-tinting loop at the end of
-    // getZoomedObjPic() remaps palette indices 144-150 for all other houses.
-    if(ModManager::instance().getActiveModName() == "Tornie"
-       && pFileManager->exists("Tornie_Deviator.png")) {
-        auto devRaw = LoadPNG_RW(pFileManager->openFile("Tornie_Deviator.png").get());
-        if(devRaw && devRaw->format->BitsPerPixel == 8) {
-            benePalette.applyToSurface(devRaw.get());
-            objPic[ObjPic_DeviatorCustom][HOUSE_HARKONNEN][0] = std::move(devRaw);
-            for(int z = 1; z < NUM_ZOOMLEVEL; z++) {
-                SDL_Surface* src0 = objPic[ObjPic_DeviatorCustom][HOUSE_HARKONNEN][0].get();
-                if(!src0) continue;
-                sdl2::surface_ptr dst{ SDL_CreateRGBSurface(0,
-                    src0->w * (z+1), src0->h * (z+1),
-                    src0->format->BitsPerPixel,
-                    src0->format->Rmask, src0->format->Gmask,
-                    src0->format->Bmask, src0->format->Amask) };
-                if(dst) {
-                    SDL_BlitScaled(src0, nullptr, dst.get(), nullptr);
-                    objPic[ObjPic_DeviatorCustom][HOUSE_HARKONNEN][z] = std::move(dst);
-                }
-            }
-            SDL_Log("GFXManager: Loaded Tornie_Deviator.png (palette-indexed)");
-        } else if(devRaw) {
-            SDL_Log("GFXManager WARNING: Tornie_Deviator.png is not 8-bit palette-indexed (%d bpp), skipped",
-                    devRaw->format->BitsPerPixel);
-        }
-    }
+    // DuneCity 1.0.253: Tornie custom Deviator sprite loader disabled.
+    // Per user spec 'deviator graphic need to be restored for vanilla
+    // one in Tornie Mods' — when Tornie mod is active, the Tornie_*
+    // custom sprite should not be loaded and the stock vanilla Deviator
+    // Launcher sprite is used instead. Other mods that ship their own
+    // Tornie_Deviator.png are unaffected; this loader simply always
+    // no-ops so the autoloaded ObjPic_DeviatorCustom stays null.
+    (void)0;
 
     // DuneCity: Tornie Elite Siege Tank custom sprite — palette-indexed 8-frame strip.
     // Tiles must match the vanilla SiegeTank (same frame count/dimensions) so blitToScreen

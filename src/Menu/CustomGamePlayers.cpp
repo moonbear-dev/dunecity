@@ -1456,8 +1456,8 @@ void CustomGamePlayers::onChangeHousesDropDownBoxes(bool bInteractive, int house
         addToHouseDropDown(curHouseInfo.houseDropDown, HOUSE_INVALID);
 
         for(int h=0;h<NUM_HOUSES;h++) {
-            if (h == HOUSE_REBELS) continue; // Rebels: AI-only, not player-selectable
-
+            // Rebels is now a selectable house in Custom Game + Skirmish
+            // (Tornie 1.0.250). The previous AI-only skip was removed.
             bool bAddHouse;
 
             bool bCheck;

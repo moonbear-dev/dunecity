@@ -2710,8 +2710,13 @@ GFXManager::GFXManager() {
         uiGraphic[UI_Herald_ColoredLarge][HOUSE_NEUTRAL] = Scaler::defaultDoubleSurface(uiGraphic[UI_Herald_Colored][HOUSE_NEUTRAL].get());
 
         // HOUSE_REBELS herald
-        // Try the explicit HeraldRebels.png first if the mod ships one.
-        if (ModManager::instance().getActiveModName() == "Tornie" && pFileManager->exists("HeraldRebels.png")) {
+        // Per user request, the Rebels banner applies to ALL mods: any mod
+        // that ships a HeraldRebels.png in its data dir will have that file
+        // preferred over the Sonic Tank assemble fallback and the Neutral
+        // remap fallback. This was previously gated on the active mod being
+        // "Tornie" — that gate is removed so the same banner follows the
+        // mod that ships it, not just the mod explicitly named.
+        if (pFileManager->exists("HeraldRebels.png")) {
             auto pRebels = LoadPNG_RW(pFileManager->openFile("HeraldRebels.png").get());
             if (pRebels) {
                 if (pRebels->format->BitsPerPixel == 8)

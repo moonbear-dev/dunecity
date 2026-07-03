@@ -2467,7 +2467,12 @@ GFXManager::GFXManager() {
     // Cyril. There is no separate Tornie Fremen mentat art in the repo, so
     // the Atreides branch is sufficient.
     uiGraphic[UI_MentatBackground][HOUSE_ORDOS] = Scaler::defaultDoubleSurface(LoadCPS_RW(pFileManager->openFile("MENTATO.CPS").get()).get());
-    uiGraphic[UI_MentatBackground][HOUSE_FREMEN] = PictureFactory::mapMentatSurfaceToFremen(uiGraphic[UI_MentatBackground][HOUSE_ATREIDES].get());
+    // DuneCity 1.0.251: Cyril (HOUSE_ATREIDES) and Fremen share the same
+    // mentat background in vanilla Dune II — the orange-tinted variant
+    // produced by mapMentatSurfaceToFremen. Apply it to both houses so
+    // the vanilla palette matches.
+    uiGraphic[UI_MentatBackground][HOUSE_ATREIDES] = PictureFactory::mapMentatSurfaceToFremen(uiGraphic[UI_MentatBackground][HOUSE_ATREIDES].get());
+    uiGraphic[UI_MentatBackground][HOUSE_FREMEN]  = PictureFactory::mapMentatSurfaceToFremen(uiGraphic[UI_MentatBackground][HOUSE_ATREIDES].get());
     uiGraphic[UI_MentatBackground][HOUSE_SARDAUKAR] = PictureFactory::mapMentatSurfaceToSardaukar(uiGraphic[UI_MentatBackground][HOUSE_HARKONNEN].get());
     uiGraphic[UI_MentatBackground][HOUSE_MERCENARY] = PictureFactory::mapMentatSurfaceToMercenary(uiGraphic[UI_MentatBackground][HOUSE_ORDOS].get());
     // DuneCity: Neutral mentat background.

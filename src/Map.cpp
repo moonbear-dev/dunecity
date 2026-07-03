@@ -243,6 +243,11 @@ void Map::damage(Uint32 damagerID, House* damagerOwner, const Coord& realPos, Ui
                             pUnit->handleDamage(lround(damage), damagerID, damagerOwner);
                         } else if(bulletID == Bullet_Flame) {
                             // Flame Tank: no aircraft damage, instakill light infantry, 2x vs troopers
+                            // Don't damage allied units or self — the Flame Tank previously
+                            // damaged itself when standing in the bullet's damage radius.
+                            if(pUnit->getOwner() == damagerOwner) {
+                                continue;
+                            }
                             if(!pUnit->isAFlyingUnit()) {
                                 int flameDmg = lround(damage);
                                 int uid = pUnit->getItemID();

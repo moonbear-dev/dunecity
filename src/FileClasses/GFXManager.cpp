@@ -2896,15 +2896,27 @@ GFXManager::GFXManager() {
     }
 
     // Tornie: red/green spice field + bloom editor icons from custom terrain strips.
-    // Spice field = col 0, row 0 (thin spice); bloom icons use vanilla SpiceBloom.
+    // The strip is 17 cols × 2 rows of 16x16 tiles. Layout:
+    //   Row 0 = light spice ("with sand", low density, bloom preview)
+    //   Row 1 = heavy spice ("full spice", high density, field preview)
+    // Column 7 (center of 0-16) is the most "full spice" tile with no sand
+    // collision; it's the most representative icon for both density variants.
     for (int h = 0; h < (int)NUM_HOUSES; h++) {
         if (objPic[ObjPic_TerrainRedSpice][h][0] != nullptr) {
+            // Red field = col 7, row 1 (heavy/full spice, no sand)
             uiGraphic[UI_MapEditor_RedSpice][h] = getSubFrame(
-                objPic[ObjPic_TerrainRedSpice][h][0].get(), 0, 0, 17, 2);
+                objPic[ObjPic_TerrainRedSpice][h][0].get(), 7, 1, 17, 2);
+            // Red bloom = col 7, row 0 (light/spice+bloom preview)
+            uiGraphic[UI_MapEditor_RedSpiceBloom][h] = getSubFrame(
+                objPic[ObjPic_TerrainRedSpice][h][0].get(), 7, 0, 17, 2);
         }
         if (objPic[ObjPic_TerrainGreenSpice][h][0] != nullptr) {
+            // Green field = col 7, row 1
             uiGraphic[UI_MapEditor_GreenSpice][h] = getSubFrame(
-                objPic[ObjPic_TerrainGreenSpice][h][0].get(), 0, 0, 17, 2);
+                objPic[ObjPic_TerrainGreenSpice][h][0].get(), 7, 1, 17, 2);
+            // Green bloom = col 7, row 0
+            uiGraphic[UI_MapEditor_GreenSpiceBloom][h] = getSubFrame(
+                objPic[ObjPic_TerrainGreenSpice][h][0].get(), 7, 0, 17, 2);
         }
     }
 

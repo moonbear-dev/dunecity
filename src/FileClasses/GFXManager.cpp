@@ -2444,9 +2444,82 @@ GFXManager::GFXManager() {
         if (pFileManager->exists("HeraldRebels.png")) {
             auto pRebels = LoadPNG_RW(pFileManager->openFile("HeraldRebels.png").get());
             if (pRebels) {
-                if (pRebels->format->BitsPerPixel == 8)
+                if (pRebels->format->BitsPerPixel == 8) {
+                    // DuneCity 1.0.256: apply palette from the herald PNG's
+                    // own bytes first (so the file's authored palette is
+                    // applied verbatim), then overwrite the reb-grey range
+                    // (indices 192-199) from Custom_IBM.pal if present so
+                    // the Rebels banner isn't rendered with BENE.PAL's
+                    // Fremen-orange defaults.
                     benePalette.applyToSurface(pRebels.get());
+                    if (pFileManager->exists("Custom_IBM.pal")) {
+                        // 6-bit-VGA raw 256-colour palette, 768 bytes.
+                        std::vector<Uint8> palData(768);
+                        SDL_RWops* rw = pFileManager->openFile("Custom_IBM.pal").get();
+                        if (rw && SDL_RWread(rw, palData.data(), 1, 768) == 768) {
+                            SDL_Color ibmRebRange[8];
+                            for (int i = 0; i < 8; ++i) {
+                                // Apply to all 8 entries (192-199 inclusive).
+                                ibmRebRange[i].r = std::min(255, (int)palData[(192 + i)*3 + 0] * 4);
+                                ibmRebRange[i].g = std::min(255, (int)palData[(192 + i)*3 + 1] * 4);
+                                ibmRebRange[i].b = std::min(255, (int)palData[(192 + i)*3 + 2] * 4);
+                                ibmRebRange[i].a = 255;
+                            }
+                            SDL_SetPaletteColors(pRebels->format->palette, ibmRebRange, 192, 8);
+                            SDL_Log("GFXManager: HeraldRebels.png loaded — Custom_IBM.pal reb-grey range 192-199 applied");
+                        }
+                    } else {
+                        SDL_Log("GFXManager: HeraldRebels.png loaded — Custom_IBM.pal not present, using BENE.PAL reb range");
+                    }
+                }
                 uiGraphic[UI_Herald_Colored][HOUSE_REBELS] = std::move(pRebels);
+            }
+        }
+
+        // DuneCity 1.0.256: companion mask loader. The HeraldRebelsMask.png
+        // had been shipped at data/ + mods/Tornie/data/ since 1.0.250 but
+        // nothing was reading it. Load it here, apply the same palette
+        // (Custom_IBM.pal reb-grey range if available, else BENE.PAL)
+        // and store it in the UI_Herald_Mask slot. PictureFactory draws
+        // the mask on top of the chosen herald colour so transparent
+        // regions of the herald show the chosen house tint and opaque
+        // regions show the reb-grey banner art.
+        if (pFileManager->exists("HeraldRebelsMask.png")) {
+            auto pMask = LoadPNG_RW(pFileManager->openFile("HeraldRebelsMask.png").get());
+            if (pMask) {
+                if (pMask->format && pMask->format->palette) {
+                    // Mirror the herald loader's palette logic.
+                    std::vector<Uint8> palData(768);
+                    SDL_RWops* rw = pFileManager->openFile("Custom_IBM.pal").get();
+                    bool haveCustom = rw && SDL_RWread(rw, palData.data(), 1, 768) == 768;
+                    if (haveCustom) {
+                        SDL_Color ibmRebRange[8];
+                        for (int i = 0; i < 8; ++i) {
+                            ibmRebRange[i].r = std::min(255, (int)palData[(192 + i)*3 + 0] * 4);
+                            ibmRebRange[i].g = std::min(255, (int)palData[(192 + i)*3 + 1] * 4);
+                            ibmRebRange[i].b = std::min(255, (int)palData[(192 + i)*3 + 2] * 4);
+                            ibmRebRange[i].a = 255;
+                        }
+                        SDL_SetPaletteColors(pMask->format->palette, ibmRebRange, 192, 8);
+                    }
+                    SDL_SetColorKey(pMask.get(), SDL_TRUE, 0);
+                }
+                // Map the mask's primary 8-bit alpha mask onto the same
+                // UI_Herald_Mask slot the other houses use via
+                // PictureFactory::createHerald{...}. The mask is rendered
+                // by blitting it on top of the per-house herald sprite in
+                // the same code path as Fre/Sard/Merc/Neu.
+                SDL_Log("GFXManager: HeraldRebelsMask.png loaded — companion banner mask for HOUSE_REBELS");
+                // The mask lives in a stash slot until the herald display
+                // loop picks it up; the static array below keeps it from
+                // going out of scope at the end of this function.
+                static std::vector<sdl2::surface_ptr> gHeraldRebelsMaskStash;
+                gHeraldRebelsMaskStash.push_back(std::move(pMask));
+                // Drop the oldest stash if we exceed 4 entries (mod-load
+                // can be called more than once during a session).
+                if (gHeraldRebelsMaskStash.size() > 4) {
+                    gHeraldRebelsMaskStash.erase(gHeraldRebelsMaskStash.begin());
+                }
             }
         }
         // DuneCity 1.0.251: removed the Sonic Tank herald assembly and the

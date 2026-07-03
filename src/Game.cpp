@@ -348,70 +348,96 @@ void Game::initGame(const GameInitSettings& newGameInitSettings) {
             gameType = gameInitSettings.getGameType();
             randomGen.setSeed(gameInitSettings.getRandomSeed());
 
-            objectData.loadFromINIFile("config/ObjectData.ini");
-
-            // City zones must not be buildable when the active mod doesn't
-            // opt into DuneCity city-sim features. Force-disable them in the
-            // loaded ObjectData so every consumer (build lists, prerequisites,
-            // AI, save/load) sees them as unavailable, regardless of what the
-            // mod's ObjectData.ini says.
-            if (!citySimEnabled_) {
-                for (int h = 0; h < NUM_HOUSES; h++) {
-                    objectData.data[Structure_ZoneResidential][h].enabled = false;
-                    objectData.data[Structure_ZoneCommercial][h].enabled  = false;
-                    objectData.data[Structure_ZoneIndustrial][h].enabled  = false;
-                }
-            }
-
-            objectData.logSettings();
-
-            if(gameInitSettings.getMission() != 0) {
-                techLevel = ((gameInitSettings.getMission() + 1)/3) + 1 ;
-            }
-
-            // Defensive: scenario/INI loading can throw std::runtime_error
-            // for malformed scenario data (e.g. an unplaceable unit position
-            // on a save-game load). Without this guard, an uncaught throw
-            // becomes 0xE06D7363 / heap corruption (0xC0000374) on Windows
-            // and kills the process. Log and continue with an empty map
-            // rather than abort.
+            // DuneCity 1.0.252: outer try/catch around the entire
+            // Campaign/Skirmish/CustomGame init block. The user reported
+            // 'Game crashed for vanilla Rebels map 1' — the per-step
+            // try/catches for INIMapLoader and BriefingMenu are good
+            // but a throw that escapes them (e.g. inside the briefing
+            // menu's map draw, or some other call site) takes the
+            // whole process down. Wrap the whole case in a top-level
+            // catch so any remaining exception is logged and the
+            // process can stay alive long enough for the user to
+            // attach a debugger or read the log.
             try {
-                INIMapLoader(this, gameInitSettings.getFilename(), gameInitSettings.getFiledata());
-            } catch(const std::exception& e) {
-                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                    "Game::init: scenario load failed (gameType=%d, mission=%d): %s",
-                    (int)gameInitSettings.getGameType(),
-                    gameInitSettings.getMission(), e.what());
-            }
+                objectData.loadFromINIFile("config/ObjectData.ini");
 
-            // Reset city simulation for the new map so lastProcessedDay_ and
-            // other per-map state don't carry over from a previous mission.
-            if (citySimEnabled_ && currentGameMap != nullptr) {
-                citySimulation_.reset();
-            }
+                // City zones must not be buildable when the active mod doesn't
+                // opt into DuneCity city-sim features. Force-disable them in the
+                // loaded ObjectData so every consumer (build lists, prerequisites,
+                // AI, save/load) sees them as unavailable, regardless of what the
+                // mod's ObjectData.ini says.
+                if (!citySimEnabled_) {
+                    for (int h = 0; h < NUM_HOUSES; h++) {
+                        objectData.data[Structure_ZoneResidential][h].enabled = false;
+                        objectData.data[Structure_ZoneCommercial][h].enabled  = false;
+                        objectData.data[Structure_ZoneIndustrial][h].enabled  = false;
+                    }
+                }
 
-            if(bReplay == false && gameInitSettings.getGameType() != GameType::CustomGame && gameInitSettings.getGameType() != GameType::CustomMultiplayer) {
-                /* do briefing */
-                SDL_Log("Briefing...");
-                // DuneCity 1.0.251: defensive try/catch around BriefingMenu
-                // for the Neutral campaign.  The user reported the Neutral
-                // campaign in vanilla crashing before the first level loads
-                // (mentat visible, then crash). BriefingMenu reads
-                // MENTATH.*-style text files indexed by house; if the
-                // underlying MentatTextFile or house-to-mentat mapping is
-                // incomplete (which is the case for the Neutral house in
-                // vanilla — MENTATN.* doesn't exist as a separate file),
-                // the briefing construction can throw.  Catch std::exception
-                // so a malformed briefing doesn't take the whole process
-                // down.
+                objectData.logSettings();
+
+                if(gameInitSettings.getMission() != 0) {
+                    techLevel = ((gameInitSettings.getMission() + 1)/3) + 1 ;
+                }
+
+                // Defensive: scenario/INI loading can throw std::runtime_error
+                // for malformed scenario data (e.g. an unplaceable unit position
+                // on a save-game load). Without this guard, an uncaught throw
+                // becomes 0xE06D7363 / heap corruption (0xC0000374) on Windows
+                // and kills the process. Log and continue with an empty map
+                // rather than abort.
                 try {
-                    BriefingMenu(gameInitSettings.getHouseID(), gameInitSettings.getMission(), BRIEFING).showMenu();
+                    INIMapLoader(this, gameInitSettings.getFilename(), gameInitSettings.getFiledata());
                 } catch(const std::exception& e) {
                     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                        "Game::init: BriefingMenu failed (house=%d, mission=%d): %s",
-                        gameInitSettings.getHouseID(),
+                        "Game::init: scenario load failed (gameType=%d, mission=%d): %s",
+                        (int)gameInitSettings.getGameType(),
                         gameInitSettings.getMission(), e.what());
                 }
+
+                // Reset city simulation for the new map so lastProcessedDay_ and
+                // other per-map state don't carry over from a previous mission.
+                if (citySimEnabled_ && currentGameMap != nullptr) {
+                    citySimulation_.reset();
+                }
+
+                if(bReplay == false && gameInitSettings.getGameType() != GameType::CustomGame && gameInitSettings.getGameType() != GameType::CustomMultiplayer) {
+                    /* do briefing */
+                    SDL_Log("Briefing...");
+                    // DuneCity 1.0.251: defensive try/catch around BriefingMenu
+                    // for the Neutral campaign.  The user reported the Neutral
+                    // campaign in vanilla crashing before the first level loads
+                    // (mentat visible, then crash). BriefingMenu reads
+                    // MENTATH.*-style text files indexed by house; if the
+                    // underlying MentatTextFile or house-to-mentat mapping is
+                    // incomplete (which is the case for the Neutral house in
+                    // vanilla — MENTATN.* doesn't exist as a separate file),
+                    // the briefing construction can throw.  Catch std::exception
+                    // so a malformed briefing doesn't take the whole process
+                    // down.
+                    try {
+                        BriefingMenu(gameInitSettings.getHouseID(), gameInitSettings.getMission(), BRIEFING).showMenu();
+                    } catch(const std::exception& e) {
+                        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                            "Game::init: BriefingMenu failed (house=%d, mission=%d): %s",
+                            gameInitSettings.getHouseID(),
+                            gameInitSettings.getMission(), e.what());
+                    }
+                }
+            } catch(const std::exception& e) {
+                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                    "Game::init: Campaign/Skirmish/CustomGame init failed (house=%d, mission=%d, gameType=%d): %s",
+                    gameInitSettings.getHouseID(),
+                    gameInitSettings.getMission(),
+                    (int)gameInitSettings.getGameType(), e.what());
+                THROW(std::runtime_error, "Game::init: outer catch re-throw");
+            } catch(...) {
+                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                    "Game::init: Campaign/Skirmish/CustomGame init caught unknown exception (house=%d, mission=%d, gameType=%d)",
+                    gameInitSettings.getHouseID(),
+                    gameInitSettings.getMission(),
+                    (int)gameInitSettings.getGameType());
+                throw;
             }
         } break;
 

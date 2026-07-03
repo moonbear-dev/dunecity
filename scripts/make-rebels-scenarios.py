@@ -47,6 +47,23 @@ def main():
         # structure listings. The rest of the scenario is identical.
         content = content.replace("[Sardaukar]", "[Rebels]")
         content = content.replace(",Sardaukar,", ",Rebels,")
+        # DuneCity 1.0.251: also rewrite leading-identifier Sardaukar
+        # values (e.g. 'ID024=Sardaukar,Trike,...' or '1=Sardaukar,Soldier,Homebase,1'
+        # in the [UNITS] and [REINFORCEMENTS] sections). The simple
+        # substring replace above caught embedded 'Sardaukar,' but missed
+        # the leading value. Without this fix, the Rebels campaign
+        # starts with Sardaukar-owned units still on the map, which
+        # produces the 'green grid / no place to build' symptom.
+        import re
+        content = re.sub(r'(^|[\s,;=])Sardaukar(,|$)', r'\1Rebels\2', content, flags=re.MULTILINE)
+        # Also update the 'Scenario N control for house Sardaukar.' comment.
+        content = re.sub(
+            r'^; Scenario \d+ control for house Sardaukar\.$',
+            f'; Scenario {mission} control for house Rebels (Tornie mod, 8th career).',
+            content,
+            count=1,
+            flags=re.MULTILINE,
+        )
 
         with open(dst_path, "w") as f:
             f.write(content)

@@ -175,10 +175,21 @@ sdl2::RWops_ptr Pakfile::openFile(const std::string& filename) {
         THROW(std::runtime_error, "Pakfile::openFile(): Writing files is not supported!");
     }
 
-    // find file
+    // DuneCity 1.0.252: case-insensitive filename matching. PAK entries
+    // are stored lowercase ("scenr001.ini") but FileManager::getScenarioFilename
+    // builds the requested name uppercase ("SCENR001.INI"). On Windows the
+    // external-file fallback is case-insensitive (via getCaseInsensitiveFilename)
+    // so the failing case was masked; on vanilla-mod (no mod-side
+    // campaign dir) the lookup falls through to the PAK and was rejecting
+    // SCENR001.INI as missing. Lowercase both sides for the match.
+    std::string lowerFilename = filename;
+    for (auto& c : lowerFilename) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+
     int index = -1;
     for(unsigned int i=0;i<fileEntries.size();i++) {
-        if(filename == fileEntries[i].filename) {
+        std::string entryLower = fileEntries[i].filename;
+        for (auto& c : entryLower) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        if(lowerFilename == entryLower) {
             index = i;
             break;
         }
@@ -213,8 +224,16 @@ sdl2::RWops_ptr Pakfile::openFile(const std::string& filename) {
 }
 
 bool Pakfile::exists(const std::string& filename) const {
+    // DuneCity 1.0.252: case-insensitive matching, mirroring the openFile
+    // change. See the comment in openFile() for the user-reported
+    // root cause (SCENR001.INI vs scenr001.ini lookup failure for the
+    // vanilla mod where the PAK is the only source of the file).
+    std::string lowerFilename = filename;
+    for (auto& c : lowerFilename) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
     for(unsigned int i=0;i<fileEntries.size();i++) {
-        if(filename == fileEntries[i].filename) {
+        std::string entryLower = fileEntries[i].filename;
+        for (auto& c : entryLower) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        if(lowerFilename == entryLower) {
             return true;
         }
     }

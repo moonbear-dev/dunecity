@@ -335,11 +335,12 @@ MapEditorInterface::MapEditorInterface(MapEditor* pMapEditor)
     editorModeTerrain_HBox4.addWidget(Spacer::create());
 
 
-    editorModeTerrainVBox.addWidget(VSpacer::create(10));
-
-
-    // setup terrain pen size buttons
-    editorModeTerrainVBox.addWidget(&editorModeTerrain_PenHBox, 20);
+    // DuneCity 1.0.251: brush-size (terrain pen) row moved up 20px.
+    // (1) Removed the 10px VSpacer::create(10) above the pen row.  (2) Set
+    // the pen row's fixedHeight to 0 (was 20) so the row has no extra
+    // vertical padding above the buttons themselves.  Net effect: the
+    // pen row sits 20px higher in the sidebar than it did in 1.0.250.
+    editorModeTerrainVBox.addWidget(&editorModeTerrain_PenHBox, 0);
 
     editorModeTerrain_Pen1x1.setToggleButton(true);
     editorModeTerrain_Pen1x1.setOnClick(std::bind(&MapEditorInterface::onTerrainPenButton, this, 1));
@@ -356,6 +357,7 @@ MapEditorInterface::MapEditorInterface(MapEditor* pMapEditor)
     editorModeTerrain_Pen5x5.setToggleButton(true);
     editorModeTerrain_Pen5x5.setOnClick(std::bind(&MapEditorInterface::onTerrainPenButton, this, 5));
     editorModeTerrain_PenHBox.addWidget(&editorModeTerrain_Pen5x5);
+    // (no spacer between the pen row and the next group; was 10px in 1.0.250)
 
     // setup classic terrain buttons
     editorModeClassicTerrain_MainVBox.addWidget(&editorModeClassicTerrain_VBox, sideBar.getSize().x - 17);

@@ -311,7 +311,13 @@ void SinglePlayerSkirmishMenu::onHouseLeft()
 
 void SinglePlayerSkirmishMenu::onHouseRight()
 {
-    if(currentHouseChoiceScrollPos < 4) {
+    // DuneCity 1.0.252: max scroll position increased from 4 to 5 so the
+    // 8-entry houseOrder carousel (ATREIDES, ORDOS, HARKONNEN, MERCENARY,
+    // FREMEN, SARDAUKAR, NEUTRAL, REBELS) can scroll all the way to
+    // REBELS. Previously the carousel stopped at NEUTRAL (index 6)
+    // because the bound was houseOrder.size() - 4 instead of
+    // houseOrder.size() - 3, leaving index 7 (HOUSE_REBELS) unreachable.
+    if(currentHouseChoiceScrollPos < static_cast<int>(sizeof(houseOrder)/sizeof(houseOrder[0])) - 3) {
         currentHouseChoiceScrollPos++;
         selectedButton--;
         onSelectHouseButton(selectedButton);

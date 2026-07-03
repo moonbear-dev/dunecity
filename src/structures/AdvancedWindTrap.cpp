@@ -81,11 +81,19 @@ void AdvancedWindTrap::blitToScreen() {
 
     if (fogged) return;
 
-    // DuneCity 1.0.251: tiny corner flags (top-left + bottom-right) only,
-    // hardcoded to Harkonnen red. Per user request, the flags are NOT
-    // per-house-tinted — they serve as a generic "house-color switching
-    // marker" only. The building body itself is left untinted.
-    SDL_Texture* flagTex = pGFXManager->getZoomedObjPic(ObjPic_CornerFlag, HOUSE_HARKONNEN, currentZoomlevel);
+    // DuneCity 1.0.260: per-house flag colouring. The flag is loaded
+    // once with the Harkonnen red base colour (PALCOLOR_HARKONNEN
+    // range); getZoomedObjPic() then auto-tints the flag to the
+    // owner's house colour via mapSurfaceColorRange(..., PALCOLOR_HARKONNEN,
+    // houseToPaletteIndex[house]) on first access. Calling
+    // getZoomedObjPic with the owner's house ID here drives that
+    // per-house remap, so each house's Advanced Windtrap shows its
+    // own colour flag in the two corner slots. Pre-1.0.260 the
+    // flag was hardcoded to HOUSE_HARKONNEN, which gave every house
+    // a red flag regardless of owner (per the user spec 'parles tu
+    // de cette image?' with the 7×3 per-house-coloured flag
+    // reference image).
+    SDL_Texture* flagTex = pGFXManager->getZoomedObjPic(ObjPic_CornerFlag, getOwner()->getHouseID(), currentZoomlevel);
     if (!flagTex) return;
 
     // Flag frame size is derived from the loaded texture height (supports both

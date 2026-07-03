@@ -2539,29 +2539,17 @@ GFXManager::GFXManager() {
                 uiGraphic[UI_Herald_Colored][HOUSE_REBELS] = std::move(pRebels);
             }
         }
-        if (!uiGraphic[UI_Herald_Colored][HOUSE_REBELS]) {
-            // Fallback: assemble a Sonic Tank herald (Tank_Base + Sonictank_Gun),
-            // matching the Map Editor Sonic Tank icon pattern. This gives Rebels
-            // a distinctive silhouette (turret with sonic cannon) instead of
-            // looking like a Neutral colour-shift.
-            // The combinePictures is a one-direction 8-frame tank on a 16-px grid,
-            // so the result is centred at the right offset for a herald (which is
-            // typically 24-30 px on each axis inside the 83x91 frame).
-            if (objPic[ObjPic_Tank_Base][HOUSE_HARKONNEN][0] && objPic[ObjPic_Sonictank_Gun][HOUSE_HARKONNEN][0]) {
-                sdl2::surface_ptr pSonicHerald{combinePictures(
-                    getSubFrame(objPic[ObjPic_Tank_Base][HOUSE_HARKONNEN][0].get(), 0, 0, 8, 1).get(),
-                    getSubFrame(objPic[ObjPic_Sonictank_Gun][HOUSE_HARKONNEN][0].get(), 0, 0, 8, 1).get(),
-                    3, 1)};
-                if (pSonicHerald) {
-                    uiGraphic[UI_Herald_Colored][HOUSE_REBELS] = std::move(pSonicHerald);
-                }
-            }
-            // Last-resort fallback: remap Neutral herald to Rebels palette
-            if (!uiGraphic[UI_Herald_Colored][HOUSE_REBELS]) {
-                uiGraphic[UI_Herald_Colored][HOUSE_REBELS] =
-                    mapSurfaceColorRange(uiGraphic[UI_Herald_Colored][HOUSE_NEUTRAL].get(), PALCOLOR_NEUTRAL, PALCOLOR_REBELS);
-            }
-        }
+        // DuneCity 1.0.251: removed the Sonic Tank herald assembly and the
+        // Neutral-remap fallback for the Rebels herald. With the explicit
+        // HeraldRebels.png path (loaded above, cross-mod in 1.0.250) the
+        // per-house banner is now sourced from a real asset, not a derived
+        // tank silhouette. If the mod doesn't ship HeraldRebels.png the
+        // banner is left unset — that's a valid state and matches the
+        // "green grid" look the user wanted rather than rendering a wrong
+        // icon. See also Item 12 (green grid fix) — the green grid
+        // is the *correct* state when no explicit banner is shipped.
+        // The original Sonic-Tank-combine path and the Neutral-remap path
+        // (lines 2543-2563 in 1.0.250) are intentionally removed.
         uiGraphic[UI_Herald_ColoredLarge][HOUSE_REBELS] = Scaler::defaultDoubleSurface(uiGraphic[UI_Herald_Colored][HOUSE_REBELS].get());
     }
 

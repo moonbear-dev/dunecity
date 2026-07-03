@@ -2425,7 +2425,7 @@ GFXManager::GFXManager() {
         uiGraphic[UI_Herald_ColoredLarge][HOUSE_ORDOS] = Scaler::defaultDoubleSurface(uiGraphic[UI_Herald_Colored][HOUSE_ORDOS].get());
         uiGraphic[UI_Herald_Colored][HOUSE_HARKONNEN] = getSubPicture(pHouseChoiceBackground.get(), 215, 54, 83, 91);
         uiGraphic[UI_Herald_ColoredLarge][HOUSE_HARKONNEN] = Scaler::defaultDoubleSurface(uiGraphic[UI_Herald_Colored][HOUSE_HARKONNEN].get());
-        uiGraphic[UI_Herald_Colored][HOUSE_FREMEN] = PicFactory->createHeraldFre(uiGraphic[UI_Herald_Colored][HOUSE_HARKONNEN].get());
+        uiGraphic[UI_Herald_Colored][HOUSE_FREMEN] = PicFactory->createHeraldFre(uiGraphic[UI_Herald_Colored][HOUSE_HARKONNEN].get(), ibmPalette);
         uiGraphic[UI_Herald_ColoredLarge][HOUSE_FREMEN] = Scaler::defaultDoubleSurface(uiGraphic[UI_Herald_Colored][HOUSE_FREMEN].get());
         uiGraphic[UI_Herald_Colored][HOUSE_SARDAUKAR] = PicFactory->createHeraldSard(uiGraphic[UI_Herald_Colored][HOUSE_ORDOS].get(), uiGraphic[UI_Herald_Colored][HOUSE_ATREIDES].get());
         uiGraphic[UI_Herald_ColoredLarge][HOUSE_SARDAUKAR] = Scaler::defaultDoubleSurface(uiGraphic[UI_Herald_Colored][HOUSE_SARDAUKAR].get());
@@ -2767,21 +2767,24 @@ GFXManager::GFXManager() {
         }
     }
 
-    // Brush-size pen buttons — scale each down by 20px from native 31×31 → 11×11.
+    // Brush-size pen buttons — original Dune Legacy behaviour.
+    // The source PNG (e.g. MapEditorPen1x1.png) is rendered at full
+    // resolution, then scaled down by 20 px each axis to match the
+    // older small-format brush tile previews the user asked for in
+    // 1.0.258 ('make this size for brush button (i take it from an
+    // old version)'). The 1.0.252 commit (843f4bd) had dropped the
+    // shrink because the brush icon no longer matched the actual
+    // brush cell count, but the user now wants the old compact size
+    // back regardless of cell-count visualisation.
     {
         const int penIds[] = { UI_MapEditor_Pen1x1, UI_MapEditor_Pen3x3, UI_MapEditor_Pen5x5 };
         const char* penFiles[] = { "MapEditorPen1x1.png", "MapEditorPen3x3.png", "MapEditorPen5x5.png" };
         for (int i = 0; i < 3; i++) {
             auto raw = LoadPNG_RW(pFileManager->openFile(penFiles[i]).get());
-            if (raw) {
-                // DuneCity 1.0.252: dropped the '-20' shrink. Original code
-                // (raw->w - 20, raw->h - 20) was scaling the brush icon
-                // DOWN by ~58% (a 48x48 source became 28x28) so the
-                // button symbol didn't match the actual brush cell count
-                // (the user reported "brush tile size it's not supposed
-                // to take this size"). The full source dimensions are
-                // used so the icon accurately reflects the brush size.
-                sdl2::surface_ptr scaled{ SDL_CreateRGBSurface(0, raw->w, raw->h,
+            if (raw && raw->w > 20 && raw->h > 20) {
+                int newW = raw->w - 20;
+                int newH = raw->h - 20;
+                sdl2::surface_ptr scaled{ SDL_CreateRGBSurface(0, newW, newH,
                     raw->format->BitsPerPixel,
                     raw->format->Rmask, raw->format->Gmask, raw->format->Bmask, raw->format->Amask) };
                 if (scaled) {
@@ -2791,6 +2794,9 @@ GFXManager::GFXManager() {
                     SDL_SetColorKey(scaled.get(), SDL_TRUE, 0);
                     uiGraphic[penIds[i]][HOUSE_HARKONNEN] = std::move(scaled);
                 }
+            } else if (raw) {
+                SDL_SetColorKey(raw.get(), SDL_TRUE, 0);
+                uiGraphic[penIds[i]][HOUSE_HARKONNEN] = std::move(raw);
             }
         }
     }

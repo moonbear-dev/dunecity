@@ -54,7 +54,7 @@ public:
     sdl2::surface_ptr createBuilderListUpperCap() const;
     sdl2::surface_ptr createBuilderListLowerCap() const;
 
-    sdl2::surface_ptr createHeraldFre(SDL_Surface* heraldHark) const;
+    sdl2::surface_ptr createHeraldFre(SDL_Surface* heraldHark, Palette& ibmPalette) const;
     sdl2::surface_ptr createHeraldSard(SDL_Surface* heraldOrd, SDL_Surface* heraldAtre) const;
     sdl2::surface_ptr createHeraldMerc(SDL_Surface* heraldAtre, SDL_Surface* heraldOrd) const;
     sdl2::surface_ptr createHeraldNeu(SDL_Surface* heraldOrdos, SDL_Surface* launcherIcon = nullptr) const;

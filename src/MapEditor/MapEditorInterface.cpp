@@ -304,11 +304,18 @@ MapEditorInterface::MapEditorInterface(MapEditor* pMapEditor)
 
     editorModeTerrain_HBox3.addWidget(Spacer::create());
 
-    // Tornie: red/green spice bloom buttons in their own row (hidden unless Tornie mod is active)
-    const bool isTornie = ModManager::instance().getActiveModName() == "Tornie";
+    // DuneCity 1.0.258: Tornie mod sidebar cleanup. Per user spec
+    // 'remove for tornie mods Red Spice Red Spice darker and Green Spice
+    // Green Spice Darker button on side bar'. Previously gated on the
+    // Tornie mod being active (isTornie) so the row only showed when
+    // Tornie was loaded — but the user reports the row is still visible
+    // in their Tornie mod install. The spec is unconditional: hide the
+    // row regardless of which mod is active. The button objects stay
+    // in memory (so onTerrainButton slot lookup remains valid) but
+    // they no longer take up sidebar space.
     editorModeTerrain_VBox.addWidget(VSpacer::create(2));
     editorModeTerrain_VBox.addWidget(&editorModeTerrain_HBox4);
-    editorModeTerrain_HBox4.setVisible(isTornie);
+    editorModeTerrain_HBox4.setVisible(false);
 
     editorModeTerrain_RedSpice.setToggleButton(true);
     editorModeTerrain_RedSpice.setOnClick(std::bind(&MapEditorInterface::onTerrainButton, this, Terrain_RedSpice));

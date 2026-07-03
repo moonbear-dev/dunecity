@@ -793,7 +793,7 @@ sdl2::surface_ptr PictureFactory::createBuilderListLowerCap() const {
     return copySurface(builderListLowerCap.get());
 }
 
-sdl2::surface_ptr PictureFactory::createHeraldFre(SDL_Surface* heraldHark) const {
+sdl2::surface_ptr PictureFactory::createHeraldFre(SDL_Surface* heraldHark, Palette& ibmPalette) const {
     auto pRedReplaced = mapSurfaceColorRange(heraldHark, PALCOLOR_HARKONNEN, PALCOLOR_FREMEN);
 
     auto pBlueReplaced = mapSurfaceColorRange(pRedReplaced.get(), PALCOLOR_ATREIDES, PALCOLOR_FREMEN+1);
@@ -815,6 +815,16 @@ sdl2::surface_ptr PictureFactory::createHeraldFre(SDL_Surface* heraldHark) const
     SDL_SetColorKey(pBlueReplaced.get(), SDL_TRUE, 223);
 
     SDL_BlitSurface(pBlueReplaced.get(), nullptr, pSandworm.get(), nullptr);
+
+    // DuneCity 1.0.258: restore IBM.PAL Fremen-orange at palette indices
+    // 192-207 so the Fremen campaign banner doesn't pick up the
+    // Custom_IBM.pal rebels-grey range that gets written to palette[192..199]
+    // earlier in startup. The user spec 'fremen banner in campaign and
+    // skirmish need to be with IBM.PAL not with Custom_IBM.PAL' is
+    // enforced here. Without this patch, the Fremen herald renders with
+    // the rebels-grey Custom_IBM.pal values which makes the Fremen
+    // banner indistinguishable from the Rebels banner.
+    ibmPalette.applyToSurface(pSandworm.get(), PALCOLOR_FREMEN, PALCOLOR_FREMEN + 15);
 
     return pSandworm;
 }

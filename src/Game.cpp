@@ -1585,22 +1585,23 @@ void Game::drawScreen()
 
                     SDL_Texture* validPlace = nullptr;
                     SDL_Texture* invalidPlace = nullptr;
+                    int validPlaceHouse = pBuilder->getOwner()->getHouseID();
 
                     switch(currentZoomlevel) {
                         case 0: {
-                            validPlace = pGFXManager->getUIGraphic(UI_ValidPlace_Zoomlevel0);
-                            invalidPlace = pGFXManager->getUIGraphic(UI_InvalidPlace_Zoomlevel0);
+                            validPlace = pGFXManager->getUIGraphic(UI_ValidPlace_Zoomlevel0, validPlaceHouse);
+                            invalidPlace = pGFXManager->getUIGraphic(UI_InvalidPlace_Zoomlevel0, validPlaceHouse);
                         } break;
 
                         case 1: {
-                            validPlace = pGFXManager->getUIGraphic(UI_ValidPlace_Zoomlevel1);
-                            invalidPlace = pGFXManager->getUIGraphic(UI_InvalidPlace_Zoomlevel1);
+                            validPlace = pGFXManager->getUIGraphic(UI_ValidPlace_Zoomlevel1, validPlaceHouse);
+                            invalidPlace = pGFXManager->getUIGraphic(UI_InvalidPlace_Zoomlevel1, validPlaceHouse);
                         } break;
 
                         case 2:
                         default: {
-                            validPlace = pGFXManager->getUIGraphic(UI_ValidPlace_Zoomlevel2);
-                            invalidPlace = pGFXManager->getUIGraphic(UI_InvalidPlace_Zoomlevel2);
+                            validPlace = pGFXManager->getUIGraphic(UI_ValidPlace_Zoomlevel2, validPlaceHouse);
+                            invalidPlace = pGFXManager->getUIGraphic(UI_InvalidPlace_Zoomlevel2, validPlaceHouse);
                         } break;
 
                     }
@@ -1637,20 +1638,25 @@ void Game::drawScreen()
 
             SDL_Texture* validPlace = nullptr;
             SDL_Texture* invalidPlace = nullptr;
+            int validPlaceHouse = HOUSE_HARKONNEN;
+            Player* pLocalPlayer = getPlayerByName(localPlayerName);
+            if (pLocalPlayer != nullptr && pLocalPlayer->getHouse() != nullptr) {
+                validPlaceHouse = pLocalPlayer->getHouse()->getHouseID();
+            }
 
             switch(currentZoomlevel) {
                 case 0:
-                    validPlace = pGFXManager->getUIGraphic(UI_ValidPlace_Zoomlevel0);
-                    invalidPlace = pGFXManager->getUIGraphic(UI_InvalidPlace_Zoomlevel0);
+                    validPlace = pGFXManager->getUIGraphic(UI_ValidPlace_Zoomlevel0, validPlaceHouse);
+                    invalidPlace = pGFXManager->getUIGraphic(UI_InvalidPlace_Zoomlevel0, validPlaceHouse);
                     break;
                 case 1:
-                    validPlace = pGFXManager->getUIGraphic(UI_ValidPlace_Zoomlevel1);
-                    invalidPlace = pGFXManager->getUIGraphic(UI_InvalidPlace_Zoomlevel1);
+                    validPlace = pGFXManager->getUIGraphic(UI_ValidPlace_Zoomlevel1, validPlaceHouse);
+                    invalidPlace = pGFXManager->getUIGraphic(UI_InvalidPlace_Zoomlevel1, validPlaceHouse);
                     break;
                 case 2:
                 default:
-                    validPlace = pGFXManager->getUIGraphic(UI_ValidPlace_Zoomlevel2);
-                    invalidPlace = pGFXManager->getUIGraphic(UI_InvalidPlace_Zoomlevel2);
+                    validPlace = pGFXManager->getUIGraphic(UI_ValidPlace_Zoomlevel2, validPlaceHouse);
+                    invalidPlace = pGFXManager->getUIGraphic(UI_InvalidPlace_Zoomlevel2, validPlaceHouse);
                     break;
             }
 

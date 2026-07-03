@@ -446,10 +446,16 @@ public:
     bool isSpecialBloom() const noexcept { return (type == Terrain_SpecialBloom); }
     bool isSpice() const noexcept { return ((type == Terrain_Spice) || (type == Terrain_ThickSpice) || (type == Terrain_RedSpice) || (type == Terrain_GreenSpice)); }
     bool isThickSpice() const noexcept { return (type == Terrain_ThickSpice); }
-    bool isRedSpice() const noexcept { return (type == Terrain_RedSpice); }
-    bool isGreenSpice() const noexcept { return (type == Terrain_GreenSpice); }
-    bool isRedSpiceBloom() const noexcept { return (type == Terrain_RedSpiceBloom); }
-    bool isGreenSpiceBloom() const noexcept { return (type == Terrain_GreenSpiceBloom); }
+    // DuneCity 1.0.251: removed red/green spice system. Vanilla single-spice
+    // harvesting only. isRedSpice / isGreenSpice / isRedSpiceBloom /
+    // isGreenSpiceBloom return false everywhere so existing map files
+    // that mention those terrain types are still parseable but never
+    // trigger red/green behaviour. triggerRedSpiceBloom /
+    // triggerGreenSpiceBloom are no-ops (see Tile.cpp).
+    bool isRedSpice() const noexcept { return false; }
+    bool isGreenSpice() const noexcept { return false; }
+    bool isRedSpiceBloom() const noexcept { return false; }
+    bool isGreenSpiceBloom() const noexcept { return false; }
 
     Uint32 getSandRegion() const noexcept { return sandRegion; }
     int getOwner() const noexcept { return owner; }

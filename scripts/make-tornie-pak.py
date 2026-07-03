@@ -52,6 +52,16 @@ ENTRIES = [
     "HeraldNeuMask.png",
     "NeutralLauncherIcon.png",
     "PalaceTrikeAndQuadIcon.png",
+    # DuneCity 1.0.254: Rocket Trike 91x55 sidebar icon for the player
+    # sidebar. The user-supplied 8-bit palette PNG goes to data/ and
+    # also mods/Tornie/data/ so it loads cross-mod (the loader at
+    # GFXManager.cpp:2124 uses pFileManager->exists()). Without
+    # these in the PAK the installed game falls back to the vanilla
+    # TRIKE.WSA portrait for the Rocket Trike sidebar slot, which
+    # looks wrong (the icon is supposed to distinguish rocket-trike
+    # from regular trike at a glance). Mask companion is optional.
+    "RocketTrikeIcon.png",
+    "RocketTrikeIconMask.png",
     "REGIONN.INI",
     # DuneCity 1.0.252: Custom_IBM.pal ships inside Tornie.Pak so the
     # rebels-grey palette is available to any mod that loads the PAK

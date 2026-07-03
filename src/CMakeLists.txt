@@ -708,6 +708,20 @@ if(WIN32)
         )
     endif()
 
+    # DuneCity 1.0.254: Rocket Trike Icon (the small sidebar slot,
+    # 91x55). User-supplied 8-bit palette-indexed RGBA PNG was
+    # embedded at data/RocketTrikeIcon.png via the loader at the
+    # bottom of this file. Without explicit listing the Windows
+    # install (which uses *.PAK-only filtering) drops the file.
+    if(EXISTS "${DATA_DIR}/RocketTrikeIcon.png")
+        install(
+            FILES
+                "${DATA_DIR}/RocketTrikeIcon.png"
+                "${DATA_DIR}/RocketTrikeIconMask.png"
+            DESTINATION .
+        )
+    endif()
+
     # Install mods directory (Windows)
     if(EXISTS "${CMAKE_SOURCE_DIR}/mods")
         install(

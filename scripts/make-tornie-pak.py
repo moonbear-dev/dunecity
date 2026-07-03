@@ -53,8 +53,6 @@ ENTRIES = [
     "NeutralLauncherIcon.png",
     "PalaceTrikeAndQuadIcon.png",
     "REGIONN.INI",
-    "RocketTrikeIcon.png",
-    "RocketTrikeMask.png",
     "Tornie_AdvancedWindtrap_gfx.png",
     "Tornie_AdvancedWindtrap_gfx_4frame.png",
     "Tornie_AdvancedWindtrap_gfx_frame0.png",

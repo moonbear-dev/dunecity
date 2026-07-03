@@ -273,58 +273,12 @@ GFXManager::GFXManager() {
     objPic[ObjPic_Quad][HOUSE_HARKONNEN][0] = units->getPictureArray(8,1,GROUNDUNIT_ROW(0));
     objPic[ObjPic_Trike][HOUSE_HARKONNEN][0] = units->getPictureArray(8,1,GROUNDUNIT_ROW(5));
 
-    // DuneCity: the Rocket Trike in-world sprite.
-    // Preferred path: RocketTrikeMask.png as 8-bit palette-indexed strip — load
-    // into HOUSE_HARKONNEN only; getZoomedObjPic remaps palette indices 144-150
-    // per house (same approach as regular Trike).
-    // Fallback: RocketTrike.png as truecolor RGBA — pre-build all zoom/house
-    // slots so getZoomedObjPic never palette-remaps RGBA data.
-    // Final fallback: SHP from the base game data.
+    // DuneCity 1.0.251: Rocket Trike uses the vanilla Trike sprite (no
+    // dedicated rocket-trike art). The vanilla GROUNDUNIT_ROW(5) is the same
+    // Trike sprite used for Unit_Trike; the rocket-launcher is gameplay-side
+    // (different bullet, different range), not visually different. Drop
+    // the mod-side RocketTrikeMask.png / RocketTrike.png fallback paths.
     objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][0] = units->getPictureArray(8,1,GROUNDUNIT_ROW(5));
-    {
-        bool usedPaletteIndexed = false;
-        if(pFileManager->exists("RocketTrikeMask.png")) {
-            auto rtMask = LoadPNG_RW(pFileManager->openFile("RocketTrikeMask.png").get());
-            if(rtMask && rtMask->format->BitsPerPixel == 8 && rtMask->format->palette) {
-                benePalette.applyToSurface(rtMask.get());
-                objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][0] = std::move(rtMask);
-                usedPaletteIndexed = true;
-                SDL_Log("GFXManager: Loaded RocketTrikeMask.png (palette-indexed, per-house remap)");
-            } else if(rtMask) {
-                SDL_Log("GFXManager: RocketTrikeMask.png is not 8-bit palette-indexed (%d bpp), falling back to RGBA path",
-                        rtMask->format->BitsPerPixel);
-            }
-        }
-        if(!usedPaletteIndexed && pFileManager->exists("RocketTrike.png")) {
-            auto rtRaw = LoadPNG_RW(pFileManager->openFile("RocketTrike.png").get());
-            if(rtRaw) {
-                sdl2::surface_ptr rtSurf{ SDL_ConvertSurfaceFormat(rtRaw.get(), SCREEN_FORMAT, 0) };
-                if(rtSurf) {
-                    auto scaleRT = [](SDL_Surface* src, int factor) -> sdl2::surface_ptr {
-                        sdl2::surface_ptr dst{ SDL_CreateRGBSurface(0,
-                            src->w * factor, src->h * factor,
-                            src->format->BitsPerPixel,
-                            src->format->Rmask, src->format->Gmask,
-                            src->format->Bmask, src->format->Amask) };
-                        if(dst) SDL_BlitScaled(src, nullptr, dst.get(), nullptr);
-                        return dst;
-                    };
-                    objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][0] = std::move(rtSurf);
-                    objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][1] = scaleRT(objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][0].get(), 2);
-                    objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][2] = scaleRT(objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][0].get(), 3);
-                    for(int h = 1; h < (int)NUM_HOUSES; h++) {
-                        for(int z = 0; z < NUM_ZOOMLEVEL; z++) {
-                            if(objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][z]) {
-                                objPic[ObjPic_RocketTrike][h][z] = sdl2::surface_ptr{
-                                    SDL_ConvertSurface(objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][z].get(),
-                                                       objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][z]->format, 0) };
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     // DuneCity: Flame Tank (Tornie mod) — palette-indexed 8-frame strip from Tornie.PAK.
     // House tinting uses luminance-based remap: each red palette index is remapped to

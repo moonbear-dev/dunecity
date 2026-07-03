@@ -421,12 +421,31 @@ bool Map::okayToPlaceStructure(int x, int y, int buildingSizeX, int buildingSize
 }
 
 bool Map::isWithinBuildRange(int x, int y, const House* pHouse) const {
+    // DuneCity 1.0.254: a house can build near any structure owned by a
+    // house on the same team ID, not just structures owned by its own
+    // house ID. Pre-1.0.254 this checked only
+    // tile->getOwner() == pHouse->getHouseID(), which fails on Rebels /
+    // multi-team maps because a house on team N cannot extend build
+    // range off an allied house on the same team ID.
+    //
+    // global currentGame holds House* indexed by houseID. We compare
+    // team ID via currentGame->getHouse(otherID)->getTeamID() rather
+    // than reading tile->getOwner() directly so cross-team allied
+    // structures count as in-range. Vanilla single-player (every
+    // house teamID = its own) keeps the original behaviour since
+    // allied-by-team equals allied-by-self == self only.
+    const int myTeam = pHouse->getTeamID();
     for (auto i = x - BUILDRANGE; i <= x + BUILDRANGE; i++) {
         for (auto j = y - BUILDRANGE; j <= y + BUILDRANGE; j++) {
             const auto tile = getTile_internal(i, j);
 
-            if (tile && tile->getOwner() == pHouse->getHouseID())
-                return true;
+            if (!tile) continue;
+            const int ownerID = static_cast<int>(tile->getOwner());
+            if (ownerID == pHouse->getHouseID()) return true;
+
+            if (currentGame == nullptr) continue;
+            const House* owner = currentGame->getHouse(static_cast<HOUSETYPE>(ownerID));
+            if (owner && owner->getTeamID() == myTeam) return true;
         }
     }
 

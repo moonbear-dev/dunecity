@@ -53,6 +53,21 @@ public:
     inline bool isAI() const { return ai; }
     inline bool isAlive() const { return (teamID == 0) || !(((numStructures - numItem[Structure_Wall]) <= 0) && (((numUnits - numItem[Unit_Carryall] - numItem[Unit_Harvester] - numItem[Unit_Frigate] - numItem[Unit_Sandworm] - numItem[Unit_AmbientAirplane] - numItem[Unit_AmbientHelicopter]) <= 0))); }
 
+    // DuneCity 1.0.254: cross-team helper for build range and other
+    // team-aware checks. True if both house IDs sit in the same
+    // getTeamID() bucket (or match exactly). House::getTeamID() is
+    // inline; calling it requires both houses to be live (not
+    // HOUSE_INVALID). houseID == HOUSETYPE::HOUSE_INVALID is treated
+    // as "wildcard" that matches anything (caller-side meaning: an
+    // invalid tile owner has no team and is rejected by every team
+    // check). Used by Map.cpp::isWithinBuildRange through the global
+    // currentGame->house[] lookup.
+    static bool hasSameTeamID(int houseA, int houseB, int teamA, int teamB) {
+        if (houseA == houseB) return true;
+        if (teamA == 0 || teamB == 0) return false;
+        return teamA == teamB;
+    }
+
     inline bool hasCarryalls() const { return (numItem[Unit_Carryall] > 0); }
     inline bool hasBarracks() const { return (numItem[Structure_Barracks] > 0); }
     inline bool hasIX() const { return (numItem[Structure_IX] > 0); }

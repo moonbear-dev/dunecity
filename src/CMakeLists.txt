@@ -658,6 +658,56 @@ if(WIN32)
         )
     endif()
 
+    # DuneCity 1.0.254: Rebels voice files (R*.VOC) for the per-house prefix
+    # system in SFXManager.cpp. The 44 Harkonnen-voice lines were copied
+    # into R-prefixed filenames in 1.0.253 but the Windows / Linux
+    # installers only packaged *.PAK + the explicit ANEU/HNEU/MNEU/NNEU/
+    # ONEU list above, leaving R*.VOC out. Add them here so the
+    # installed game finds RREBELS.VOC and the 43 action lines under
+    # data/R*.VOC. Without these, getChunkFromFile() throws
+    # "Cannot open 'RREBELS.VOC' or 'RATRE.VOC'!" at startup.
+    if(EXISTS "${DATA_DIR}/RREBELS.VOC")
+        file(GLOB REBELS_VOC_FILES "${DATA_DIR}/R*.VOC")
+        install(
+            FILES ${REBELS_VOC_FILES}
+            DESTINATION .
+        )
+    endif()
+
+    # DuneCity 1.0.254: Neutral mentat portrait (ChaniMentat.png).
+    # Like R*.VOC above, the binary was added to data/ but the
+    # installers didn't package it. Pick up the PNG so the in-game
+    # Neutral mentat picks up Chani's portrait via the existing
+    # GFXManager.cpp:2447 loader.
+    if(EXISTS "${DATA_DIR}/ChaniMentat.png")
+        install(
+            FILES "${DATA_DIR}/ChaniMentat.png"
+            DESTINATION .
+        )
+    endif()
+
+    # DuneCity 1.0.254: Rebels house banner (HeraldRebels.png + mask).
+    # The user's existing 1.0.253 install shipped without these loose
+    # PNGs because the Windows installer uses "*.PAK"-only filtering.
+    # The herald loader at GFXManager.cpp:2524 is gated on
+    # pFileManager->exists('HeraldRebels.png'); without the PNG in
+    # the install, the file isn't found, the lazy-remap fallback
+    # kicks in, and the Rebels banner displays in the reb-grey
+    # palette (palette index 192 = Custom_IBM.pal grey range).
+    # Per the user spec 'fait en sorte que la maison Rebels ait sa
+    # propre bannière indépendante et charge ce fichier sans
+    # modification de couleur', package the PNG and mask so the
+    # loader picks them up at the engine's first load and renders
+    # the PNG's original colours without any palette remap.
+    if(EXISTS "${DATA_DIR}/HeraldRebels.png")
+        install(
+            FILES
+                "${DATA_DIR}/HeraldRebels.png"
+                "${DATA_DIR}/HeraldRebelsMask.png"
+            DESTINATION .
+        )
+    endif()
+
     # Install mods directory (Windows)
     if(EXISTS "${CMAKE_SOURCE_DIR}/mods")
         install(

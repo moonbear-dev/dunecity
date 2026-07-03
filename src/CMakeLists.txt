@@ -688,22 +688,16 @@ if(WIN32)
 
     # DuneCity 1.0.254: Rebels house banner (HeraldRebels.png + mask).
     # The user's existing 1.0.253 install shipped without these loose
-    # PNGs because the Windows installer uses "*.PAK"-only filtering.
-    # The herald loader at GFXManager.cpp:2524 is gated on
-    # pFileManager->exists('HeraldRebels.png'); without the PNG in
-    # the install, the file isn't found, the lazy-remap fallback
-    # kicks in, and the Rebels banner displays in the reb-grey
-    # palette (palette index 192 = Custom_IBM.pal grey range).
-    # Per the user spec 'fait en sorte que la maison Rebels ait sa
-    # propre bannière indépendante et charge ce fichier sans
-    # modification de couleur', package the PNG and mask so the
-    # loader picks them up at the engine's first load and renders
-    # the PNG's original colours without any palette remap.
+    # DuneCity 1.0.262: HeraldRebels.png ships to the installer; the
+    # HeraldRebelsMask.png companion was dropped in 1.0.262 per user spec
+    # 'seulement celui que j'envoie soit pris en compte sur le nom du
+    # fichier et que toutes les copies soit identique a celui-ci'. The
+    # Custom_IBM.pal reb-grey range 192-199 is applied to HeraldRebels.png
+    # at load time so no mask cross-blit is needed.
     if(EXISTS "${DATA_DIR}/HeraldRebels.png")
         install(
             FILES
                 "${DATA_DIR}/HeraldRebels.png"
-                "${DATA_DIR}/HeraldRebelsMask.png"
             DESTINATION .
         )
     endif()

@@ -393,7 +393,25 @@ void Game::initGame(const GameInitSettings& newGameInitSettings) {
             if(bReplay == false && gameInitSettings.getGameType() != GameType::CustomGame && gameInitSettings.getGameType() != GameType::CustomMultiplayer) {
                 /* do briefing */
                 SDL_Log("Briefing...");
-                BriefingMenu(gameInitSettings.getHouseID(), gameInitSettings.getMission(),BRIEFING).showMenu();
+                // DuneCity 1.0.251: defensive try/catch around BriefingMenu
+                // for the Neutral campaign.  The user reported the Neutral
+                // campaign in vanilla crashing before the first level loads
+                // (mentat visible, then crash). BriefingMenu reads
+                // MENTATH.*-style text files indexed by house; if the
+                // underlying MentatTextFile or house-to-mentat mapping is
+                // incomplete (which is the case for the Neutral house in
+                // vanilla — MENTATN.* doesn't exist as a separate file),
+                // the briefing construction can throw.  Catch std::exception
+                // so a malformed briefing doesn't take the whole process
+                // down.
+                try {
+                    BriefingMenu(gameInitSettings.getHouseID(), gameInitSettings.getMission(), BRIEFING).showMenu();
+                } catch(const std::exception& e) {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                        "Game::init: BriefingMenu failed (house=%d, mission=%d): %s",
+                        gameInitSettings.getHouseID(),
+                        gameInitSettings.getMission(), e.what());
+                }
             }
         } break;
 

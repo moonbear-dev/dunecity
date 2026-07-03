@@ -1541,24 +1541,24 @@ GFXManager::GFXManager() {
             }
 
             sdl2::surface_ptr superSrc;
-            // Prefer Tornie's animated 4-frame sprite (192×48) at ConstructionYard
-            // cycle speed. Falls back to the single 48×48 frame (which becomes a
-            // static atlas with no animation) if the 4-frame variant isn't shipped.
-            static const int kAdvWindFrames = 4;  // matches ConstructionYard's numImagesX
-            if (pFileManager->exists("Tornie_AdvancedWindtrap_gfx_4frame.png")) {
-                auto gfxSurf = LoadPNG_RW(pFileManager->openFile("Tornie_AdvancedWindtrap_gfx_4frame.png").get());
-                if (gfxSurf) {
-                    sdl2::surface_ptr converted{ SDL_ConvertSurfaceFormat(gfxSurf.get(), SDL_PIXELFORMAT_RGBA32, 0) };
-                    superSrc = converted ? std::move(converted) : std::move(gfxSurf);
-                    SDL_Log("Loaded AdvancedWindtrap animated 4-frame gfx from Tornie_AdvancedWindtrap_gfx_4frame.png");
-                }
-            }
-            if (!superSrc && pFileManager->exists("Tornie_AdvancedWindtrap_gfx.png")) {
+            // DuneCity 1.0.251: prefer the single-frame Tornie sprite (48×48).
+            // Class is numImagesX=1 so the atlas must be exactly 48×48 wide to
+            // avoid OOB. The 4-frame path stays as a defensive fallback (old PAKs)
+            // but we only blit frame 0 of it into a 48×48 atlas.
+            if (pFileManager->exists("Tornie_AdvancedWindtrap_gfx.png")) {
                 auto gfxSurf = LoadPNG_RW(pFileManager->openFile("Tornie_AdvancedWindtrap_gfx.png").get());
                 if (gfxSurf) {
                     sdl2::surface_ptr converted{ SDL_ConvertSurfaceFormat(gfxSurf.get(), SDL_PIXELFORMAT_RGBA32, 0) };
                     superSrc = converted ? std::move(converted) : std::move(gfxSurf);
-                    SDL_Log("Loaded AdvancedWindtrap gfx from Tornie_AdvancedWindtrap_gfx.png (single-frame fallback)");
+                    SDL_Log("Loaded AdvancedWindtrap gfx from Tornie_AdvancedWindtrap_gfx.png (single-frame, DuneCity 1.0.251)");
+                }
+            }
+            if (!superSrc && pFileManager->exists("Tornie_AdvancedWindtrap_gfx_4frame.png")) {
+                auto gfxSurf = LoadPNG_RW(pFileManager->openFile("Tornie_AdvancedWindtrap_gfx_4frame.png").get());
+                if (gfxSurf) {
+                    sdl2::surface_ptr converted{ SDL_ConvertSurfaceFormat(gfxSurf.get(), SDL_PIXELFORMAT_RGBA32, 0) };
+                    superSrc = converted ? std::move(converted) : std::move(gfxSurf);
+                    SDL_Log("Loaded AdvancedWindtrap 4-frame gfx (using only frame 0; legacy fallback)");
                 }
             }
             if (!superSrc) for (const auto& dir : superDirs) {
@@ -1576,182 +1576,36 @@ GFXManager::GFXManager() {
                 }
             }
 
-            // If we loaded a 4-frame sprite (192×48), blit each frame into the atlas
-            // preserving its native content. Otherwise (single-frame source), scale
-            // the source up to fill every atlas frame so every animation cell shows
-            // the same static image.
+            // DuneCity 1.0.251: blit source as a single frame into a 48×48 atlas.
+            // The atlas is exactly numImagesX * frameW = 1 * 48 = 48 wide. Using
+            // SDL_BlitScaled with explicit src=full source rect clamps safely to
+            // dst bounds — no OOB read.
             if (atlas && superSrc) {
-                const int srcFrames = (superSrc->w >= 192 && superSrc->h >= 48) ? kAdvWindFrames : 1;
-                const int srcFrameW = superSrc->w / srcFrames;
                 SDL_SetSurfaceBlendMode(superSrc.get(), SDL_BLENDMODE_NONE);
-                for (int f = 0; f < kAdvWindFrames; ++f) {
-                    SDL_Rect srcRect = { (f % srcFrames) * srcFrameW, 0, srcFrameW, superSrc->h };
-                    SDL_Rect frameDst = { f * frameW, 0, frameW, frameH };
-                    SDL_BlitScaled(superSrc.get(), &srcRect, atlas.get(), &frameDst);
-                }
+                SDL_Rect srcRect = { 0, 0, superSrc->w, superSrc->h };
+                SDL_Rect frameDst = { 0, 0, frameW, frameH };
+                SDL_BlitScaled(superSrc.get(), &srcRect, atlas.get(), &frameDst);
 
                 objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0] = std::move(atlas);
                 objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][1] = scaleRGBASurface(objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0].get(), 2);
                 objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][2] = scaleRGBASurface(objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0].get(), 3);
 
+                // DuneCity 1.0.251: removed per-house building-body tint. Each
+                // house's atlas is a deep copy of the Harkonnen one, unmodulated.
                 for (int h = 1; h < NUM_HOUSES; h++) {
                     for (int z = 0; z < NUM_ZOOMLEVEL; z++) {
                         if (objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][z]) {
-                            // Clone the Harkonnen sprite, then modulate RGB by
-                            // this house's tint colour. The previous code did a
-                            // bare SDL_ConvertSurface copy which left every house
-                            // showing the Harkonnen grey/red palette — no
-                            // per-house owner flag in the editor palette or in
-                            // the in-world sprite. Per-house anchor RGB matches
-                            // the Flame Tank loader (h=0 red, h=1 blue, h=2
-                            // green, h=3 orange, h=4 purple, h=5 gold, h=6 grey,
-                            // h=7 dark grey). The factor scales the source
-                            // channels toward the house colour while preserving
-                            // alpha and shading contrast.
-                            SDL_Surface* src0 = objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][z].get();
-                            sdl2::surface_ptr tinted{ SDL_CreateRGBSurface(0, src0->w, src0->h, 32,
-                                src0->format->Rmask, src0->format->Gmask,
-                                src0->format->Bmask, src0->format->Amask) };
-                            if (tinted) {
-                                static const int houseAnchor[NUM_HOUSES][3] = {
-                                    {255,  60,  60}, { 80, 120,255}, { 60,220, 60},
-                                    {255, 180,  40}, {180, 80, 220}, {240,200,  60}, {160,160,160},
-                                    {110,110,110}  // HOUSE_REBELS: dark grey
-                                };
-                                const int hr = houseAnchor[h][0];
-                                const int hg = houseAnchor[h][1];
-                                const int hb = houseAnchor[h][2];
-                                // Blend factor 0.55: 55% house colour + 45% original.
-                                // Keeps shading contrast readable while tinting
-                                // recognisably. Same idea as the Flame Tank
-                                // luminance-tier remap but for RGBA sprites.
-                                constexpr int blendNumer = 55;
-                                constexpr int blendDenom = 100;
-                                SDL_LockSurface(src0);
-                                SDL_LockSurface(tinted.get());
-                                const Uint32* sp = static_cast<const Uint32*>(src0->pixels);
-                                Uint32* dp = static_cast<Uint32*>(tinted->pixels);
-                                const int npix = src0->w * src0->h;
-                                for (int p = 0; p < npix; ++p) {
-                                    Uint8 r, g, b, a;
-                                    SDL_GetRGBA(sp[p], src0->format, &r, &g, &b, &a);
-                                    if (a == 0) {
-                                        dp[p] = sp[p];
-                                        continue;
-                                    }
-                                    Uint8 nr = static_cast<Uint8>((r * (blendDenom - blendNumer) + hr * blendNumer) / blendDenom);
-                                    Uint8 ng = static_cast<Uint8>((g * (blendDenom - blendNumer) + hg * blendNumer) / blendDenom);
-                                    Uint8 nb = static_cast<Uint8>((b * (blendDenom - blendNumer) + hb * blendNumer) / blendDenom);
-                                    dp[p] = SDL_MapRGBA(tinted->format, nr, ng, nb, a);
-                                }
-                                SDL_UnlockSurface(tinted.get());
-                                SDL_UnlockSurface(src0);
-                                objPic[ObjPic_AdvancedWindTrap][h][z] = std::move(tinted);
-                            }
+                            objPic[ObjPic_AdvancedWindTrap][h][z] = sdl2::surface_ptr{
+                                SDL_ConvertSurface(objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][z].get(),
+                                                   objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][z]->format, 0)
+                            };
                         }
                     }
                 }
 
-                // Per-house corner flag: blit 2×2 Tornie_AdvHouseFlag.png at (0,0)
-                // with palette index 147 (PALCOLOR_HARKONNEN+3) recoloured to each
-                // house's own accent colour (houseToPaletteIndex[h]+3).
-                if (pFileManager->exists("Tornie_AdvHouseFlag.png")) {
-                    auto flagSrc = LoadPNG_RW(pFileManager->openFile("Tornie_AdvHouseFlag.png").get());
-                    if (flagSrc && flagSrc->format->BitsPerPixel == 8) {
-                        for (int h = 0; h < NUM_HOUSES; h++) {
-                            if (!objPic[ObjPic_AdvancedWindTrap][h][0]) continue;
-                            // For Fremen, source colours from vanilla IBM.PAL (ibmPalette) so Custom_IBM.pal rebels grey doesn't bleed in
-                            const Palette& srcPal = (h == HOUSE_FREMEN) ? ibmPalette : palette;
-                            // Clone flag surface and substitute palette entries for this house
-                            sdl2::surface_ptr flagCopy{ SDL_ConvertSurface(flagSrc.get(), flagSrc->format, 0) };
-                            if (flagCopy && flagCopy->format->palette) {
-                                // Remap dark Harkonnen slot (index 147 = PALCOLOR_HARKONNEN+3)
-                                flagCopy->format->palette->colors[147] = srcPal[houseToPaletteIndex[h] + 3];
-                                // Remap highlight slot (index 51) to lighter house tone (+1)
-                                flagCopy->format->palette->colors[51] = srcPal[houseToPaletteIndex[h] + 1];
-                            }
-                            sdl2::surface_ptr flagRGBA{ SDL_ConvertSurfaceFormat(flagCopy.get(), SDL_PIXELFORMAT_RGBA32, 0) };
-                            if (flagRGBA) {
-                                // Fill flag body with #65654c base color under house colours
-                                {
-                                    SDL_LockSurface(flagRGBA.get());
-                                    const Uint32 bodyColor = SDL_MapRGBA(flagRGBA->format, 101, 101, 76, 255);
-                                    const int pixelCount = flagRGBA->w * flagRGBA->h;
-                                    auto* pixels = static_cast<Uint32*>(flagRGBA->pixels);
-                                    for (int i = 0; i < pixelCount; i++) {
-                                        Uint8 r, g, b, a;
-                                        SDL_GetRGBA(pixels[i], flagRGBA->format, &r, &g, &b, &a);
-                                        // Fill opaque non-house-colour pixels with the base colour
-                                        if (a > 0) {
-                                            // Preserve house-remapped pixels (dark=index 147, highlight=index 51)
-                                            // by checking if this pixel matches a house palette entry
-                                            const SDL_Color& dark = srcPal[houseToPaletteIndex[h] + 3];
-                                            const SDL_Color& light = srcPal[houseToPaletteIndex[h] + 1];
-                                            if ((r == dark.r && g == dark.g && b == dark.b) ||
-                                                (r == light.r && g == light.g && b == light.b)) {
-                                                continue; // keep house colours
-                                            }
-                                            pixels[i] = bodyColor;
-                                        }
-                                    }
-                                    SDL_UnlockSurface(flagRGBA.get());
-                                }
-                                SDL_SetSurfaceBlendMode(flagRGBA.get(), SDL_BLENDMODE_BLEND);
-                                for (int z = 0; z < NUM_ZOOMLEVEL; z++) {
-                                    if (objPic[ObjPic_AdvancedWindTrap][h][z]) {
-                                        int flagSize = (z + 1) * 2; // z=0→2px, z=1→4px, z=2→6px
-                                        sdl2::surface_ptr flagScaled{ SDL_CreateRGBSurfaceWithFormat(0, flagSize, flagSize,
-                                            32, SDL_PIXELFORMAT_RGBA32) };
-                                        if (flagScaled) {
-                                            SDL_SetSurfaceBlendMode(flagScaled.get(), SDL_BLENDMODE_NONE);
-                                            SDL_BlitScaled(flagRGBA.get(), nullptr, flagScaled.get(), nullptr);
-                                            SDL_SetSurfaceBlendMode(flagScaled.get(), SDL_BLENDMODE_BLEND);
-                                            SDL_Rect dst{0, 0, flagSize, flagSize};
-                                            SDL_BlitSurface(flagScaled.get(), nullptr, objPic[ObjPic_AdvancedWindTrap][h][z].get(), &dst);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } else if (flagSrc) {
-                        // RGBA flag PNG — blit directly with blend mode, no palette remapping
-                        sdl2::surface_ptr flagRGBA{ SDL_ConvertSurfaceFormat(flagSrc.get(), SDL_PIXELFORMAT_RGBA32, 0) };
-                        if (flagRGBA) {
-                            // Fill flag body with #65654c base color
-                            {
-                                SDL_LockSurface(flagRGBA.get());
-                                const Uint32 bodyColor = SDL_MapRGBA(flagRGBA->format, 101, 101, 76, 255);
-                                const int pixelCount = flagRGBA->w * flagRGBA->h;
-                                auto* pixels = static_cast<Uint32*>(flagRGBA->pixels);
-                                for (int i = 0; i < pixelCount; i++) {
-                                    Uint8 r, g, b, a;
-                                    SDL_GetRGBA(pixels[i], flagRGBA->format, &r, &g, &b, &a);
-                                    if (a > 0) {
-                                        pixels[i] = bodyColor;
-                                    }
-                                }
-                                SDL_UnlockSurface(flagRGBA.get());
-                            }
-                            SDL_SetSurfaceBlendMode(flagRGBA.get(), SDL_BLENDMODE_BLEND);
-                            for (int h = 0; h < NUM_HOUSES; h++) {
-                                for (int z = 0; z < NUM_ZOOMLEVEL; z++) {
-                                    if (objPic[ObjPic_AdvancedWindTrap][h][z]) {
-                                        int flagSize = (z + 1) * 2;
-                                        sdl2::surface_ptr flagScaled{ SDL_CreateRGBSurfaceWithFormat(0, flagSize, flagSize,
-                                            32, SDL_PIXELFORMAT_RGBA32) };
-                                        if (flagScaled) {
-                                            SDL_SetSurfaceBlendMode(flagScaled.get(), SDL_BLENDMODE_NONE);
-                                            SDL_BlitScaled(flagRGBA.get(), nullptr, flagScaled.get(), nullptr);
-                                            SDL_SetSurfaceBlendMode(flagScaled.get(), SDL_BLENDMODE_BLEND);
-                                            SDL_Rect dst{0, 0, flagSize, flagSize};
-                                            SDL_BlitSurface(flagScaled.get(), nullptr, objPic[ObjPic_AdvancedWindTrap][h][z].get(), &dst);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                // DuneCity 1.0.251: removed per-house corner-flag tint. The flag is
+                // drawn at runtime in AdvancedWindTrap::blitToScreen() from
+                // HOUSE_HARKONNEN's flag sprite only — no per-house remap.
 
                 // Zone-colour corner markers removed — replaced by animated ObjPic_CornerFlag
                 // drawn at runtime in AdvancedWindTrap::blitToScreen().

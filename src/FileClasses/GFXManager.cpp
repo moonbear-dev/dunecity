@@ -1475,24 +1475,20 @@ GFXManager::GFXManager() {
             }
 
             sdl2::surface_ptr superSrc;
-            // DuneCity 1.0.251: prefer the single-frame Tornie sprite (48×48).
-            // Class is numImagesX=1 so the atlas must be exactly 48×48 wide to
-            // avoid OOB. The 4-frame path stays as a defensive fallback (old PAKs)
-            // but we only blit frame 0 of it into a 48×48 atlas.
+            // DuneCity 1.0.254: load a single static PNG for Advanced
+            // Windtrap tiles. No animation frames, no per-house
+            // tint variants, no 4-frame fallback path — the user's
+            // supplied 48×48 image is THE tile; we render it
+            // unchanged for every house. The corner-flag blit block
+            // (further down) is also dropped: the same 48×48 PNG is
+            // used both as the on-map tile and as the corner flag,
+            // with no per-house recolouring.
             if (pFileManager->exists("Tornie_AdvancedWindtrap_gfx.png")) {
                 auto gfxSurf = LoadPNG_RW(pFileManager->openFile("Tornie_AdvancedWindtrap_gfx.png").get());
                 if (gfxSurf) {
                     sdl2::surface_ptr converted{ SDL_ConvertSurfaceFormat(gfxSurf.get(), SDL_PIXELFORMAT_RGBA32, 0) };
                     superSrc = converted ? std::move(converted) : std::move(gfxSurf);
-                    SDL_Log("Loaded AdvancedWindtrap gfx from Tornie_AdvancedWindtrap_gfx.png (single-frame, DuneCity 1.0.251)");
-                }
-            }
-            if (!superSrc && pFileManager->exists("Tornie_AdvancedWindtrap_gfx_4frame.png")) {
-                auto gfxSurf = LoadPNG_RW(pFileManager->openFile("Tornie_AdvancedWindtrap_gfx_4frame.png").get());
-                if (gfxSurf) {
-                    sdl2::surface_ptr converted{ SDL_ConvertSurfaceFormat(gfxSurf.get(), SDL_PIXELFORMAT_RGBA32, 0) };
-                    superSrc = converted ? std::move(converted) : std::move(gfxSurf);
-                    SDL_Log("Loaded AdvancedWindtrap 4-frame gfx (using only frame 0; legacy fallback)");
+                    SDL_Log("Loaded AdvancedWindtrap gfx (single static PNG, DuneCity 1.0.254)");
                 }
             }
             if (!superSrc) for (const auto& dir : superDirs) {
@@ -1602,106 +1598,46 @@ GFXManager::GFXManager() {
     } // end city-sprite loading scope (binDir, srcDirEnv, scaleRGBASurface)
 
     // ----- DuneCity corner flag sprite -----
-    // Tornie_AdvancedWindtrap_gfx.png: 48×96 (or 48×48 single-frame), 8-bit
-    // palette-indexed.  2 frames stacked vertically, each 48×48.  Loaded into
-    // HOUSE_HARKONNEN only; getZoomedObjPic remaps palette indices 144-150 for
-    // other houses (same as Trike).  Rearranged into a horizontal strip
-    // (numFrames × frameSize wide, frameSize tall) for rendering consistency.
-    // Falls back to Tornie_CornerFlagNew.png (old RGBA path) if unavailable.
+    // DuneCity 1.0.254: Tornie_AdvancedWindtrap_gfx.png is now THE
+    // sprite for the corner flag too — same single static 48×48 PNG,
+    // applied across all 8 houses without any per-house
+    // recolouring. The previous Tornie_CornerFlagNew.png fallback
+    // path (frameSize=7, 2×7×7 frame layout, per-house tint bucket)
+    // was a procedural RGBA blit that conflicted with the user's
+    // request for a single static PNG with no animation and no
+    // tint frames.
     {
-        bool loadedNewFlag = false;
+        bool loadedFlag = false;
         if (pFileManager->exists("Tornie_AdvancedWindtrap_gfx.png")) {
             auto flagSrc = LoadPNG_RW(pFileManager->openFile("Tornie_AdvancedWindtrap_gfx.png").get());
-            if (flagSrc && flagSrc->format->BitsPerPixel == 8 && flagSrc->format->palette) {
+            if (flagSrc) {
                 const int frameSize = flagSrc->w;  // 48
-                const int numFrames = (flagSrc->h >= frameSize * 2) ? 2 : 1;
-                benePalette.applyToSurface(flagSrc.get());
-
-                // Rearrange vertically-stacked frames into a horizontal strip
-                sdl2::surface_ptr strip{ SDL_CreateRGBSurface(0, numFrames * frameSize, frameSize,
-                    8, 0, 0, 0, 0) };
+                sdl2::surface_ptr converted{ SDL_ConvertSurfaceFormat(flagSrc.get(), SDL_PIXELFORMAT_RGBA32, 0) };
+                sdl2::surface_ptr srcRGBA = converted ? std::move(converted) : std::move(flagSrc);
+                // Allocate a 1-frame horizontal strip wide enough for one
+                // 48×48 frame; the loader stores numFrames=1 for the
+                // Advanced Windtrap class (set elsewhere).
+                sdl2::surface_ptr strip{ SDL_CreateRGBSurface(0, frameSize, frameSize, 32,
+                    srcRGBA->format->Rmask, srcRGBA->format->Gmask,
+                    srcRGBA->format->Bmask, srcRGBA->format->Amask) };
                 if (strip) {
-                    SDL_SetPaletteColors(strip->format->palette, flagSrc->format->palette->colors, 0, 256);
-                    for (int f = 0; f < numFrames; f++) {
-                        SDL_Rect srcRect = { 0, f * frameSize, frameSize, frameSize };
-                        SDL_Rect dstRect = { f * frameSize, 0, frameSize, frameSize };
-                        SDL_SetSurfaceBlendMode(flagSrc.get(), SDL_BLENDMODE_NONE);
-                        SDL_BlitSurface(flagSrc.get(), &srcRect, strip.get(), &dstRect);
-                    }
+                    SDL_SetSurfaceBlendMode(srcRGBA.get(), SDL_BLENDMODE_NONE);
+                    SDL_BlitSurface(srcRGBA.get(), nullptr, strip.get(), nullptr);
+                    // Apply to HOUSE_HARKONNEN only — same convention as
+                    // the rest of the engine: HOUSE_HARKONNEN holds the
+                    // canonical sprite; getZoomedObjPic() handles the
+                    // per-house remap (no-op here since this sprite has
+                    // no house-coloured region).
                     objPic[ObjPic_CornerFlag][HOUSE_HARKONNEN][0] = std::move(strip);
-                    loadedNewFlag = true;
-                    SDL_Log("GFXManager: Loaded Tornie_AdvancedWindtrap_gfx.png as CornerFlag (%dx%d, %d frames)",
-                            frameSize, frameSize, numFrames);
+                    loadedFlag = true;
+                    SDL_Log("GFXManager: Loaded Tornie_AdvancedWindtrap_gfx.png as CornerFlag (single static %dx%d PNG, cross-house, DuneCity 1.0.254)",
+                            frameSize, frameSize);
                 }
             } else if (flagSrc) {
-                SDL_Log("GFXManager: Tornie_AdvancedWindtrap_gfx.png is not 8-bit palette-indexed (%d bpp), skipping",
-                        flagSrc->format->BitsPerPixel);
+                SDL_Log("GFXManager: Tornie_AdvancedWindtrap_gfx.png is not a valid PNG, skipping");
             }
         }
-
-        // Fallback: old RGBA corner flag (Tornie_CornerFlagNew.png, 14x7, 2×7x7 frames)
-        if (!loadedNewFlag && pFileManager->exists("Tornie_CornerFlagNew.png")) {
-            auto flagSrc = LoadPNG_RW(pFileManager->openFile("Tornie_CornerFlagNew.png").get());
-            if (flagSrc) {
-                sdl2::surface_ptr flagRGBA{ SDL_ConvertSurfaceFormat(flagSrc.get(), SDL_PIXELFORMAT_RGBA32, 0) };
-                if (!flagRGBA) flagRGBA = std::move(flagSrc);
-
-                const int frameSize = 7;
-                const int numFrames = 2;
-                const Uint32 srcLight = SDL_MapRGBA(flagRGBA->format, 214, 65, 48, 255);
-                const Uint32 srcDark  = SDL_MapRGBA(flagRGBA->format, 153, 44, 32, 255);
-                const Uint32 srcBlack = SDL_MapRGBA(flagRGBA->format, 0, 0, 0, 255);
-                const Uint32 dstPole  = SDL_MapRGBA(flagRGBA->format, 30, 30, 30, 255);
-
-                for (int h = 0; h < NUM_HOUSES; h++) {
-                    // For Fremen, source colours from vanilla IBM.PAL so rebels grey doesn't bleed in
-                    const Palette& hPal = (h == HOUSE_FREMEN) ? ibmPalette : palette;
-                    SDL_Color cLight = hPal[houseToPaletteIndex[h] + 0];
-                    SDL_Color cDark  = hPal[houseToPaletteIndex[h] + 2];
-                    Uint32 dstLight = SDL_MapRGBA(flagRGBA->format, cLight.r, cLight.g, cLight.b, 255);
-                    Uint32 dstDark  = SDL_MapRGBA(flagRGBA->format, cDark.r, cDark.g, cDark.b, 255);
-
-                    sdl2::surface_ptr atlas{ SDL_CreateRGBSurface(0, numFrames * frameSize, frameSize,
-                        flagRGBA->format->BitsPerPixel,
-                        flagRGBA->format->Rmask, flagRGBA->format->Gmask,
-                        flagRGBA->format->Bmask, flagRGBA->format->Amask) };
-                    if (!atlas) continue;
-                    SDL_FillRect(atlas.get(), nullptr, SDL_MapRGBA(atlas->format, 0, 0, 0, 0));
-
-                    SDL_LockSurface(flagRGBA.get());
-                    SDL_LockSurface(atlas.get());
-                    for (int y = 0; y < frameSize && y < flagRGBA->h; y++) {
-                        const Uint32* srcRow = reinterpret_cast<const Uint32*>(
-                            static_cast<const Uint8*>(flagRGBA->pixels) + y * flagRGBA->pitch);
-                        Uint32* dstRow = reinterpret_cast<Uint32*>(
-                            static_cast<Uint8*>(atlas->pixels) + y * atlas->pitch);
-                        for (int x = 0; x < numFrames * frameSize && x < flagRGBA->w; x++) {
-                            Uint32 px = srcRow[x];
-                            if (px == srcLight)      dstRow[x] = dstLight;
-                            else if (px == srcDark)  dstRow[x] = dstDark;
-                            else if (px == srcBlack) dstRow[x] = dstPole;
-                            else                     dstRow[x] = px;
-                        }
-                    }
-                    SDL_UnlockSurface(atlas.get());
-                    SDL_UnlockSurface(flagRGBA.get());
-
-                    objPic[ObjPic_CornerFlag][h][0] = std::move(atlas);
-                    for (int z = 1; z < NUM_ZOOMLEVEL; z++) {
-                        const int factor = z + 1;
-                        auto* src = objPic[ObjPic_CornerFlag][h][0].get();
-                        sdl2::surface_ptr scaled{ SDL_CreateRGBSurface(0, src->w * factor, src->h * factor,
-                            src->format->BitsPerPixel,
-                            src->format->Rmask, src->format->Gmask, src->format->Bmask, src->format->Amask) };
-                        if (scaled) {
-                            SDL_SetSurfaceBlendMode(src, SDL_BLENDMODE_NONE);
-                            SDL_BlitScaled(src, nullptr, scaled.get(), nullptr);
-                            objPic[ObjPic_CornerFlag][h][z] = std::move(scaled);
-                        }
-                    }
-                }
-            }
-        }
+        (void)loadedFlag;  // loadedFlag unused after the drop of the legacy fallback path
     }
 
     // Final safety net: ensure every DuneCity civic sprite has a populated

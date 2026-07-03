@@ -71,10 +71,6 @@ ENTRIES = [
     # the rebels-grey values from the file.
     "Custom_IBM.pal",
     "Tornie_AdvancedWindtrap_gfx.png",
-    "Tornie_AdvancedWindtrap_gfx_4frame.png",
-    "Tornie_AdvancedWindtrap_gfx_frame0.png",
-    "Tornie_AdvancedWindtrap_gfx_frame1.png",
-    "Tornie_AdvancedWindtrap_gfx_two_frames.png",
     "Tornie_AdvancedWindtrap_editor.png",
     "Tornie_AdvancedWindtrap_icon.png",
     "Tornie_SpiceRed.png",

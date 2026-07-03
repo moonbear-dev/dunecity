@@ -74,24 +74,33 @@ MentatMenu::MentatMenu(int newHouse)
         } break;
 
         case HOUSE_ATREIDES: {
-            const bool paulMod = (ModManager::instance().getActiveModName() == "Tornie")
-                              && pFileManager->exists("PaulAtreidesMentat.png");
-            SDL_Log("MentatMenu ATREIDES: paulMod=%s (mod=%s, file=%s)",
-                paulMod ? "YES" : "NO",
+            // DuneCity 1.0.252: was `paulMod = (activeMod == "Tornie")
+            // AND file exists`. Tightened to just file existence so the
+            // Paul eyes/mouth apply to any mod that ships
+            // PaulAtreidesMentat.png (per user spec 'ajust eyes from
+            // all mods and mouth'). The bTornieActive gate in GFXManager
+            // still restricts the override of Cyril's background
+            // (HOUSE_ATREIDES) to the Tornie mod — only that override
+            // is "Atreides-specific". Eyes and mouth are generic
+            // animations that can come from any mod.
+            const bool paulActive = pFileManager->exists("PaulAtreidesMentat.png")
+                                  && pGFXManager->getAnimation(Anim_PaulEyes) != nullptr;
+            SDL_Log("MentatMenu ATREIDES: paulActive=%s (mod=%s, file=%s)",
+                paulActive ? "YES" : "NO",
                 ModManager::instance().getActiveModName().c_str(),
                 pFileManager->exists("PaulAtreidesMentat.png") ? "found" : "MISSING");
 
-            anim = paulMod && pGFXManager->getAnimation(Anim_PaulEyes)
+            anim = paulActive
                  ? pGFXManager->getAnimation(Anim_PaulEyes)
                  : pGFXManager->getAnimation(Anim_AtreidesEyes);
             eyesAnim.setAnimation(anim);
-            windowWidget.addWidget(&eyesAnim, paulMod ? Point(118,114) : Point(80,160), eyesAnim.getMinimumSize());
+            windowWidget.addWidget(&eyesAnim, paulActive ? Point(118,114) : Point(80,160), eyesAnim.getMinimumSize());
 
-            anim = paulMod && pGFXManager->getAnimation(Anim_PaulMouth)
+            anim = paulActive
                  ? pGFXManager->getAnimation(Anim_PaulMouth)
                  : pGFXManager->getAnimation(Anim_AtreidesMouth);
             mouthAnim.setAnimation(anim);
-            windowWidget.addWidget(&mouthAnim, paulMod ? Point(116,170) : Point(80,192), mouthAnim.getMinimumSize());
+            windowWidget.addWidget(&mouthAnim, paulActive ? Point(116,170) : Point(80,192), mouthAnim.getMinimumSize());
 
             anim = pGFXManager->getAnimation(Anim_AtreidesBook);
             specialAnim.setAnimation(anim);

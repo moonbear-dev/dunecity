@@ -2430,11 +2430,14 @@ GFXManager::GFXManager() {
     uiGraphic[UI_MentatBackground][HOUSE_SARDAUKAR] = PictureFactory::mapMentatSurfaceToSardaukar(uiGraphic[UI_MentatBackground][HOUSE_HARKONNEN].get());
     uiGraphic[UI_MentatBackground][HOUSE_MERCENARY] = PictureFactory::mapMentatSurfaceToMercenary(uiGraphic[UI_MentatBackground][HOUSE_ORDOS].get());
     // DuneCity: Neutral mentat background.
-    // Tornie mod: use ChaniMentat.png (320×200 palette-indexed) if available.
-    // Default: Mentat Cyril — remap Atreides portrait blue to neutral grey.
+    // DuneCity 1.0.251: ChaniMentat.png is now used for ALL mods (was
+    // gated on the active mod being "Tornie" — that gate is removed so
+    // the same Chani background follows the mod that ships the file,
+    // not just the mod explicitly named). Default fallback: MENTATA.CPS
+    // remapped to neutral grey.
     {
         bool loadedChani = false;
-        if (bTornieActive && pFileManager->exists("ChaniMentat.png")) {
+        if (pFileManager->exists("ChaniMentat.png")) {
             auto chaniSurf = LoadPNG_RW(pFileManager->openFile("ChaniMentat.png").get());
             if (chaniSurf) {
                 if (chaniSurf->format->BitsPerPixel == 8)

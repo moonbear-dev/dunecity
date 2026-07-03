@@ -31,14 +31,15 @@ void AdvancedWindTrap::init() {
 
     graphicID = ObjPic_AdvancedWindTrap;
     graphic = pGFXManager->getObjPic(graphicID, getOwner()->getHouseID());
-    // Animate at ConstructionYard speed: 4-frame strip [frame0, frame1, frame0, frame1]
-    // cycling frames 2 and 3 to alternate the lit-corner pixels between the two
-    // dedicated Tornie frames. Frames 0 and 1 are the static base drawn when
-    // just placed or while the justPlacedTimer > 0 (placement animation).
-    numImagesX = 4;
+    // DuneCity 1.0.251: drop the 4-frame animation. The Tornie static sprite
+    // is used as-is — no cycling between frames. House tint is not applied
+    // to the building body; only the two tiny corner flags (top-left +
+    // bottom-right) are drawn, and they're hardcoded to Harkonnen red as
+    // a generic "house-color switching" marker (see blitToScreen()).
+    numImagesX = 1;
     numImagesY = 1;
-    firstAnimFrame = 2;
-    lastAnimFrame = 3;
+    firstAnimFrame = 0;
+    lastAnimFrame = 0;
 }
 
 AdvancedWindTrap::~AdvancedWindTrap() = default;
@@ -47,12 +48,8 @@ bool AdvancedWindTrap::update() {
     bool bResult = StructureBase::update();
 
     if(bResult) {
-        if(justPlacedTimer <= 0) {
-            // Match ConstructionYard's per-frame cycle exactly: STRUCTURE_ANIMATIONTIMER (31)
-            // cycles per frame, looping between firstAnimFrame (2) and lastAnimFrame (3).
-            curAnimFrame = 2 + ((currentGame->getGameCycleCount() / STRUCTURE_ANIMATIONTIMER) % 2);
-        }
-
+        // DuneCity 1.0.251: removed per-frame animation. curAnimFrame stays
+        // at the static frame set during init.
         auto* citySim = currentGame->getCitySimulation();
         if (citySim) {
             citySim->registerPowerSource(location.x, location.y, getProducedPower());
@@ -68,8 +65,11 @@ void AdvancedWindTrap::blitToScreen() {
 
     if (fogged) return;
 
-    // Draw animated house-colored flags at top-left and bottom-right corners
-    SDL_Texture* flagTex = pGFXManager->getZoomedObjPic(ObjPic_CornerFlag, getOwner()->getHouseID(), currentZoomlevel);
+    // DuneCity 1.0.251: tiny corner flags (top-left + bottom-right) only,
+    // hardcoded to Harkonnen red. Per user request, the flags are NOT
+    // per-house-tinted — they serve as a generic "house-color switching
+    // marker" only. The building body itself is left untinted.
+    SDL_Texture* flagTex = pGFXManager->getZoomedObjPic(ObjPic_CornerFlag, HOUSE_HARKONNEN, currentZoomlevel);
     if (!flagTex) return;
 
     // Flag frame size is derived from the loaded texture height (supports both
@@ -81,9 +81,10 @@ void AdvancedWindTrap::blitToScreen() {
         if (texH > 0) baseFlagPx = texH;
     }
     const int flagPx = baseFlagPx;
-    const int flagFrame = (currentGame->getGameCycleCount() / STRUCTURE_ANIMATIONTIMER) % 2;
+    // No animation: always draw frame 0.
+    const int flagFrame = 0;
 
-    // Building screen rect (same calculation as StructureBase::blitToScreen)
+    // Building screen rect (single-frame now that the building is static)
     SDL_Rect buildDest = calcSpriteDrawingRect(graphic[currentZoomlevel],
                                                 screenborder->world2screenX(lround(realX)),
                                                 screenborder->world2screenY(lround(realY)),

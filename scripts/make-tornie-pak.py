@@ -53,6 +53,13 @@ ENTRIES = [
     "NeutralLauncherIcon.png",
     "PalaceTrikeAndQuadIcon.png",
     "REGIONN.INI",
+    # DuneCity 1.0.252: Custom_IBM.pal ships inside Tornie.Pak so the
+    # rebels-grey palette is available to any mod that loads the PAK
+    # (the loader at GFXManager.cpp checks pFileManager->exists, which
+    # finds the PAK-stored file via Pakfile::exists). The
+    # "Custom_IBM.pal" loader overwrites palette entries 192-199 with
+    # the rebels-grey values from the file.
+    "Custom_IBM.pal",
     "Tornie_AdvancedWindtrap_gfx.png",
     "Tornie_AdvancedWindtrap_gfx_4frame.png",
     "Tornie_AdvancedWindtrap_gfx_frame0.png",

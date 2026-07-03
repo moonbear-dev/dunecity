@@ -47,12 +47,12 @@ def resolve_entry(name):
 ENTRIES = [
     "FlameTank.png",
     "FlameTankIcon.png",
-    # DuneCity 1.0.261: Deviator sprite derived from the Launcher
-    # (RTANK) sprite so Tornie mod users get a per-house-tinted
-    # Deviator without depending on the vanilla ORDRTANK.WSA only.
-    # data/Deviator.png is a byte-copy of data/FlameTank.png (same
-    # launcher source, same per-house tint loop in GFXManager.cpp).
-    "Deviator.png",
+    "EliteSiegeTank.png",
+    # DuneCity 1.0.262: Deviator.png removed from the PAK. The 1.0.261
+    # sprite caused a 'Empty destination palette' crash at Harkonnen
+    # campaign map load (draw_util.cpp:608). Per the 1.0.253/1.0.262
+    # rollback the vanilla ORDRTANK.WSA-derived Deviator is used and
+    # the custom Tornie PNG path is no-ops in GFXManager.cpp.
     "EliteSiegeTankIcon.png",
     "HeraldNeu.png",
     "HeraldNeuMask.png",
@@ -79,6 +79,15 @@ ENTRIES = [
     "Tornie_AdvancedWindtrap_gfx.png",
     "Tornie_AdvancedWindtrap_editor.png",
     "Tornie_AdvancedWindtrap_icon.png",
+    "HeraldRebels.png",
+    # DuneCity 1.0.262: HeraldRebels.png now ships inside Tornie.Pak. The
+    # mask companion (HeraldRebelsMask.png) was dropped in 1.0.262 per
+    # the user spec 'seulement celui que j'envoie soit pris en compte' —
+    # the single HeraldRebels.png is the canonical Rebels herald asset
+    # and Custom_IBM.pal reb-grey range 192-199 is applied to it at load
+    # time. Cross-mod: any mod that ships a HeraldRebels.png in its own
+    # data/ overrides the loader via the standard FileManager
+    # precedence (mod-side first, then PAK).
     "Tornie_SpiceRed.png",
     "Tornie_SpiceGreen.png",
     "PaulAtreidesMentat.png",

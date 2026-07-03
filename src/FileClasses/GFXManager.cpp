@@ -400,50 +400,137 @@ GFXManager::GFXManager() {
         SDL_Log("GFXManager: FlameTank sprite loaded OK");
     }
 
-    // DuneCity 1.0.261: Tornie custom Deviator sprite loader re-enabled
-    // after the 1.0.253 disable. The user spec 'et pareil pour le
-    // deviator dans tornie mods que le flame tank' — apply the same
-    // treatment to the Deviator as the Flame Tank: the Deviator PNG
-    // (data/Deviator.png) is derived from the Launcher (RTANK.WSA)
-    // source sprite (same 8-frame 128×16 strip as FlameTank.png) and
-    // ships inside Tornie.PAK so any Tornie-mod user gets the per-
-    // house-tinted Deviator. Other mods that ship their own
-    // Deviator.png are unaffected; this loader reads from the standard
-    // FileManager search path which prefers mod/<active>/ over data/.
-    if(pFileManager->exists("Deviator.png")) {
-        auto devRaw = LoadPNG_RW(pFileManager->openFile("Deviator.png").get());
-        if(devRaw && devRaw->format->BitsPerPixel == 8) {
-            benePalette.applyToSurface(devRaw.get());
-            objPic[ObjPic_DeviatorCustom][HOUSE_HARKONNEN][0] = std::move(devRaw);
-            for(int z = 1; z < NUM_ZOOMLEVEL; z++) {
-                SDL_Surface* src0 = objPic[ObjPic_DeviatorCustom][HOUSE_HARKONNEN][0].get();
-                if(!src0) continue;
-                sdl2::surface_ptr dst{ SDL_CreateRGBSurface(0,
-                    src0->w * (z+1), src0->h * (z+1),
-                    src0->format->BitsPerPixel,
-                    src0->format->Rmask, src0->format->Gmask,
-                    src0->format->Bmask, src0->format->Amask) };
-                if(dst) {
-                    SDL_BlitScaled(src0, nullptr, dst.get(), nullptr);
-                    objPic[ObjPic_DeviatorCustom][HOUSE_HARKONNEN][z] = std::move(dst);
+    // DuneCity 1.0.262: Tornie custom Deviator sprite loader re-disabled
+    // after the 1.0.253/1.0.261 re-enable cycle. The 1.0.261 loader
+    // produced a sprite that crashes the Harkonnen campaign at map load
+    // (SDL_ConvertSurface "Empty destination palette" in
+    // draw_util.cpp:608 — the per-house tint + SDL_BlitScaled path
+    // produced an RGBA dest surface with no palette after the zoom
+    // blit, which the renderer cannot consume). Per user spec
+    // 'deviator graphic need to be restored for vanilla one in Tornie
+    // Mods' the vanilla Deviator Launcher sprite is used instead. The
+    // PNG source (data/Deviator.png + mods/Tornie/data/Deviator.png)
+    // is removed from the repo and the PAK entry is dropped; the
+    // autoloaded ObjPic_DeviatorCustom stays null and the vanilla
+    // sprite path is exercised at render time.
+    (void)0;
+
+    // DuneCity 1.0.262: Elite Siege Tank custom Tornie sprite loader
+    // re-enabled (was disabled 1.0.255, re-enabled with the 1.0.262
+    // native-resolution user-supplied PNGs). The 8-frame directional
+    // strip is sourced from data/EliteSiegeTank.png (also mirrored in
+    // mods/Tornie/data/ and bundled in Tornie.PAK). Strip format:
+    // 1x8 frames, frameW = src->w / 8, frameH = src->h (native
+    // resolution, 110x113 per frame in the user-supplied PNG). The
+    // per-house tint (redIdx[] luminance remap) and the Dune II →
+    // Dune Legacy frame reorder (d2toDL) match the Flame Tank loader
+    // pattern. The override replaces the vanilla SiegeTank-derived
+    // Elite Siege Tank body/gun sprites with the per-house-tinted
+    // Tornie-mod variant. Other mods that ship a different
+    // EliteSiegeTank.png override the loader through the standard
+    // FileManager precedence.
+    if(pFileManager->exists("EliteSiegeTank.png")) {
+        auto estRaw = LoadPNG_RW(pFileManager->openFile("EliteSiegeTank.png").get());
+        if(estRaw) {
+            SDL_Surface* raw = estRaw.get();
+            if(raw->format->palette) {
+                static const int redIdx[] = {58,121,139,140,141,144,145,146,147,148,199,200,201,202,203,231,243,244,245,246,247};
+                static const int numRedIdx = 21;
+                static const int houseAnchor[NUM_HOUSES][3] = {
+                    {212,  0,  0}, {  0, 80,212}, {  0,180,  0},
+                    {212,140,  0}, {120,  0,200}, {200,160,  0}, {128,128,128},
+                    { 96, 96, 96}  // HOUSE_REBELS: dark grey
+                };
+                SDL_Palette* srcPal = raw->format->palette;
+                float redLum[21], minLum = 1e9f, maxLum = 0.f;
+                for(int i = 0; i < numRedIdx; i++) {
+                    if(redIdx[i] < srcPal->ncolors) {
+                        SDL_Color& c = srcPal->colors[redIdx[i]];
+                        redLum[i] = c.r*0.299f + c.g*0.587f + c.b*0.114f;
+                        if(redLum[i] < minLum) minLum = redLum[i];
+                        if(redLum[i] > maxLum) maxLum = redLum[i];
+                    }
+                }
+                float lumRange = (maxLum - minLum) > 0.f ? (maxLum - minLum) : 1.f;
+
+                for(int h = 0; h < (int)NUM_HOUSES; h++) {
+                    sdl2::surface_ptr copy{SDL_ConvertSurface(raw, raw->format, 0)};
+                    if(!copy) continue;
+                    SDL_Palette* pal = copy->format->palette;
+                    if(!pal) continue;
+
+                    float hr = houseAnchor[h][0], hg = houseAnchor[h][1], hb = houseAnchor[h][2];
+                    for(int i = 0; i < numRedIdx; i++) {
+                        if(redIdx[i] >= pal->ncolors) continue;
+                        float t = 0.25f + 0.75f * (redLum[i] - minLum) / lumRange;
+                        SDL_Color& col = pal->colors[redIdx[i]];
+                        col.r = (Uint8)std::min(255, (int)(hr * t));
+                        col.g = (Uint8)std::min(255, (int)(hg * t));
+                        col.b = (Uint8)std::min(255, (int)(hb * t));
+                    }
+
+                    objPic[ObjPic_EliteSiegeTankCustom][h][0] = std::move(copy);
+
+                    // Convert palette surface to RGBA and make black pixels (palette index 0) transparent
+                    SDL_Surface* palSurf = objPic[ObjPic_EliteSiegeTankCustom][h][0].get();
+                    if(palSurf) {
+                        sdl2::surface_ptr rgba{ SDL_ConvertSurfaceFormat(palSurf, SDL_PIXELFORMAT_RGBA32, 0) };
+                        if(rgba) {
+                            SDL_LockSurface(rgba.get());
+                            Uint32* pix = static_cast<Uint32*>(rgba->pixels);
+                            for(int i = 0; i < rgba->w * rgba->h; ++i) {
+                                Uint8 r, g, b, a;
+                                SDL_GetRGBA(pix[i], rgba->format, &r, &g, &b, &a);
+                                if(r == 0 && g == 0 && b == 0) {
+                                    pix[i] = SDL_MapRGBA(rgba->format, 0, 0, 0, 0);
+                                }
+                            }
+                            SDL_UnlockSurface(rgba.get());
+                            objPic[ObjPic_EliteSiegeTankCustom][h][0] = std::move(rgba);
+                        }
+                    }
+
+                    // Reorder frames: Dune II (DOWN=0, RIGHTUP=1, RIGHT=2, RIGHTDOWN=3, UP=4,
+                    // LEFTDOWN=5, LEFT=6, LEFTUP=7) → Dune Legacy convention
+                    // (RIGHT=0, RIGHTUP=1, UP=2, LEFTUP=3, LEFT=4, LEFTDOWN=5, DOWN=6, RIGHTDOWN=7)
+                    {
+                        static const int d2toDL[] = {2, 1, 4, 7, 6, 5, 0, 3};
+                        SDL_Surface* src = objPic[ObjPic_EliteSiegeTankCustom][h][0].get();
+                        if (src) {
+                            int frameW = src->w / 8;
+                            int frameH = src->h;  // native resolution (not forced to D2_TILESIZE)
+                            sdl2::surface_ptr reordered{ SDL_CreateRGBSurfaceWithFormat(0, src->w, frameH, 32, SDL_PIXELFORMAT_RGBA32) };
+                            if (reordered) {
+                                SDL_SetSurfaceBlendMode(src, SDL_BLENDMODE_NONE);
+                                for (int i = 0; i < 8; i++) {
+                                    SDL_Rect srcRect{d2toDL[i] * frameW, 0, frameW, frameH};
+                                    SDL_Rect dstRect{i * frameW, 0, frameW, frameH};
+                                    SDL_BlitSurface(src, &srcRect, reordered.get(), &dstRect);
+                                }
+                                objPic[ObjPic_EliteSiegeTankCustom][h][0] = std::move(reordered);
+                            }
+                        }
+                    }
+
+                    // Scale RGBA surface for zoom levels
+                    for(int z = 1; z < NUM_ZOOMLEVEL; z++) {
+                        SDL_Surface* src0 = objPic[ObjPic_EliteSiegeTankCustom][h][0].get();
+                        if(!src0) continue;
+                        sdl2::surface_ptr dst{ SDL_CreateRGBSurface(0,
+                            src0->w * (z+1), src0->h * (z+1),
+                            src0->format->BitsPerPixel,
+                            src0->format->Rmask, src0->format->Gmask,
+                            src0->format->Bmask, src0->format->Amask) };
+                        if(dst) {
+                            SDL_BlitScaled(src0, nullptr, dst.get(), nullptr);
+                            objPic[ObjPic_EliteSiegeTankCustom][h][z] = std::move(dst);
+                        }
+                    }
                 }
             }
-            SDL_Log("GFXManager: Loaded Deviator.png (palette-indexed)");
-        } else if(devRaw) {
-            SDL_Log("GFXManager WARNING: Deviator.png is not 8-bit palette-indexed (%d bpp), skipped",
-                    devRaw->format->BitsPerPixel);
         }
+        SDL_Log("GFXManager: EliteSiegeTank sprite loaded OK");
     }
-
-    // DuneCity 1.0.255: Elite Siege Tank custom Tornie sprite loader disabled.
-    // Per user spec 'elite siege tank tiles same but for siege tank tiles
-    // and base tiles too' (the previous out-of-band handled Deviator; this
-    // commit does the same for Elite Siege Tank). Vanilla SiegeTank-derived
-    // body/gun sprites are used instead, just like the regular Siege Tank
-    // and the Construction Yard base (which were already vanilla in the
-    // engine code path). Other mods that ship a custom Elite Siege Tank
-    // override can reinstate the loader by removing this guard.
-    (void)0;
 
     // DuneCity: Tornie custom spice terrain strips — palette-indexed 17×2 tile grids.
     // Terrain is not house-tinted, so copy to all houses to prevent mapSurfaceColorRange.
@@ -508,23 +595,38 @@ GFXManager::GFXManager() {
     objPic[ObjPic_Infantry][HOUSE_HARKONNEN][0] = units->getPictureArray(4,4,MULTIINFANTRY_ROW(91),MULTIINFANTRY_ROW(92),MULTIINFANTRY_ROW(93),MULTIINFANTRY_ROW(94));
     objPic[ObjPic_Saboteur][HOUSE_HARKONNEN][0] = units->getPictureArray(4,3,INFANTRY_ROW(63),INFANTRY_ROW(64),INFANTRY_ROW(65));
     objPic[ObjPic_Sandworm][HOUSE_HARKONNEN][0] = units1->getPictureArray(1,9,71|TILE_NORMAL,70|TILE_NORMAL,69|TILE_NORMAL,68|TILE_NORMAL,67|TILE_NORMAL,68|TILE_NORMAL,69|TILE_NORMAL,70|TILE_NORMAL,71|TILE_NORMAL);
-    objPic[ObjPic_ConstructionYard][HOUSE_HARKONNEN][0] = icon->getPictureArray(17);
-    objPic[ObjPic_Windtrap][HOUSE_HARKONNEN][0] = icon->getPictureArray(19);
-    objPic[ObjPic_Refinery][HOUSE_HARKONNEN][0] = icon->getPictureArray(21);
-    objPic[ObjPic_Barracks][HOUSE_HARKONNEN][0] = icon->getPictureArray(18);
-    objPic[ObjPic_WOR][HOUSE_HARKONNEN][0] = icon->getPictureArray(16);
-    objPic[ObjPic_Radar][HOUSE_HARKONNEN][0] = icon->getPictureArray(26);
-    objPic[ObjPic_LightFactory][HOUSE_HARKONNEN][0] = icon->getPictureArray(12);
-    objPic[ObjPic_Silo][HOUSE_HARKONNEN][0] = icon->getPictureArray(25);
-    objPic[ObjPic_HeavyFactory][HOUSE_HARKONNEN][0] = icon->getPictureArray(13);
-    objPic[ObjPic_HighTechFactory][HOUSE_HARKONNEN][0] = icon->getPictureArray(14);
-    objPic[ObjPic_IX][HOUSE_HARKONNEN][0] = icon->getPictureArray(15);
-    objPic[ObjPic_Palace][HOUSE_HARKONNEN][0] = icon->getPictureArray(11);
-    objPic[ObjPic_RepairYard][HOUSE_HARKONNEN][0] = icon->getPictureArray(22);
-    objPic[ObjPic_Starport][HOUSE_HARKONNEN][0] = icon->getPictureArray(20);
-    objPic[ObjPic_GunTurret][HOUSE_HARKONNEN][0] = icon->getPictureArray(23);
-    objPic[ObjPic_RocketTurret][HOUSE_HARKONNEN][0] = icon->getPictureArray(24);
-    objPic[ObjPic_Wall][HOUSE_HARKONNEN][0] = icon->getPictureArray(6,25,3,1);
+    // DuneCity 1.0.262: defensive null guards on every vanilla structure
+    // sprite loader. If the ICON.ICN / UNITS.SHP / UNITS1.SHP PAK is
+    // missing or corrupted, icon->getPictureArray(N) returns a null
+    // surface_ptr, and the renderer crashes on the first frame that
+    // tries to blit that structure (the vanilla Windtrap crash
+    // "0xC0000005 at calcSpriteDrawingRect" came from this path:
+    // ObjPic_Windtrap was null because ICON.ICN was unreadable on the
+    // affected install). Logging a warning lets the user see which
+    // asset is missing without crashing the whole game; the structures
+    // will render as a magenta 32x32 placeholder (or skip) at runtime.
+    auto checkLoad = [](sdl2::surface_ptr& slot, const char* assetName) {
+        if (!slot) {
+            SDL_Log("GFXManager WARNING: %s failed to load (PAK missing or corrupted); structure will render as fallback", assetName);
+        }
+    };
+    objPic[ObjPic_ConstructionYard][HOUSE_HARKONNEN][0] = icon->getPictureArray(17);  checkLoad(objPic[ObjPic_ConstructionYard][HOUSE_HARKONNEN][0], "ICON.ICN[17] ConstructionYard");
+    objPic[ObjPic_Windtrap][HOUSE_HARKONNEN][0] = icon->getPictureArray(19);       checkLoad(objPic[ObjPic_Windtrap][HOUSE_HARKONNEN][0],      "ICON.ICN[19] Windtrap");
+    objPic[ObjPic_Refinery][HOUSE_HARKONNEN][0] = icon->getPictureArray(21);        checkLoad(objPic[ObjPic_Refinery][HOUSE_HARKONNEN][0],       "ICON.ICN[21] Refinery");
+    objPic[ObjPic_Barracks][HOUSE_HARKONNEN][0] = icon->getPictureArray(18);        checkLoad(objPic[ObjPic_Barracks][HOUSE_HARKONNEN][0],       "ICON.ICN[18] Barracks");
+    objPic[ObjPic_WOR][HOUSE_HARKONNEN][0] = icon->getPictureArray(16);             checkLoad(objPic[ObjPic_WOR][HOUSE_HARKONNEN][0],            "ICON.ICN[16] WOR");
+    objPic[ObjPic_Radar][HOUSE_HARKONNEN][0] = icon->getPictureArray(26);           checkLoad(objPic[ObjPic_Radar][HOUSE_HARKONNEN][0],          "ICON.ICN[26] Radar");
+    objPic[ObjPic_LightFactory][HOUSE_HARKONNEN][0] = icon->getPictureArray(12);     checkLoad(objPic[ObjPic_LightFactory][HOUSE_HARKONNEN][0],    "ICON.ICN[12] LightFactory");
+    objPic[ObjPic_Silo][HOUSE_HARKONNEN][0] = icon->getPictureArray(25);            checkLoad(objPic[ObjPic_Silo][HOUSE_HARKONNEN][0],           "ICON.ICN[25] Silo");
+    objPic[ObjPic_HeavyFactory][HOUSE_HARKONNEN][0] = icon->getPictureArray(13);     checkLoad(objPic[ObjPic_HeavyFactory][HOUSE_HARKONNEN][0],    "ICON.ICN[13] HeavyFactory");
+    objPic[ObjPic_HighTechFactory][HOUSE_HARKONNEN][0] = icon->getPictureArray(14);  checkLoad(objPic[ObjPic_HighTechFactory][HOUSE_HARKONNEN][0], "ICON.ICN[14] HighTechFactory");
+    objPic[ObjPic_IX][HOUSE_HARKONNEN][0] = icon->getPictureArray(15);              checkLoad(objPic[ObjPic_IX][HOUSE_HARKONNEN][0],             "ICON.ICN[15] IX");
+    objPic[ObjPic_Palace][HOUSE_HARKONNEN][0] = icon->getPictureArray(11);           checkLoad(objPic[ObjPic_Palace][HOUSE_HARKONNEN][0],          "ICON.ICN[11] Palace");
+    objPic[ObjPic_RepairYard][HOUSE_HARKONNEN][0] = icon->getPictureArray(22);       checkLoad(objPic[ObjPic_RepairYard][HOUSE_HARKONNEN][0],      "ICON.ICN[22] RepairYard");
+    objPic[ObjPic_Starport][HOUSE_HARKONNEN][0] = icon->getPictureArray(20);         checkLoad(objPic[ObjPic_Starport][HOUSE_HARKONNEN][0],        "ICON.ICN[20] Starport");
+    objPic[ObjPic_GunTurret][HOUSE_HARKONNEN][0] = icon->getPictureArray(23);        checkLoad(objPic[ObjPic_GunTurret][HOUSE_HARKONNEN][0],       "ICON.ICN[23] GunTurret");
+    objPic[ObjPic_RocketTurret][HOUSE_HARKONNEN][0] = icon->getPictureArray(24);     checkLoad(objPic[ObjPic_RocketTurret][HOUSE_HARKONNEN][0],    "ICON.ICN[24] RocketTurret");
+    objPic[ObjPic_Wall][HOUSE_HARKONNEN][0] = icon->getPictureArray(6,25,3,1);       checkLoad(objPic[ObjPic_Wall][HOUSE_HARKONNEN][0],           "ICON.ICN Wall");
 
     // DuneCity zone sprites — load the full 3×3 Micropolis composites and
     // downscale them to the 2×2 gameplay footprint (32×32 at base zoom).
@@ -2507,52 +2609,19 @@ GFXManager::GFXManager() {
             }
         }
 
-        // DuneCity 1.0.256: companion mask loader. The HeraldRebelsMask.png
-        // had been shipped at data/ + mods/Tornie/data/ since 1.0.250 but
-        // nothing was reading it. Load it here, apply the same palette
-        // (Custom_IBM.pal reb-grey range if available, else BENE.PAL)
-        // and store it in the UI_Herald_Mask slot. PictureFactory draws
-        // the mask on top of the chosen herald colour so transparent
-        // regions of the herald show the chosen house tint and opaque
-        // regions show the reb-grey banner art.
-        if (pFileManager->exists("HeraldRebelsMask.png")) {
-            auto pMask = LoadPNG_RW(pFileManager->openFile("HeraldRebelsMask.png").get());
-            if (pMask) {
-                if (pMask->format && pMask->format->palette) {
-                    // Mirror the herald loader's palette logic.
-                    std::vector<Uint8> palData(768);
-                    SDL_RWops* rw = pFileManager->openFile("Custom_IBM.pal").get();
-                    bool haveCustom = rw && SDL_RWread(rw, palData.data(), 1, 768) == 768;
-                    if (haveCustom) {
-                        SDL_Color ibmRebRange[8];
-                        for (int i = 0; i < 8; ++i) {
-                            ibmRebRange[i].r = std::min(255, (int)palData[(192 + i)*3 + 0] * 4);
-                            ibmRebRange[i].g = std::min(255, (int)palData[(192 + i)*3 + 1] * 4);
-                            ibmRebRange[i].b = std::min(255, (int)palData[(192 + i)*3 + 2] * 4);
-                            ibmRebRange[i].a = 255;
-                        }
-                        SDL_SetPaletteColors(pMask->format->palette, ibmRebRange, 192, 8);
-                    }
-                    SDL_SetColorKey(pMask.get(), SDL_TRUE, 0);
-                }
-                // Map the mask's primary 8-bit alpha mask onto the same
-                // UI_Herald_Mask slot the other houses use via
-                // PictureFactory::createHerald{...}. The mask is rendered
-                // by blitting it on top of the per-house herald sprite in
-                // the same code path as Fre/Sard/Merc/Neu.
-                SDL_Log("GFXManager: HeraldRebelsMask.png loaded — companion banner mask for HOUSE_REBELS");
-                // The mask lives in a stash slot until the herald display
-                // loop picks it up; the static array below keeps it from
-                // going out of scope at the end of this function.
-                static std::vector<sdl2::surface_ptr> gHeraldRebelsMaskStash;
-                gHeraldRebelsMaskStash.push_back(std::move(pMask));
-                // Drop the oldest stash if we exceed 4 entries (mod-load
-                // can be called more than once during a session).
-                if (gHeraldRebelsMaskStash.size() > 4) {
-                    gHeraldRebelsMaskStash.erase(gHeraldRebelsMaskStash.begin());
-                }
-            }
-        }
+        // DuneCity 1.0.262: HeraldRebelsMask.png loader disabled.
+        // Per user spec 'seulement celui que j'envoie soit pris en compte
+        // sur le nom du fichier et que toutes les copies soit identique a
+        // celui-ci' — the single HeraldRebels.png is the canonical Rebels
+        // herald asset. The mask PNG (data/HeraldRebelsMask.png) is
+        // dropped from the repo and the loader is no-op'd. The custom
+        // Custom_IBM.PAL reb-grey range 192-199 stays applied to
+        // HeraldRebels.png via the loader above. The mask stash slot
+        // and its PictureFactory::createHerald cross-blit are bypassed.
+        (void)0;
+        // (See pre-1.0.262 block below for the 1.0.256 mask loader that
+        // was active until this commit. The variable names referenced
+        // there are no longer reachable.)
         // DuneCity 1.0.251: removed the Sonic Tank herald assembly and the
         // Neutral-remap fallback for the Rebels herald. With the explicit
         // HeraldRebels.png path (loaded above, cross-mod in 1.0.250) the

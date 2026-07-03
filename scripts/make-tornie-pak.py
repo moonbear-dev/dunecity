@@ -47,6 +47,12 @@ def resolve_entry(name):
 ENTRIES = [
     "FlameTank.png",
     "FlameTankIcon.png",
+    # DuneCity 1.0.261: Deviator sprite derived from the Launcher
+    # (RTANK) sprite so Tornie mod users get a per-house-tinted
+    # Deviator without depending on the vanilla ORDRTANK.WSA only.
+    # data/Deviator.png is a byte-copy of data/FlameTank.png (same
+    # launcher source, same per-house tint loop in GFXManager.cpp).
+    "Deviator.png",
     "EliteSiegeTankIcon.png",
     "HeraldNeu.png",
     "HeraldNeuMask.png",

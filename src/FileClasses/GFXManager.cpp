@@ -400,14 +400,40 @@ GFXManager::GFXManager() {
         SDL_Log("GFXManager: FlameTank sprite loaded OK");
     }
 
-    // DuneCity 1.0.253: Tornie custom Deviator sprite loader disabled.
-    // Per user spec 'deviator graphic need to be restored for vanilla
-    // one in Tornie Mods' — when Tornie mod is active, the Tornie_*
-    // custom sprite should not be loaded and the stock vanilla Deviator
-    // Launcher sprite is used instead. Other mods that ship their own
-    // Tornie_Deviator.png are unaffected; this loader simply always
-    // no-ops so the autoloaded ObjPic_DeviatorCustom stays null.
-    (void)0;
+    // DuneCity 1.0.261: Tornie custom Deviator sprite loader re-enabled
+    // after the 1.0.253 disable. The user spec 'et pareil pour le
+    // deviator dans tornie mods que le flame tank' — apply the same
+    // treatment to the Deviator as the Flame Tank: the Deviator PNG
+    // (data/Deviator.png) is derived from the Launcher (RTANK.WSA)
+    // source sprite (same 8-frame 128×16 strip as FlameTank.png) and
+    // ships inside Tornie.PAK so any Tornie-mod user gets the per-
+    // house-tinted Deviator. Other mods that ship their own
+    // Deviator.png are unaffected; this loader reads from the standard
+    // FileManager search path which prefers mod/<active>/ over data/.
+    if(pFileManager->exists("Deviator.png")) {
+        auto devRaw = LoadPNG_RW(pFileManager->openFile("Deviator.png").get());
+        if(devRaw && devRaw->format->BitsPerPixel == 8) {
+            benePalette.applyToSurface(devRaw.get());
+            objPic[ObjPic_DeviatorCustom][HOUSE_HARKONNEN][0] = std::move(devRaw);
+            for(int z = 1; z < NUM_ZOOMLEVEL; z++) {
+                SDL_Surface* src0 = objPic[ObjPic_DeviatorCustom][HOUSE_HARKONNEN][0].get();
+                if(!src0) continue;
+                sdl2::surface_ptr dst{ SDL_CreateRGBSurface(0,
+                    src0->w * (z+1), src0->h * (z+1),
+                    src0->format->BitsPerPixel,
+                    src0->format->Rmask, src0->format->Gmask,
+                    src0->format->Bmask, src0->format->Amask) };
+                if(dst) {
+                    SDL_BlitScaled(src0, nullptr, dst.get(), nullptr);
+                    objPic[ObjPic_DeviatorCustom][HOUSE_HARKONNEN][z] = std::move(dst);
+                }
+            }
+            SDL_Log("GFXManager: Loaded Deviator.png (palette-indexed)");
+        } else if(devRaw) {
+            SDL_Log("GFXManager WARNING: Deviator.png is not 8-bit palette-indexed (%d bpp), skipped",
+                    devRaw->format->BitsPerPixel);
+        }
+    }
 
     // DuneCity 1.0.255: Elite Siege Tank custom Tornie sprite loader disabled.
     // Per user spec 'elite siege tank tiles same but for siege tank tiles

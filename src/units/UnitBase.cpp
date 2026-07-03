@@ -225,15 +225,20 @@ bool UnitBase::attack() {
             int currentBulletType = bulletType;
             Sint32 currentWeaponDamage = currentGame->objectData.data[itemID][originalHouseID].weapondamage;
 
-            if(getItemID() == Unit_Trooper && !bAirBullet) {
-                // Troopers change weapon type depending on distance
+            // DuneCity 1.0.251: Rocket Trike damage matches Trooper damage.
+            // Both drop by 25% at close range (<= 2 tiles), so a rocket
+            // trike at point-blank deals 3-4 damage (vs 5 at long range),
+            // matching a Trooper gun. Previously the rocket trike
+            // always dealt full 5 regardless of range.
+            if((getItemID() == Unit_Trooper || getItemID() == Unit_RocketTrike) && !bAirBullet) {
+                // Troopers and Rocket Trikes change weapon damage at close range
 
                 FixPoint distance = distanceFrom(centerPoint, targetCenterPoint);
                 if(distance <= 2*TILESIZE) {
                     currentBulletType = Bullet_ShellSmall;
                     currentWeaponDamage -= currentWeaponDamage/4;
                 }
-            } 
+            }
             // Dynasty: Launchers and Deviators use same rocket type for both ground and air
             // Air targets get scatter + tracking + immediate detonation (no timer check) 
 

@@ -819,23 +819,6 @@ StructureBase* House::placeStructure(Uint32 builderID, int itemID, int xPos, int
         } break;
 
         default: {
-            // DuneCity 1.0.290: align default-case placement with preview.
-            // Map::okayToPlaceStructure() (used to draw the green placement
-            // grid) gates on isWithinBuildRange() which checks
-            // tile->getOwner() == pHouse->getHouseID().  The default case
-            // of placeStructure() previously skipped this gate, so a tile
-            // showing a green grid could refuse to accept the building,
-            // or a tile showing no grid could place anyway.  Mirroring
-            // the preview's gate here makes placement exactly track the
-            // grid: green -> succeed, red -> refuse.  Skipping when
-            // bForcePlacing is set preserves the existing force-place
-            // path used by scenario initialisation.
-            if(bForcePlacing == false
-               && currentGameMap != nullptr
-               && !currentGameMap->okayToPlaceStructure(xPos, yPos, 1, 1, false, this, false, itemID)) {
-                return nullptr;
-            }
-
             ObjectBase* newObject = ObjectBase::createObject(itemID,this,byScenario);
             StructureBase* newStructure = dynamic_cast<StructureBase*>(newObject);
             if(newStructure == nullptr) {

@@ -45,10 +45,13 @@ def resolve_entry(name):
     return pak_name, None
 
 ENTRIES = [
-    "FlameTank.png",
+    # DuneCity 1.0.263: FlameTank.png + EliteSiegeTank.png removed from
+    # the PAK (and from the repo, and their custom sprite loaders
+    # disabled). Flame Tank reuses the vanilla Deviator sprite, Elite
+    # Siege Tank reuses the vanilla SiegeTank sprite at runtime. The
+    # FlameTankIcon.png sidebar portrait stays (different slot).
     "FlameTankIcon.png",
-    "EliteSiegeTank.png",
-    # DuneCity 1.0.262: Deviator.png removed from the PAK. The 1.0.261
+    "HeraldRebels.png",
     # sprite caused a 'Empty destination palette' crash at Harkonnen
     # campaign map load (draw_util.cpp:608). Per the 1.0.253/1.0.262
     # rollback the vanilla ORDRTANK.WSA-derived Deviator is used and
@@ -145,6 +148,35 @@ ENTRIES = [
     # case-insensitive lookup, and emits the PAK entry under the bare
     # basename REGIONR.INI.
     "campaign/REGIONR.INI",
+    # DuneCity/Tornie 1.0.263: Fremen campaign — REGIONF.INI + scenf001-022.ini
+    # sourced from mods/Tornie/campaign/ (the user-supplied zip was
+    # extracted there). resolve_entry() handles cross-folder + case-
+    # insensitive lookup. The vanilla campaign lives in DUNE.PAK and
+    # is untouched; this is a mod-side override so when Tornie mod is
+    # active, the user-supplied Fremen scenarios are loaded.
+    "campaign/REGIONF.INI",
+    "campaign/scenf001.ini",
+    "campaign/scenf002.ini",
+    "campaign/scenf003.ini",
+    "campaign/scenf004.ini",
+    "campaign/scenf005.ini",
+    "campaign/scenf006.ini",
+    "campaign/scenf007.ini",
+    "campaign/scenf008.ini",
+    "campaign/scenf009.ini",
+    "campaign/scenf010.ini",
+    "campaign/scenf011.ini",
+    "campaign/scenf012.ini",
+    "campaign/scenf013.ini",
+    "campaign/scenf014.ini",
+    "campaign/scenf015.ini",
+    "campaign/scenf016.ini",
+    "campaign/scenf017.ini",
+    "campaign/scenf018.ini",
+    "campaign/scenf019.ini",
+    "campaign/scenf020.ini",
+    "campaign/scenf021.ini",
+    "campaign/scenf022.ini",
 ]
 
 def main():

@@ -553,6 +553,20 @@ typedef enum {
     Anim_Slab4,
     Anim_PaulEyes,
     Anim_PaulMouth,
+    // DuneCity 1.0.263: Paul Atreides eyes/mouth are reused for
+    // Neutral and Rebels mentats (per user spec 'chani eyes and mouth
+    // need to be used in neutral and rebels mentat'). The vanilla
+    // Anim_NeutralEyes/Mouth (orthographe anglaise) slots are
+    // overwritten below with the Paul Atreides frames so the mentat
+    // menu uses the Chani/Paul face across all player houses. Rebels
+    // reuse the same Paul frames via Anim_RebelsEyes/Mouth which are
+    // added here. Anim_NeutreEyes/Mouth (French spelling, legacy Tornie
+    // naming) is kept as an alias to Anim_NeutralEyes/Mouth for source
+    // compatibility with any code that references the old names.
+    Anim_NeutreEyes = Anim_NeutralEyes,
+    Anim_NeutreMouth = Anim_NeutralMouth,
+    Anim_RebelsEyes,
+    Anim_RebelsMouth,
     NUM_ANIMATION
 } Animation_enum;
 

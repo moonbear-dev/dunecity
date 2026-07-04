@@ -1600,6 +1600,33 @@ void Game::drawScreen()
             int xPos = screenborder->screen2MapX(drawnMouseX);
             int yPos = screenborder->screen2MapY(drawnMouseY);
 
+            // DuneCity 1.0.296 DIAG: log where the placement cursor is
+            // every render frame while CursorMode_Placing is active and the
+            // mouse is over the map.  Tornie reported a green grid covering
+            // the entire map when walking the cursor around with no fog.
+            // Capturing xPos/yPos/structuresize/withinRange each frame lets
+            // us see whether the draw loop is bounded (correct: small bbox)
+            // or unbounded (large bbox, possibly negative or > map size).
+            if (selectedList.size() == 1) {
+                auto pBuilder = dynamic_cast<BuilderBase*>(objectManager.getObject(*selectedList.begin()));
+                if (pBuilder) {
+                    int placeItem = pBuilder->getCurrentProducedItem();
+                    Coord structuresize = getStructureSize(placeItem);
+                    bool withinRange = false;
+                    for (int i = xPos; i < (xPos + structuresize.x); i++) {
+                        for (int j = yPos; j < (yPos + structuresize.y); j++) {
+                            if (currentGameMap->isWithinBuildRange(i, j, pBuilder->getOwner())) {
+                                withinRange = true;
+                            }
+                        }
+                    }
+                    SDL_Log("DuneCity 1.0.296 DIAG: Game::draw placement cursor frame"
+                            " mouse=(%d,%d) xPos=%d yPos=%d size=(%d,%d) withinRange=%d",
+                            drawnMouseX, drawnMouseY, xPos, yPos,
+                            structuresize.x, structuresize.y, (int)withinRange);
+                }
+            }
+
             if(selectedList.size() == 1) {
                 auto pBuilder = dynamic_cast<BuilderBase*>(objectManager.getObject(*selectedList.begin()));
                 if(pBuilder) {

@@ -713,6 +713,15 @@ void House::freeHarvester(int xPos, int yPos) {
 
 
 StructureBase* House::placeStructure(Uint32 builderID, int itemID, int xPos, int yPos, bool byScenario, bool bForcePlacing) {
+    // DuneCity 1.0.269: diagnostic logging for the vanilla
+    // mission-transition crash (0xC0000005). The ObjectBase::createObject
+    // diagnostic in 1.0.265 shows that createObject returns a non-null
+    // object for every itemID, but the crash still happens after the
+    // briefing when the next mission loads (DUNE5.ADL in the 1.0.268
+    // log). Log the placement call so we can see whether the crash is
+    // inside placeStructure itself or somewhere downstream.
+    SDL_Log("House::placeStructure: houseID=%d itemID=%d xPos=%d yPos=%d byScenario=%d bForcePlacing=%d",
+            (int)getHouseID(), itemID, xPos, yPos, (int)byScenario, (int)bForcePlacing);
     if(!currentGameMap->tileExists(xPos,yPos)) {
         return nullptr;
     }

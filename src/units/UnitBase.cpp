@@ -1683,30 +1683,55 @@ void UnitBase::quitDeviation() {
 }
 
 bool UnitBase::update() {
-    if(getOwner() && getOwner()->getHouseID() == HOUSE_REBELS) {
-        SDL_Log("DuneCity 1.0.280 DIAG: UnitBase::update owner=HOUSE_REBELS itemID=%d objectID=%d active=%d",
+    bool isRebels = getOwner() && getOwner()->getHouseID() == HOUSE_REBELS;
+    if(isRebels) {
+        SDL_Log("DuneCity 1.0.281 DIAG: UnitBase::update ENTER owner=HOUSE_REBELS itemID=%d objectID=%d active=%d",
                 (int)itemID, (int)getObjectID(), (int)active);
     }
     if(active) {
         // Time targeting
         Uint64 targetStart = SDL_GetPerformanceCounter();
+        if(isRebels) {
+            SDL_Log("DuneCity 1.0.281 DIAG: UnitBase::update.before_targeting owner=HOUSE_REBELS itemID=%d objectID=%d",
+                    (int)itemID, (int)getObjectID());
+        }
         targeting();
+        if(isRebels) {
+            SDL_Log("DuneCity 1.0.281 DIAG: UnitBase::update.after_targeting owner=HOUSE_REBELS itemID=%d objectID=%d",
+                    (int)itemID, (int)getObjectID());
+        }
         Uint64 targetEnd = SDL_GetPerformanceCounter();
         double targetMs = currentGame->getElapsedMs(targetStart, targetEnd);
         currentGame->frameTiming.unitTargetingMs += targetMs;
         currentGame->frameTiming.unitTargetingMsThisFrame += targetMs;
-        
+
         // Time navigate
         Uint64 navStart = SDL_GetPerformanceCounter();
+        if(isRebels) {
+            SDL_Log("DuneCity 1.0.281 DIAG: UnitBase::update.before_navigate owner=HOUSE_REBELS itemID=%d objectID=%d",
+                    (int)itemID, (int)getObjectID());
+        }
         navigate();
+        if(isRebels) {
+            SDL_Log("DuneCity 1.0.281 DIAG: UnitBase::update.after_navigate owner=HOUSE_REBELS itemID=%d objectID=%d",
+                    (int)itemID, (int)getObjectID());
+        }
         Uint64 navEnd = SDL_GetPerformanceCounter();
         double navMs = currentGame->getElapsedMs(navStart, navEnd);
         currentGame->frameTiming.unitNavigateMs += navMs;
         currentGame->frameTiming.unitNavigateMsThisFrame += navMs;
-        
+
         // Time move
         Uint64 moveStart = SDL_GetPerformanceCounter();
+        if(isRebels) {
+            SDL_Log("DuneCity 1.0.281 DIAG: UnitBase::update.before_move owner=HOUSE_REBELS itemID=%d objectID=%d",
+                    (int)itemID, (int)getObjectID());
+        }
         move();
+        if(isRebels) {
+            SDL_Log("DuneCity 1.0.281 DIAG: UnitBase::update.after_move owner=HOUSE_REBELS itemID=%d objectID=%d",
+                    (int)itemID, (int)getObjectID());
+        }
         Uint64 moveEnd = SDL_GetPerformanceCounter();
         double moveMs = currentGame->getElapsedMs(moveStart, moveEnd);
         currentGame->frameTiming.unitMoveMs += moveMs;

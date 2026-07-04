@@ -435,6 +435,7 @@ bool Map::isWithinBuildRange(int x, int y, const House* pHouse) const {
     // house teamID = its own) keeps the original behaviour since
     // allied-by-team equals allied-by-self == self only.
     const int myTeam = pHouse->getTeamID();
+    int tileIdx = 0;
     for (auto i = x - BUILDRANGE; i <= x + BUILDRANGE; i++) {
         for (auto j = y - BUILDRANGE; j <= y + BUILDRANGE; j++) {
             const auto tile = getTile_internal(i, j);
@@ -445,6 +446,18 @@ bool Map::isWithinBuildRange(int x, int y, const House* pHouse) const {
 
             if (currentGame == nullptr) continue;
             const House* owner = currentGame->getHouse(static_cast<HOUSETYPE>(ownerID));
+            // DuneCity 1.0.277: diagnostic for the persistent crash.
+            // The crash signature is "cmp %dil, 0x1a(%rdx)" inside the
+            // nested loop here. If `owner` is non-null but its typeid
+            // byte at offset 0x1a mismatches, it could be a dangling
+            // pointer. Log every iteration so the next crash narrows the
+            // trigger parameters. Counter-bounded: skip after 64 tiles.
+            if (owner && tileIdx < 64) {
+                const Uint8 typeByte = *(reinterpret_cast<const Uint8*>(owner) + 0x1a);
+                SDL_Log("BUILDRANGE_DIAG: myTeam=%d pHouseHID=%d tile=(%d,%d) ownerID=%d owner=%p typeByte=0x%02x",
+                        myTeam, (int)pHouse->getHouseID(), i, j, ownerID, (const void*)owner, typeByte);
+                tileIdx++;
+            }
             if (owner && owner->getTeamID() == myTeam) return true;
         }
     }

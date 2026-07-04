@@ -57,10 +57,12 @@ FlameTank::~FlameTank() = default;
 void FlameTank::destroy() {
     if(currentGameMap->tileExists(location) && isVisible()) {
         Coord realPos(lround(realX), lround(realY));
-        Uint32 explosionID = currentGame->randomGen.getRandOf({Explosion_Medium1, Explosion_Medium2});
-        currentGame->getExplosionList().push_back(new Explosion(explosionID, realPos, owner->getHouseID()));
 
-        // Scatter flame explosions around the wreck
+        // DuneCity 1.0.279: drop the explosion-Medium wreck (the "wreck
+        // sprite" + blob that survived on the field after the unit
+        // was destroyed). Keep only the scatter of pure-flame
+        // explosions per the user spec "pas de restes de véhicule non
+        // plus".  Removed Explosion_Medium{1,2}.
         for(int i = 0; i < 3; i++) {
             Coord flamePos = realPos;
             flamePos.x += currentGame->randomGen.rand(-TILESIZE/2, TILESIZE/2);

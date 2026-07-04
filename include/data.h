@@ -122,10 +122,14 @@ typedef enum {
     Unit_FlameTank = 56,               ///< DuneCity: Flame Tank (Tornie mod, Heavy Factory, sonic-style flame line attack)
     Unit_ExtLastID = 56,
 
-    // Additional extended structures after units (isStructure handles non-contiguous range)
-    Structure_AdvancedWindTrap = 54,  ///< DuneCity: Advanced Windtrap (500 credits, -300 power, 3x3)
+    // Structure_AdvancedWindTrap moved to 60 (was 54: collided with no
+    // unit slot but the in-band placement read as a unit index by mistake
+    // in some code paths). 54 stays reserved; 60 is the new ID. The old
+    // isStructure/isUnit helpers already gated 54 with an explicit !=,
+    // but that hack disappears with this reassignment.
+    Structure_AdvancedWindTrap = 60,  ///< DuneCity: Advanced Windtrap (500 credits, -300 power, 3x3)
 
-    ItemID_LastID = 56,
+    ItemID_LastID = 60,
 
     Num_ItemID
 } ItemID_enum;

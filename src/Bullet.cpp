@@ -263,7 +263,10 @@ void Bullet::init()
             damageRadius = (TILESIZE*3)/4;
             speed = 6;  // Same speed as Sonic
             numFrames = 1;
-            detonationTimer = 28;  // Shorter range than Sonic (range 5 vs 8)
+            // DuneCity 1.0.279: shortened from 28 (Sonic-style 5-cell range
+            // instead of the original 8).  Matches user spec "la portée
+            // reste à 5".
+            detonationTimer = 5;
             // Use the ExplosionFlames sprite (21 frames of pure flames spawned at
             // vehicle wreck sites) as the flame bullet's appearance. This renders
             // the bullet as a proper flame element rather than reusing the Sonic

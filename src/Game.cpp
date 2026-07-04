@@ -2667,14 +2667,22 @@ void Game::updateGameState() {
     frameTiming.aiWorstHouseMsThisFrame = worstHouseMs;
     frameTiming.aiWorstHouseIdxThisFrame = worstHouseIdx;
 
+    SDL_Log("DuneCity 1.0.287 DIAG: Game::runGameLoop.before_screenborder_update cycle=%u",
+            (unsigned)gameCycleCount);
     screenborder->update();
+    SDL_Log("DuneCity 1.0.287 DIAG: Game::runGameLoop.after_screenborder_update");
     triggerManager.trigger(gameCycleCount);
+    SDL_Log("DuneCity 1.0.287 DIAG: Game::runGameLoop.before_processObjects cycle=%u",
+            (unsigned)gameCycleCount);
     processObjects();
+    SDL_Log("DuneCity 1.0.287 DIAG: Game::runGameLoop.after_processObjects");
 
     // DuneCity: advance one phase of the city simulation
     if (citySimEnabled_ && citySimulation_) {
+        SDL_Log("DuneCity 1.0.287 DIAG: Game::runGameLoop.before_citySim_advance");
         const Uint64 citySimStart = SDL_GetPerformanceCounter();
         citySimulation_->advancePhase(gameCycleCount);
+        SDL_Log("DuneCity 1.0.287 DIAG: Game::runGameLoop.after_citySim_advance");
         const Uint64 citySimEnd = SDL_GetPerformanceCounter();
         const double citySimMs = getElapsedMs(citySimStart, citySimEnd);
         frameTiming.citySimMsThisFrame += citySimMs;

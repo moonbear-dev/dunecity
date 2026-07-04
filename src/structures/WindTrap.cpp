@@ -45,19 +45,14 @@ void WindTrap::init() {
     graphicID = ObjPic_Windtrap;
     graphic = pGFXManager->getObjPic(graphicID,getOwner()->getHouseID());
     // DuneCity 1.0.263: diagnostic logging for the vanilla Windtrap
-    // crash that survives the 1.0.262 checkLoad null-guard. The crash
-    // happens at placement time (per Tornie). Log the inputs to
-    // getObjPic and the result so we can see whether the loader is
-    // returning a valid texture or not. Will be removed once the root
-    // cause is identified and fixed.
+    // crash (kept for the user's next test run). The early-return
+    // guard that was here in 1.0.263.0 was reverted because it
+    // skipped the numImagesX/Y/firstAnimFrame/lastAnimFrame setup
+    // and broke the vanilla Windtrap render path downstream
+    // (mentat menu and post-placement blits).
     SDL_Log("WindTrap::init: houseID=%d graphicID=%d graphic[0]=%p graphic[1]=%p graphic[2]=%p",
             (int)getOwner()->getHouseID(), (int)graphicID,
             (void*)graphic[0], (void*)graphic[1], (void*)graphic[2]);
-    if (!graphic[0] || !graphic[1] || !graphic[2]) {
-        SDL_Log("WindTrap::init WARNING: one or more zoom textures are null for houseID=%d — placement will fail but game continues",
-                (int)getOwner()->getHouseID());
-        return;
-    }
     numImagesX = NUM_WINDTRAP_ANIMATIONS_PER_ROW;
     numImagesY = (2+NUM_WINDTRAP_ANIMATIONS+NUM_WINDTRAP_ANIMATIONS_PER_ROW-1)/NUM_WINDTRAP_ANIMATIONS_PER_ROW;
     firstAnimFrame = 2;

@@ -155,13 +155,52 @@ void StructureBase::blitToScreen() {
     int indexX = index % numImagesX;
     int indexY = index / numImagesX;
 
-    SDL_Rect dest = calcSpriteDrawingRect(  graphic[currentZoomlevel],
+    SDL_Texture* pTex = graphic[currentZoomlevel];
+    if (!pTex) {
+        SDL_Log("StructureBase::blitToScreen WARNING: graphic[%d] is null for itemID=%d ownerHouseID=%d zoom=%d — skipping blit",
+                currentZoomlevel, (int)itemID, (int)(getOwner() ? getOwner()->getHouseID() : -1), currentZoomlevel);
+        return;
+    }
+
+    SDL_Rect dest = calcSpriteDrawingRect(  pTex,
                                             screenborder->world2screenX(lround(realX)),
                                             screenborder->world2screenY(lround(realY)),
                                             numImagesX, numImagesY);
-    SDL_Rect source = calcSpriteSourceRect(graphic[currentZoomlevel],indexX,numImagesX,indexY,numImagesY);
+    SDL_Rect source = calcSpriteSourceRect(pTex,indexX,numImagesX,indexY,numImagesY);
 
-    SDL_RenderCopy(renderer, graphic[currentZoomlevel], &source, &dest);
+    // DuneCity 1.0.270: clamp source/dest rect to texture bounds. The
+    // v1.0.269 crash log shows the crash is in a DLL (likely SDL2.dll)
+    // at offset 0xBCDA54F8 — almost certainly an out-of-bounds read in
+    // SDL_RenderCopy when the source/dest rect exceeds the texture
+    // dimensions. Clamp the source rect to the actual texture and log
+    // any clipping so we can identify which structure has the bad
+    // sprite. This turns the crash into a diagnostic log line.
+    int origSourceW = source.w;
+    int origSourceH = source.h;
+    int origDestW = dest.w;
+    int origDestH = dest.h;
+    int texW = 0, texH = 0;
+    SDL_QueryTexture(pTex, NULL, NULL, &texW, &texH);
+    if (source.x < 0) { source.x = 0; }
+    if (source.y < 0) { source.y = 0; }
+    if (source.x >= texW && texW > 0) { source.x = texW - 1; }
+    if (source.y >= texH && texH > 0) { source.y = texH - 1; }
+    if (source.x + source.w > texW) { source.w = texW - source.x; }
+    if (source.y + source.h > texH) { source.h = texH - source.y; }
+    if (source.w < 0) source.w = 0;
+    if (source.h < 0) source.h = 0;
+    if (source.w != origSourceW || source.h != origSourceH) {
+        SDL_Log("StructureBase::blitToScreen WARNING: source rect for itemID=%d houseID=%d zoom=%d exceeds texture bounds (origW=%d origH=%d newW=%d newH=%d texW=%d texH=%d)",
+                (int)itemID, (int)(getOwner() ? getOwner()->getHouseID() : -1),
+                currentZoomlevel, origSourceW, origSourceH, source.w, source.h, texW, texH);
+    }
+    if (dest.w != origDestW || dest.h != origDestH) {
+        SDL_Log("StructureBase::blitToScreen WARNING: dest rect for itemID=%d houseID=%d zoom=%d was clamped (origW=%d origH=%d newW=%d newH=%d)",
+                (int)itemID, (int)(getOwner() ? getOwner()->getHouseID() : -1),
+                currentZoomlevel, origDestW, origDestH, dest.w, dest.h);
+    }
+
+    SDL_RenderCopy(renderer, pTex, &source, &dest);
 
     if(!fogged) {
         SDL_Texture* pSmokeTex = pGFXManager->getZoomedObjPic(ObjPic_Smoke, getOwner()->getHouseID(), currentZoomlevel);

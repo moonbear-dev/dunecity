@@ -3248,7 +3248,20 @@ SDL_Surface* GFXManager::getUIGraphicSurface(unsigned int id, int house) {
     if(uiGraphic[id][house] == nullptr) {
         // remap to this color
         if(uiGraphic[id][HOUSE_HARKONNEN] == nullptr) {
-            THROW(std::runtime_error, "GFXManager::getUIGraphicSurface(): UI Graphic with ID %u is not loaded!", id);
+            // DuneCity 1.0.292: previously THROW(std::runtime_error)
+            // here, which crashed the game with an unrecoverable
+            // error dialog when a renderer requested a UI Graphic that
+            // was never loaded (e.g. a Tornie-exclusive icon whose
+            // loader is gated behind a mod toggle but whose
+            // getUIGraphicSurface call site still fires).
+            // Demote this to a log + return nullptr so the renderer
+            // falls back to the existing nullptr guard (the existing
+            // `if (uiGraphic[id][house] == nullptr) return;` paths in
+            // each render site already handle a missing UI Graphic
+            // gracefully; only the throw was fatal).
+            SDL_Log("DuneCity 1.0.292 WARNING: UI Graphic with ID %u is not loaded for HOUSE_HARKONNEN, returning empty surface",
+                    (unsigned)id);
+            return {};
         }
 
         uiGraphic[id][house] = mapSurfaceColorRange(uiGraphic[id][HOUSE_HARKONNEN].get(), PALCOLOR_HARKONNEN, houseToPaletteIndex[house]);

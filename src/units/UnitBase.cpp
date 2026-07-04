@@ -1740,15 +1740,31 @@ bool UnitBase::update() {
         if(active) {
             // Time turn
             Uint64 turnStart = SDL_GetPerformanceCounter();
+            if(isRebels) {
+                SDL_Log("DuneCity 1.0.283 DIAG: UnitBase::update.before_turn owner=HOUSE_REBELS itemID=%d objectID=%d",
+                        (int)itemID, (int)getObjectID());
+            }
             turn();
+            if(isRebels) {
+                SDL_Log("DuneCity 1.0.283 DIAG: UnitBase::update.after_turn owner=HOUSE_REBELS itemID=%d objectID=%d",
+                        (int)itemID, (int)getObjectID());
+            }
             Uint64 turnEnd = SDL_GetPerformanceCounter();
             double turnMs = currentGame->getElapsedMs(turnStart, turnEnd);
             currentGame->frameTiming.unitTurnMs += turnMs;
             currentGame->frameTiming.unitTurnMsThisFrame += turnMs;
-            
+
             // Time updateVisibleUnits
             Uint64 visStart = SDL_GetPerformanceCounter();
+            if(isRebels) {
+                SDL_Log("DuneCity 1.0.283 DIAG: UnitBase::update.before_updateVisibleUnits owner=HOUSE_REBELS itemID=%d objectID=%d",
+                        (int)itemID, (int)getObjectID());
+            }
             updateVisibleUnits();
+            if(isRebels) {
+                SDL_Log("DuneCity 1.0.283 DIAG: UnitBase::update.after_updateVisibleUnits owner=HOUSE_REBELS itemID=%d objectID=%d",
+                        (int)itemID, (int)getObjectID());
+            }
             Uint64 visEnd = SDL_GetPerformanceCounter();
             double visMs = currentGame->getElapsedMs(visStart, visEnd);
             currentGame->frameTiming.unitVisibilityMs += visMs;
@@ -1767,8 +1783,16 @@ bool UnitBase::update() {
     if(carryallRequestCooldown > 0) carryallRequestCooldown--;
     if(secondaryWeaponTimer > 0) secondaryWeaponTimer--;
     if(deviationTimer != INVALID) {
+        if(isRebels) {
+            SDL_Log("DuneCity 1.0.283 DIAG: UnitBase::update.before_quitDeviation owner=HOUSE_REBELS itemID=%d objectID=%d deviationTimer=%d",
+                    (int)itemID, (int)getObjectID(), (int)deviationTimer);
+        }
         if(--deviationTimer <= 0) {
             quitDeviation();
+            if(isRebels) {
+                SDL_Log("DuneCity 1.0.283 DIAG: UnitBase::update.after_quitDeviation owner=HOUSE_REBELS itemID=%d objectID=%d",
+                        (int)itemID, (int)getObjectID());
+            }
         }
     }
 

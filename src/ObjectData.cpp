@@ -390,18 +390,29 @@ int ObjectData::loadIntValue(const INIFile& objectDataFile, const std::string& s
     std::string specializedKey = key + "(" + houseChar + ")";
     if(objectDataFile.hasKey(section, specializedKey)) {
         return objectDataFile.getIntValue(section, specializedKey, defaultValue);
-    } else {
+    }
+    // DuneCity 1.0.297: when a house-specific (X) override is missing,
+    // fall back to the section's unqualified key (when present) rather
+    // than zero.  This makes adding the 8th house (Rebels) a single-key
+    // affair per item instead of requiring (R) for every prop on every
+    // line.  The 1.0.291 / 1.0.294 patches added the (R) keys after the
+    // fact; that workaround becomes redundant with this loader fix.
+    if(objectDataFile.hasKey(section, key)) {
         return objectDataFile.getIntValue(section, key, defaultValue);
     }
+    return defaultValue;
 }
 
 bool ObjectData::loadBoolValue(const INIFile& objectDataFile, const std::string& section, const std::string& key, char houseChar, bool defaultValue) {
     std::string specializedKey = key + "(" + houseChar + ")";
     if(objectDataFile.hasKey(section, specializedKey)) {
         return objectDataFile.getBoolValue(section, specializedKey, defaultValue);
-    } else {
+    }
+    // DuneCity 1.0.297: same loader-fallback rule as loadIntValue above.
+    if(objectDataFile.hasKey(section, key)) {
         return objectDataFile.getBoolValue(section, key, defaultValue);
     }
+    return defaultValue;
 }
 
 FixPoint ObjectData::loadFixPointValue(const INIFile& objectDataFile, const std::string& section, const std::string& key, char houseChar, FixPoint defaultValue) {

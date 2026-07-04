@@ -56,6 +56,8 @@ ENTRIES = [
     "EliteSiegeTankIcon.png",
     "HeraldNeu.png",
     "HeraldNeuMask.png",
+    "HeraldRebels.png",
+    "HeraldRebelsMask.png",
     "NeutralLauncherIcon.png",
     "PalaceTrikeAndQuadIcon.png",
     # DuneCity 1.0.254: Rocket Trike 91x55 sidebar icon for the player

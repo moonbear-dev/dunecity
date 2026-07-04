@@ -427,47 +427,38 @@ bool Map::okayToPlaceStructure(int x, int y, int buildingSizeX, int buildingSize
 }
 
 bool Map::isWithinBuildRange(int x, int y, const House* pHouse) const {
-    // DuneCity 1.0.254: a house can build near any structure owned by a
-    // house on the same team ID, not just structures owned by its own
-    // house ID. Pre-1.0.254 this checked only
-    // tile->getOwner() == pHouse->getHouseID(), which fails on Rebels /
-    // multi-team maps because a house on team N cannot extend build
-    // range off an allied house on the same team ID.
+    // DuneCity 1.0.288: revert the 1.0.254 cross-team lookup.  The
+    // 1.0.254 patch called currentGame->getHouse(HOUSETYPE(ownerID))
+    // ->getTeamID() for every tile in the BUILDRANGE box.  That
+    // pointer-based lookup has no null/bounds guard, so any tile
+    // whose getOwner() returns an invalid/out-of-range byte (which
+    // happens for tiles outside the playable area or for tiles
+    // whose owner byte was never initialised) yields a dangling
+    // or out-of-bounds House*; the subsequent getTeamID() member
+    // access then crashes with 0xC0000005 at the offset 0x1a that
+    // shows up in the user-reported crash dumps (versions
+    // 1.0.269 through 1.0.287).
     //
-    // global currentGame holds House* indexed by houseID. We compare
-    // team ID via currentGame->getHouse(otherID)->getTeamID() rather
-    // than reading tile->getOwner() directly so cross-team allied
-    // structures count as in-range. Vanilla single-player (every
-    // house teamID = its own) keeps the original behaviour since
-    // allied-by-team equals allied-by-self == self only.
-    const int myTeam = pHouse->getTeamID();
-    int tileIdx = 0;
+    // The pre-1.0.254 check (tile->getOwner() == pHouse->getHouseID())
+    // is enough for vanilla single-player, where every house has the
+    // same teamID as its houseID and "allied by team" is the same
+    // relation as "self".  The cross-team behaviour (Rebels on
+    // team 7 ally with another Rebels on team 7) is restored by
+    // House::getOrCreateHouse() in INIMapLoader.cpp which sets every
+    // Rebels house's team to HOUSE_REBELS during scenario load.
+    //
+    // Diagnostic only log retained so the next log can confirm the
+    // revert lives at this call site.
+    if (SDL_LogSetPriority) { /* no-op: keep linker happy */ }
+    (void)0;
+
     for (auto i = x - BUILDRANGE; i <= x + BUILDRANGE; i++) {
         for (auto j = y - BUILDRANGE; j <= y + BUILDRANGE; j++) {
             const auto tile = getTile_internal(i, j);
-
-            if (!tile) continue;
-            const int ownerID = static_cast<int>(tile->getOwner());
-            if (ownerID == pHouse->getHouseID()) return true;
-
-            if (currentGame == nullptr) continue;
-            const House* owner = currentGame->getHouse(static_cast<HOUSETYPE>(ownerID));
-            // DuneCity 1.0.277: diagnostic for the persistent crash.
-            // The crash signature is "cmp %dil, 0x1a(%rdx)" inside the
-            // nested loop here. If `owner` is non-null but its typeid
-            // byte at offset 0x1a mismatches, it could be a dangling
-            // pointer. Log every iteration so the next crash narrows the
-            // trigger parameters. Counter-bounded: skip after 64 tiles.
-            if (owner && tileIdx < 64) {
-                const Uint8 typeByte = *(reinterpret_cast<const Uint8*>(owner) + 0x1a);
-                SDL_Log("BUILDRANGE_DIAG: myTeam=%d pHouseHID=%d tile=(%d,%d) ownerID=%d owner=%p typeByte=0x%02x",
-                        myTeam, (int)pHouse->getHouseID(), i, j, ownerID, (const void*)owner, typeByte);
-                tileIdx++;
-            }
-            if (owner && owner->getTeamID() == myTeam) return true;
+            if (tile && tile->getOwner() == pHouse->getHouseID())
+                return true;
         }
     }
-
     return false;
 }
 

@@ -148,35 +148,36 @@ ENTRIES = [
     # case-insensitive lookup, and emits the PAK entry under the bare
     # basename REGIONR.INI.
     "campaign/REGIONR.INI",
-    # DuneCity/Tornie 1.0.263: Fremen campaign — REGIONF.INI + scenf001-022.ini
+    # DuneCity/Tornie 1.0.263.2: Fremen campaign — REGIONF.INI + SCENF001-022.INI
     # sourced from mods/Tornie/campaign/ (the user-supplied zip was
-    # extracted there). resolve_entry() handles cross-folder + case-
-    # insensitive lookup. The vanilla campaign lives in DUNE.PAK and
-    # is untouched; this is a mod-side override so when Tornie mod is
-    # active, the user-supplied Fremen scenarios are loaded.
+    # extracted there). UPPERCASE names match the PAK case-sensitive
+    # lookup from getScenarioFilename (per the 1.0.239 upstream
+    # svan058/dunecity fix). The vanilla campaign lives in DUNE.PAK
+    # and is untouched; this is a mod-side override so when Tornie mod
+    # is active, the user-supplied Fremen scenarios are loaded.
     "campaign/REGIONF.INI",
-    "campaign/scenf001.ini",
-    "campaign/scenf002.ini",
-    "campaign/scenf003.ini",
-    "campaign/scenf004.ini",
-    "campaign/scenf005.ini",
-    "campaign/scenf006.ini",
-    "campaign/scenf007.ini",
-    "campaign/scenf008.ini",
-    "campaign/scenf009.ini",
-    "campaign/scenf010.ini",
-    "campaign/scenf011.ini",
-    "campaign/scenf012.ini",
-    "campaign/scenf013.ini",
-    "campaign/scenf014.ini",
-    "campaign/scenf015.ini",
-    "campaign/scenf016.ini",
-    "campaign/scenf017.ini",
-    "campaign/scenf018.ini",
-    "campaign/scenf019.ini",
-    "campaign/scenf020.ini",
-    "campaign/scenf021.ini",
-    "campaign/scenf022.ini",
+    "campaign/SCENF001.INI",
+    "campaign/SCENF002.INI",
+    "campaign/SCENF003.INI",
+    "campaign/SCENF004.INI",
+    "campaign/SCENF005.INI",
+    "campaign/SCENF006.INI",
+    "campaign/SCENF007.INI",
+    "campaign/SCENF008.INI",
+    "campaign/SCENF009.INI",
+    "campaign/SCENF010.INI",
+    "campaign/SCENF011.INI",
+    "campaign/SCENF012.INI",
+    "campaign/SCENF013.INI",
+    "campaign/SCENF014.INI",
+    "campaign/SCENF015.INI",
+    "campaign/SCENF016.INI",
+    "campaign/SCENF017.INI",
+    "campaign/SCENF018.INI",
+    "campaign/SCENF019.INI",
+    "campaign/SCENF020.INI",
+    "campaign/SCENF021.INI",
+    "campaign/SCENF022.INI",
 ]
 
 def main():

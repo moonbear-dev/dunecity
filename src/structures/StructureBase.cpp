@@ -204,21 +204,39 @@ void StructureBase::blitToScreen() {
 
     if(!fogged) {
         SDL_Texture* pSmokeTex = pGFXManager->getZoomedObjPic(ObjPic_Smoke, getOwner()->getHouseID(), currentZoomlevel);
-        SDL_Rect smokeSource = calcSpriteSourceRect(pSmokeTex, 0, 3);
-        for(const StructureSmoke& structureSmoke : smoke) {
-            SDL_Rect smokeDest = calcSpriteDrawingRect( pSmokeTex,
-                                                        screenborder->world2screenX(structureSmoke.realPos.x),
-                                                        screenborder->world2screenY(structureSmoke.realPos.y),
-                                                        3, 1, HAlign::Center, VAlign::Bottom);
-            Uint32 cycleDiff = currentGame->getGameCycleCount() - structureSmoke.startGameCycle;
-
-            Uint32 smokeFrame = (cycleDiff/25) % 4;
-            if(smokeFrame == 3) {
-                smokeFrame = 1;
+        if (pSmokeTex) {
+            SDL_Rect smokeSource = calcSpriteSourceRect(pSmokeTex, 0, 3);
+            // DuneCity 1.0.271: clamp smoke source rect to texture bounds.
+            // Same OOB-read issue as the main blitToScreen; the v1.0.271
+            // crash log shows the crash is downstream of blitToScreen so
+            // it must be in the smoke draw. Apply the same clamp.
+            {
+                int texW = 0, texH = 0;
+                SDL_QueryTexture(pSmokeTex, NULL, NULL, &texW, &texH);
+                if (smokeSource.x < 0) smokeSource.x = 0;
+                if (smokeSource.y < 0) smokeSource.y = 0;
+                if (smokeSource.x >= texW && texW > 0) smokeSource.x = texW - 1;
+                if (smokeSource.y >= texH && texH > 0) smokeSource.y = texH - 1;
+                if (smokeSource.x + smokeSource.w > texW) smokeSource.w = texW - smokeSource.x;
+                if (smokeSource.y + smokeSource.h > texH) smokeSource.h = texH - smokeSource.y;
+                if (smokeSource.w < 0) smokeSource.w = 0;
+                if (smokeSource.h < 0) smokeSource.h = 0;
             }
+            for(const StructureSmoke& structureSmoke : smoke) {
+                SDL_Rect smokeDest = calcSpriteDrawingRect( pSmokeTex,
+                                                            screenborder->world2screenX(structureSmoke.realPos.x),
+                                                            screenborder->world2screenY(structureSmoke.realPos.y),
+                                                            3, 1, HAlign::Center, VAlign::Bottom);
+                Uint32 cycleDiff = currentGame->getGameCycleCount() - structureSmoke.startGameCycle;
 
-            smokeSource.x = smokeFrame * smokeSource.w;
-            SDL_RenderCopy(renderer, pSmokeTex, &smokeSource, &smokeDest);
+                Uint32 smokeFrame = (cycleDiff/25) % 4;
+                if(smokeFrame == 3) {
+                    smokeFrame = 1;
+                }
+
+                smokeSource.x = smokeFrame * smokeSource.w;
+                SDL_RenderCopy(renderer, pSmokeTex, &smokeSource, &smokeDest);
+            }
         }
     }
 }

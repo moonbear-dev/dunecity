@@ -512,13 +512,19 @@ void Game::processObjects()
     frameTiming.unitsMs += unitMs;
     frameTiming.unitsMsThisFrame += unitMs;
 
+    SDL_Log("DuneCity 1.0.284 DIAG: Game::processObjects.before_bullets bulletCount=%u",
+            (unsigned)bulletList.size());
     for(Bullet* pBullet : bulletList) {
         pBullet->update();
     }
+    SDL_Log("DuneCity 1.0.284 DIAG: Game::processObjects.after_bullets");
 
+    SDL_Log("DuneCity 1.0.284 DIAG: Game::processObjects.before_explosions explosionCount=%u",
+            (unsigned)explosionList.size());
     for(Explosion* pExplosion : explosionList) {
         pExplosion->update();
     }
+    SDL_Log("DuneCity 1.0.284 DIAG: Game::processObjects.after_explosions");
 }
 
 void Game::processTargetRequests() {

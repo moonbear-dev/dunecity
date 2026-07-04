@@ -857,6 +857,29 @@ StructureBase* House::placeStructure(Uint32 builderID, int itemID, int xPos, int
 
             newStructure->setLocation(xPos, yPos);
 
+            // DuneCity 1.0.299: stamp tile ownership for the structure's
+            // footprint.  Vanilla houses have their tile ownership set
+            // implicitly via StructureBase's own bookkeeping, but the
+            // 8th house (Rebels) needs an explicit setOwner() inside the
+            // default case because the 1.0.249 introduction did not update
+            // the structure-spawn loop.  Without this, tile->owner stays
+            // at Tile::INVALID (-1) after Rebels place a structure, so
+            // Map::isWithinBuildRange (which compares against
+            // pHouse->getHouseID() == 7) returns false everywhere on the
+            // map, suppressing the green placement grid and blocking
+            // any subsequent placement from "see" the tile as a buildable
+            // anchor.  Applying the same setOwner() to vanilla houses too
+            // is benign — it just makes the tile ownership statement
+            // explicit at the placement site instead of relying on
+            // downstream code to leave the right value behind.
+            for(int i=0;i<newStructure->getStructureSizeX();i++) {
+                for(int j=0;j<newStructure->getStructureSizeY();j++) {
+                    if(currentGameMap->tileExists(xPos+i, yPos+j)) {
+                        currentGameMap->getTile(xPos+i, yPos+j)->setOwner(getHouseID());
+                    }
+                }
+            }
+
             // DuneCity: when city-sim mode is active, auto-pave a 1-tile
             // road ring around any freshly-placed building (zones AND
             // regular Dune structures like Refineries/Barracks/etc.) so

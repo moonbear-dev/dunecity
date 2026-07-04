@@ -404,6 +404,10 @@ void StructureBase::setJustPlaced() {
 }
 
 bool StructureBase::update() {
+    if(owner && owner->getHouseID() == HOUSE_REBELS) {
+        SDL_Log("DuneCity 1.0.280 DIAG: StructureBase::update owner=HOUSE_REBELS itemID=%d objectID=%d pos=(%d,%d)",
+                (int)itemID, (int)getObjectID(), location.x, location.y);
+    }
     if(((currentGame->getGameCycleCount() + getObjectID()) % 512) == 0) {
         currentGameMap->viewMap(owner->getHouseID(), location, getViewRange());
     }

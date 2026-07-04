@@ -1683,6 +1683,10 @@ void UnitBase::quitDeviation() {
 }
 
 bool UnitBase::update() {
+    if(getOwner() && getOwner()->getHouseID() == HOUSE_REBELS) {
+        SDL_Log("DuneCity 1.0.280 DIAG: UnitBase::update owner=HOUSE_REBELS itemID=%d objectID=%d active=%d",
+                (int)itemID, (int)getObjectID(), (int)active);
+    }
     if(active) {
         // Time targeting
         Uint64 targetStart = SDL_GetPerformanceCounter();

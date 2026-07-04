@@ -974,6 +974,7 @@ ObjectBase* ObjectBase::createObject(int itemID, House* Owner, bool byScenario) 
     }
 
     if(newObject == nullptr) {
+        SDL_Log("DuneCity 1.0.280 DIAG: ObjectBase::createObject returned nullptr for itemID=%d",itemID);
         return nullptr;
     }
 

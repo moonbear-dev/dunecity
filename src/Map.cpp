@@ -361,6 +361,12 @@ bool Map::isAStructureGap(int x, int y, int buildingSizeX, int buildingSizeY) co
 }
 
 bool Map::okayToPlaceStructure(int x, int y, int buildingSizeX, int buildingSizeY, bool tilesRequired, const House* pHouse, bool bIgnoreUnits) const {
+    // DuneCity 1.0.280 DIAG: log Rebels placement-preview calls to see
+    // whether 'green grid' / 'placement fails' issue is in this function.
+    if(pHouse && pHouse->getHouseID() == HOUSE_REBELS) {
+        SDL_Log("DuneCity 1.0.280 DIAG: Map::okayToPlaceStructure house=HOUSE_REBELS pos=(%d,%d) size=(%d,%d) tilesReq=%d",
+                x, y, buildingSizeX, buildingSizeY, (int)tilesRequired);
+    }
     bool withinBuildRange = false;
 
     for(auto i = x; i < x + buildingSizeX; i++) {

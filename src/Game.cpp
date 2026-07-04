@@ -2293,8 +2293,15 @@ void Game::runMainLoop() {
         // PHASE 1.3: CYCLE GUARDRAIL - Prevent renderer starvation
         static constexpr int kMaxCyclesPerFrame = 10;
         
-        while(((frameTime > getGameSpeed()) || (!finished && (gameCycleCount < skipToGameCycle))) 
+        while(((frameTime > getGameSpeed()) || (!finished && (gameCycleCount < skipToGameCycle)))
               && cyclesExecuted < kMaxCyclesPerFrame) {
+            // DuneCity 1.0.280 DIAG: periodic game-cycle marker at the start
+            // of each tick so we can correlate later crashes with the
+            // tick that produced them.
+            if((gameCycleCount % 100) == 0) {
+                SDL_Log("DuneCity 1.0.280 DIAG: Game::runMainLoop tick cycle=%u",
+                        (unsigned)gameCycleCount);
+            }
             loopIterations++;
             
             Uint64 networkWaitStart = SDL_GetPerformanceCounter();

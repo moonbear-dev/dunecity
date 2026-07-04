@@ -45,15 +45,12 @@ def resolve_entry(name):
     return pak_name, None
 
 ENTRIES = [
-    "FlameTank.png",
-    "FlameTankIcon.png",
-    # DuneCity 1.0.261: Deviator sprite derived from the Launcher
-    # (RTANK) sprite so Tornie mod users get a per-house-tinted
-    # Deviator without depending on the vanilla ORDRTANK.WSA only.
-    # data/Deviator.png is a byte-copy of data/FlameTank.png (same
-    # launcher source, same per-house tint loop in GFXManager.cpp).
-    "Deviator.png",
-    "EliteSiegeTankIcon.png",
+    # DuneCity 1.0.286: removed FlameTank.png, FlameTankIcon.png and
+    # Deviator.png. Per user spec, vanilla tiles are reused (the
+    # code in GFXManager.cpp falls back to ObjPic_Launcher_Gun for
+    # FlameTank; vanilla ObjPic_Deviator_Gun for Deviator).  The
+    # Tornie mod no longer carries custom tile art for these two
+    # units.
     "HeraldNeu.png",
     "HeraldNeuMask.png",
     "HeraldRebels.png",

@@ -1013,6 +1013,22 @@ House* INIMapLoader::getOrCreateHouse(int houseID) {
             // in campaign all "other" units are in the same team as the AI
             team = 2;
         }
+        // DuneCity 1.0.270: HOUSE_REBELS fix (re-applied after rebase loss).
+        // The 8th house (added in 1.0.249) was being created with teamID
+        // 0 or 2 (via the default branches above) which made
+        // Map::isWithinBuildRange return false everywhere on a Rebels
+        // scenario. The build range check compares the placing house's
+        // teamID to the tile owner's teamID; a freshly created Rebels
+        // house with teamID 0/2 didn't match any of the vanilla house
+        // teamIDs. Every placement on a Rebels scenario ended with
+        // 'Invalid or occupied position' even on tiles the Rebels
+        // visually own. Force the Rebels team to its own houseID so the
+        // build range check passes the same way it does for vanilla
+        // houses. Per-house tint code in GFXManager.cpp already maps
+        // the per-house palette index correctly.
+        if (houseID == HOUSE_REBELS) {
+            team = static_cast<Uint8>(HOUSE_REBELS);
+        }
 
         // Use map size defaults from ObjectData.ini
         const int mapsize = currentGameMap->getSizeX() * currentGameMap->getSizeY();

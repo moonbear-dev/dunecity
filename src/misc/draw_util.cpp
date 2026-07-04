@@ -599,13 +599,19 @@ sdl2::surface_ptr createShadowSurface(SDL_Surface* source) {
 
 
 sdl2::surface_ptr mapSurfaceColorRange(SDL_Surface* source, int srcColor, int destColor) {
-    if (!source)
-        THROW(std::runtime_error, "mapSurfaceColorRange(): Null source!");
+    if (!source) {
+        SDL_Log("DuneCity 1.0.278 DIAG: mapSurfaceColorRange() called with null source surface");
+        return {};
+    }
 
     sdl2::surface_ptr retPic{ SDL_ConvertSurface(source,source->format,source->flags) };
 
-    if (!retPic)
-        THROW(std::runtime_error, "mapSurfaceColorRange(): Cannot copy image (SDL_ConvertSurface failed: %s)!", SDL_GetError());
+    if (!retPic) {
+        SDL_Log("DuneCity 1.0.278 DIAG: mapSurfaceColorRange() SDL_ConvertSurface returned null. SDL_GetError=\"%s\" source=%p format=%p flags=%u srcColor=%d destColor=%d",
+                SDL_GetError(), (const void*)source, (const void*)(source ? source->format : nullptr),
+                source ? (unsigned)source->flags : 0u, srcColor, destColor);
+        return {};
+    }
 
     if (retPic->format->BytesPerPixel == 1) {
         SDL_SetSurfaceBlendMode(retPic.get(), SDL_BLENDMODE_NONE);

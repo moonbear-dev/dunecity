@@ -830,7 +830,16 @@ StructureBase* House::placeStructure(Uint32 builderID, int itemID, int xPos, int
                 // check if there is already something on this tile
                 for(int i=0;i<newStructure->getStructureSizeX();i++) {
                     for(int j=0;j<newStructure->getStructureSizeY();j++) {
-                        if((currentGameMap->tileExists(xPos+i, yPos+j) == false) || (currentGameMap->getTile(xPos+i, yPos+j)->hasAGroundObject() == true)) {
+                        if(currentGameMap->tileExists(xPos+i, yPos+j) == false) {
+                            delete newObject;
+                            return nullptr;
+                        }
+                        Tile* pTile = currentGameMap->getTile(xPos+i, yPos+j);
+                        if(pTile == nullptr) {
+                            delete newObject;
+                            return nullptr;
+                        }
+                        if(pTile->hasAGroundObject() == true) {
                             delete newObject;
                             return nullptr;
                         }

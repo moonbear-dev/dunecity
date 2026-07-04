@@ -109,7 +109,21 @@ void InfantryBase::assignToMap(const Coord& pos) {
 }
 
 void InfantryBase::blitToScreen() {
-    SDL_Rect dest = calcSpriteDrawingRect(  graphic[currentZoomlevel],
+    SDL_Texture* pTex = graphic[currentZoomlevel];
+    if (!pTex) {
+        // DuneCity 1.0.273: defensive guard. Same null-guard as
+        // StructureBase::blitToScreen — the v1.0.272 crash log
+        // shows the crash at offset 0x1400454F8 in dunecity.exe
+        // (cmp %dil, 0x1a(%rdx) — OOB read on the Soldier
+        // sprite pointer). The first-render of any infantry after
+        // mission transition can hit this if the sprite wasn't
+        // loaded yet.
+        SDL_Log("InfantryBase::blitToScreen WARNING: graphic[%d] is null for itemID=%d ownerHouseID=%d zoom=%d — skipping blit",
+                currentZoomlevel, (int)itemID, (int)(getOwner() ? getOwner()->getHouseID() : -1), currentZoomlevel);
+        return;
+    }
+
+    SDL_Rect dest = calcSpriteDrawingRect(  pTex,
                                             screenborder->world2screenX(realX),
                                             screenborder->world2screenY(realY),
                                             numImagesX, numImagesY,
@@ -127,9 +141,33 @@ void InfantryBase::blitToScreen() {
         temp = 0;
     }
 
-    SDL_Rect source = calcSpriteSourceRect(graphic[currentZoomlevel], temp, numImagesX, (walkFrame/10 == 3) ? 1 : walkFrame/10, numImagesY);
+    SDL_Rect source = calcSpriteSourceRect(pTex, temp, numImagesX, (walkFrame/10 == 3) ? 1 : walkFrame/10, numImagesY);
 
-    SDL_RenderCopy(renderer, graphic[currentZoomlevel], &source, &dest);
+    // DuneCity 1.0.273: clamp source rect to texture bounds. Same
+    // OOB-read protection as StructureBase::blitToScreen. The
+    // v1.0.272 crash log confirms the crash is in this function
+    // (or a similar InfantryBase render path).
+    {
+        int texW = 0, texH = 0;
+        SDL_QueryTexture(pTex, NULL, NULL, &texW, &texH);
+        int origSourceW = source.w;
+        int origSourceH = source.h;
+        if (source.x < 0) source.x = 0;
+        if (source.y < 0) source.y = 0;
+        if (source.x >= texW && texW > 0) source.x = texW - 1;
+        if (source.y >= texH && texH > 0) source.y = texH - 1;
+        if (source.x + source.w > texW) source.w = texW - source.x;
+        if (source.y + source.h > texH) source.h = texH - source.y;
+        if (source.w < 0) source.w = 0;
+        if (source.h < 0) source.h = 0;
+        if (source.w != origSourceW || source.h != origSourceH) {
+            SDL_Log("InfantryBase::blitToScreen WARNING: source rect for itemID=%d houseID=%d zoom=%d exceeds texture bounds (origW=%d origH=%d newW=%d newH=%d texW=%d texH=%d)",
+                    (int)itemID, (int)(getOwner() ? getOwner()->getHouseID() : -1),
+                    currentZoomlevel, origSourceW, origSourceH, source.w, source.h, texW, texH);
+        }
+    }
+
+    SDL_RenderCopy(renderer, pTex, &source, &dest);
 }
 
 bool InfantryBase::canPass(int xPos, int yPos) const {

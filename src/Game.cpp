@@ -395,6 +395,47 @@ void Game::initGame(const GameInitSettings& newGameInitSettings) {
                 SDL_Log("Briefing...");
                 BriefingMenu(gameInitSettings.getHouseID(), gameInitSettings.getMission(),BRIEFING).showMenu();
             }
+
+            // DuneCity 1.0.395: apply the per-house colorIndex swap to
+            // the runtime 'palette' array LAST, after the scenario has
+            // loaded. This is the path Tornie's OOB identified:
+            // 'La couleur personnalisee est pas appliquee en jeu
+            // depuis le mode custom map [...] Elle doit etre appliquee
+            // en dernier pour changer la couleur du joueur pour la
+            // maison dans la carte.' Each HouseInfo stores the
+            // colorIndex the user picked in the CustomGamePlayers
+            // dropdown (data value: own slot = houseInfoNum, -2 = Teal
+            // / Spectator at PALCOLOR_REBELS, -3..-6 = Fushia / Apple
+            // Green / Dark Purple / Light Pink, <-100 = foreign house).
+            // We apply each swap in order so the palette reflects the
+            // final house-bound colors when the first frame renders.
+            {
+                const auto& houseInfoList = gameInitSettings.getHouseInfoList();
+                for(size_t i = 0; i < houseInfoList.size(); i++) {
+                    const auto& hi = houseInfoList[i];
+                    if(hi.houseID < 0 || hi.houseID >= NUM_HOUSES) continue;
+                    int pickedSlot = hi.colorIndex;
+                    if(pickedSlot < 0 || pickedSlot >= 256) {
+                        // Foreign house entry data values are negative.
+                        // They were stored as pickedSlot = -100 - j which
+                        // means use house j's slot. Translate back.
+                        if(pickedSlot <= -100 && pickedSlot > -100 - NUM_HOUSES) {
+                            pickedSlot = -100 - pickedSlot;
+                        } else if(pickedSlot == -2) {
+                            pickedSlot = PALCOLOR_REBELS;
+                        } else {
+                            continue;
+                        }
+                    }
+                    const int activeIdx = houseToPaletteIndex[hi.houseID];
+                    if(activeIdx + 8 > 256 || pickedSlot + 8 > 256) continue;
+                    for(int k = 0; k < 8; k++) {
+                        palette[activeIdx + k] = palette[pickedSlot + k];
+                    }
+                    SDL_Log("DuneCity 1.0.395: Game::initGame applied color swap for house %d (slot %d -> slot %d)",
+                            hi.houseID, activeIdx, pickedSlot);
+                }
+            }
         } break;
 
         default: {

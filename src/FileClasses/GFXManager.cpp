@@ -280,26 +280,25 @@ GFXManager::GFXManager() {
         SDL_Log("GFX INIT: Custom_IBM.pal applied (rebels dark-grey/black range 192-199)");
     }
 
-    // DuneCity 1.0.369: Custom_Pal_Color Teal ramp at the Ordos slot.
+    // DuneCity 1.0.369: Custom_Pal_Color Teal ramp at the REBELS slot.
     // The dropdown's 'Teal' entry (data=-2) was originally mapped
     // to slot 176 (= PALCOLOR_ORDOS) but that clobbered the
     // vanilla OrdOs green ramp. v1.0.373 moves Teal to 240-247
     // which is unused by vanilla + not reserved for a faction.
-    // v1.0.393 moves Teal BACK to 176-183 per Tornie's OOB: 'Teal
-    // si same from Rebels but with Ordos Color slot but with
-    // Custom_IBM.Pal' = the Teal slot 176 should be sourced from
-    // Custom_IBM.pal so the dropdown picks up the Ordos color
-    // values at runtime. The hardcoded fallback writes a teal
-    // ramp (Ordos green) at 176-183 when Custom_IBM.pal doesn't
-    // include the teal slot override (default state).
-    // v1.0.385: prefer SpectatorTeal.pal file if shipped (lets
-    // tornie tune the teal ramp without rebuilding). Falls back to
-    // the v1.0.369 hardcoded teal ramp if the file is absent.
-    // v1.0.394: same pattern extended to 4 new colors - Fushia
-    // (160, ATREIDES slot), Apple_Green (208, SARDAUKAR slot),
-    // Dark Purple (144, HARKONNEN slot), Light Pink (224,
-    // MERCENARY slot). All 5 colors are dropdown entries via the
-    // CustomGamePlayers color dropdown (data values -3..-7).
+    // v1.0.393 moves Teal BACK to 176-183 per Tornie's OOB.
+    // v1.0.395 moves Teal to PALCOLOR_REBELS (192-199) per Tornie's
+    // OOB: 'Les indices des couleurs spectateur et de Rebels
+    // proviennent tous du fichier Custom_IBM.Pal' = the Spectator
+    // (Teal) and Rebels color slots both come from Custom_IBM.PAL
+    // index 192. So Teal = slot 192 (REBELS), and the Ordos slot
+    // 176 is left untouched so vanilla Ordos stays green. Rebels
+    // gets Custom_IBM.PAL dark grey at 192 from the existing
+    // override load (not from Teal ramp - they're now both at
+    // slot 192).
+    // v1.0.394: 4 new colors (Fushia 160, Apple_Green 208, Dark
+    // Purple 144, Light Pink 224) added per Tornie's OOB.
+    // v1.0.385: prefer Spectator*<Color>.pal file if shipped
+    // (lets tornie tune the ramp without rebuilding).
     {
         // Each custom color has: slot, file, fallback ramp
         struct CustomColorSpec {
@@ -309,11 +308,6 @@ GFXManager::GFXManager() {
             const char* name;
         };
         const CustomColorSpec customColors[] = {
-            // Teal (Ordos slot) - data value -2
-            { PALCOLOR_ORDOS, "SpectatorTeal.pal",
-              { {0,220,220,255}, {0,200,200,255}, {0,180,180,255}, {0,160,160,255},
-                {0,140,140,255}, {0,120,120,255}, {0,100,100,255}, {0, 80, 80,255} },
-              "Teal" },
             // Fushia (Atreides slot) - data value -3
             { PALCOLOR_ATREIDES, "SpectatorFushia.pal",
               { {255,  0,255,255}, {240,  0,240,255}, {220,  0,220,255}, {200,  0,200,255},
@@ -334,6 +328,14 @@ GFXManager::GFXManager() {
               { {255,192,203,255}, {255,200,213,255}, {255,208,223,255}, {255,216,233,255},
                 {255,224,233,255}, {255,232,233,255}, {255,240,233,255}, {255,248,233,255} },
               "Light Pink" },
+            // Teal (REBELS slot per v1.0.395) - data value -2.
+            // Shares slot 192 with the Custom_IBM.PAL dark grey
+            // Rebels override. The Teal ramp overrides the dark
+            // grey if a SpectatorTeal.pal file is shipped.
+            { PALCOLOR_REBELS, "SpectatorTeal.pal",
+              { {0,220,220,255}, {0,200,200,255}, {0,180,180,255}, {0,160,160,255},
+                {0,140,140,255}, {0,120,120,255}, {0,100,100,255}, {0, 80, 80,255} },
+              "Teal" },
         };
         for (const auto& spec : customColors) {
             if(pFileManager->exists(spec.filename)) {
@@ -352,6 +354,13 @@ GFXManager::GFXManager() {
                 SDL_Log("GFX INIT: %s applied at palette[%d..%d] (file override, %s slot)",
                         spec.filename, spec.slot, spec.slot+7, spec.name);
             } else {
+                // For Teal, the fallback only fires if no
+                // SpectatorTeal.pal is shipped AND no Custom_IBM.pal
+                // is present (Custom_IBM.pal normally wins because
+                // it's loaded BEFORE this block). The Teal fallback
+                // is intentionally the same Custom_IBM.pal dark
+                // grey ramp - so even without the override files,
+                // Teal pickup ends up dark grey (same as Rebels).
                 for(int k = 0; k < 8; k++) {
                     palette[spec.slot + k] = spec.fallback[k];
                 }

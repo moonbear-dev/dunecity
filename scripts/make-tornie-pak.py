@@ -45,7 +45,7 @@ ENTRIES = [
     "REGIONH.INI",
     "REGIONM.INI",
     "REGIONS.INI",
-    "RREBELS.voc",
+    "RREBELS.VOC",
     "scena001.ini",
     "scena002.ini",
     "scena003.ini",

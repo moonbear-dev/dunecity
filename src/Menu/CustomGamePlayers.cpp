@@ -505,34 +505,49 @@ CustomGamePlayers::CustomGamePlayers(const GameInitSettings& newGameInitSettings
             }
         }
 
-        // DuneCity 1.0.400: The 4 custom colors (Fushia, Apple Green,
-// Dark Purple, Light Pink) are NOT linked to any house. They
-// are simply palette INDEX overrides at indices 160, 208, 144,
-// 224. Tornie's OOB: 'harkonnen est pas lie aux 2 couleurs les
-// couleurs en extra sont lies uniquement par index elles sont
-// independantes pour le reste' = Harkonnen isn't linked to
-// the 2 colors; the extra colors are linked ONLY by index and
-// are independent for the rest. So we DON'T filter them by
-// taken houses. All 4 custom colors are always offered.
-//
-// The data values map to specific palette indices:
-//   Fushia      data=-3 -> palette index 160 (Atreides vanilla slot)
-//   Apple Green data=-4 -> palette index 208 (Sardaukar vanilla slot)
-//   Dark Purple data=-5 -> palette index 144 (Harkonnen vanilla slot)
-//   Light Pink  data=-6 -> palette index 224 (Mercenary vanilla slot)
-// These are vanilla slots but the custom colors REPLACE the
-// vanilla values at those indices when the user picks them.
-if(true) {
-    const struct { int data; const char* name; } customColors[] = {
-        { -3, "Fushia (color)" },
-        { -4, "Apple Green (color)" },
-        { -5, "Dark Purple (color)" },
-        { -6, "Light Pink (color)" },
-    };
-    for(const auto& cc : customColors) {
-        curHouseInfo.colorDropDown.addEntry(_(cc.name), cc.data);
-    }
-}
+        // DuneCity 1.0.409: The 4 custom colors (Fushia, Apple Green,
+        // Dark Purple, Light Pink) are SPECTATOR-ONLY. Tornie's OOB:
+        // 'Teal Color/Fushia Color/Dark Purple Color/Apple Green
+        // Color need to be added like that but with color swap for
+        // spectator only' = the 4 colors should be in the dropdown
+        // but the color swap should ONLY apply to the Spectator
+        // player. We detect the Spectator by checking the houseInfo
+        // player1 player class. If the current slot's player1 is
+        // SpectatorPlayer, the 4 colors are offered; otherwise
+        // only Original is offered.
+        //
+        // The data values map to specific palette indices:
+        //   Teal        data=-2 -> palette index 192 (Rebels slot)
+        //   Fushia      data=-3 -> palette index 160 (Atreides slot)
+        //   Apple Green data=-4 -> palette index 208 (Sardaukar slot)
+        //   Dark Purple data=-5 -> palette index 144 (Harkonnen slot)
+        //   Light Pink  data=-6 -> palette index 224 (Mercenary slot)
+        {
+            // Detect if this slot's player1 is a Spectator.
+            bool isSpectatorSlot = false;
+            const auto& houseInfoList = gameInitSettings.getHouseInfoList();
+            if(i >= 0 && i < (int) houseInfoList.size()) {
+                for(const auto& pi : houseInfoList[i].playerInfoList) {
+                    if(pi.playerClass == "SpectatorPlayer") {
+                        isSpectatorSlot = true;
+                        break;
+                    }
+                }
+            }
+            // If this slot is NOT a spectator, only offer 'Original'.
+            // If it IS a spectator, offer the 4 custom colors.
+            if(isSpectatorSlot) {
+                const struct { int data; const char* name; } customColors[] = {
+                    { -3, "Fushia (color)" },
+                    { -4, "Apple Green (color)" },
+                    { -5, "Dark Purple (color)" },
+                    { -6, "Light Pink (color)" },
+                };
+                for(const auto& cc : customColors) {
+                    curHouseInfo.colorDropDown.addEntry(_(cc.name), cc.data);
+                }
+            }
+        }
 
         // Default = Original (self)
         curHouseInfo.colorDropDown.setSelectedItem(0);

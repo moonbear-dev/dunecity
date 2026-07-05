@@ -245,7 +245,13 @@ CustomGamePlayers::CustomGamePlayers(const GameInitSettings& newGameInitSettings
             curHouseInfo.teamDropDown.setEnabled(false);
             curHouseInfo.teamDropDown.setOnClickEnabled(false);
         } else {
-            for(int team = 0 ; team<numHouses ; team++) {
+            // DuneCity 1.0.375: list all NUM_HOUSES teams (was
+            // 'numHouses' in v1.0.354 and earlier). Showing only
+            // the active-house count left Team 7 + 8 (= HOUSE_REBELS
+            // + the 8th alliance slot) unselectable when fewer
+            // than 8 houses were active. With NUM_HOUSES teams the
+            // dropdown always covers the full faction range.
+            for(int team = 0 ; team<NUM_HOUSES ; team++) {
                 curHouseInfo.teamDropDown.addEntry(_("Team") + " " + std::to_string(team+1), team+1);
             }
             curHouseInfo.teamDropDown.setSelectedItem(slotToTeam[i]);

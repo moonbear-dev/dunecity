@@ -3289,7 +3289,12 @@ bool Game::loadSaveGame(InputStream& stream) {
     // read the actual house setup choosen at the beginning of the game
     Uint32 numHouseInfo = stream.readUint32();
     for(Uint32 i=0;i<numHouseInfo;i++) {
-        houseInfoListSetup.push_back(GameInitSettings::HouseInfo(stream));
+        // DuneCity 1.0.365: pass loadedSavegameVersion so HouseInfo
+        // can conditionally read the colorIndex field (format 9820+).
+        // Old saves pre-9820 don't have the field - the ctor falls
+        // through to default colorIndex = houseID (no swap), so
+        // behavior is unchanged for old saves.
+        houseInfoListSetup.push_back(GameInitSettings::HouseInfo(stream, loadedSavegameVersion));
     }
 
     //read map size

@@ -30,7 +30,11 @@
 #define DEFAULT_METASERVER  "https://dunelegacy.com/metaserver/metaserver.php"
 
 #define SAVEMAGIC           8675309
-#define SAVEGAMEVERSION     9818  // 9818: CitySimulation persists all kMaxCityHouses houseState_[] slots (was houseState_[0] only — bug: local-player slot zeroed on reload in any non-Harkonnen campaign)
+// 9820: HouseInfo gained a colorIndex field (runtime house color override,
+// default = houseID). Older saves do not write this field, so we read it
+// only when savegameVersion >= 9820. Old saves load with colorIndex == houseID
+// (the existing default) so behavior is identical for unreplaced houses.
+#define SAVEGAMEVERSION     9820
 // 9817: Added House::cityCredits (tax income separate from spice quota)
 // 9812: Added Structure_AdvancedWindTrap (ID 52), Num_ItemID now 53.
 

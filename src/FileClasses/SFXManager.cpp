@@ -121,8 +121,18 @@ void SFXManager::loadEnglishVoice() {
                 HouseNameChunk = getChunkFromFile("NNEU.VOC", "ANEU.VOC");
                 break; // Neutral house name call - NNEU.VOC is the dedicated Neutral sound
             case HOUSE_REBELS:
-                HouseString = "H";
-                HouseNameChunk = getChunkFromFile(HouseString + "HARK.VOC");
+                HouseString = "R";
+                // DuneCity 1.0.388: use the dedicated RREBELS.VOC
+                // voice sample for HOUSE_REBELS instead of falling
+                // through to HARK.VOC. The RREBELS.VOC file ships in
+                // data/ + mods/Tornie/data/ + Tornie.PAK from
+                // v1.0.352 era. Falling back to HARK.VOC if the
+                // custom voice isn't present keeps vanilla behaviour.
+                if(pFileManager->exists("RREBELS.VOC")) {
+                    HouseNameChunk = getChunkFromFile("RREBELS.VOC");
+                } else {
+                    HouseNameChunk = getChunkFromFile("HARK.VOC");
+                }
                 break; // Rebels uses Harkonnen voice
             default:
                 break;

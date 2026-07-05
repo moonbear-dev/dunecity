@@ -251,7 +251,13 @@ GFXManager::GFXManager() {
         // DuneCity 1.0.357: Custom_IBM.pal is 8-bit already (was *4
         // mistakenly scaled, which produced a pale washed-out grey
         // instead of the intended dark grey). Read raw bytes directly.
-        for (int i = 192; i < 200; ++i) {
+        // DuneCity 1.0.388: PALCOLOR_REBELS moved from 192 to 200
+        // (see include/Colors.h). Custom_IBM.pal override now writes
+        // to indices 200-207 (the dedicated Rebels slot) instead of
+        // 192-199 (which is PALCOLOR_FREMEN's slot). This keeps the
+        // vanilla Fremen orange tint intact for HOUSE_FREMEN and
+        // gives HOUSE_REBELS its own dedicated dark grey ramp.
+        for (int i = PALCOLOR_REBELS; i < PALCOLOR_REBELS + 8; ++i) {
             SDL_Color c;
             c.r = palData[i*3+0];
             c.g = palData[i*3+1];
@@ -2090,6 +2096,35 @@ GFXManager::GFXManager() {
     replaceColor(objPic[ObjPic_SandwormShimmerMask][HOUSE_HARKONNEN][0].get(), PALCOLOR_WHITE, PALCOLOR_BLACK);
     objPic[ObjPic_SandwormShimmerTemp][HOUSE_HARKONNEN][0] = units1->getPicture(10);
     objPic[ObjPic_Terrain][HOUSE_HARKONNEN][0] = icon->getPictureRow(124,209,NUM_TERRAIN_TILES_X);
+
+    // DuneCity 1.0.387: per-house clone of the terrain atlas so the
+    // visible tile tint for a Rebels player matches the Custom_IBM.pal
+    // dark grey (not vanilla Fremen orange). The atlas's surface
+    // palette is updated to use the runtime 'palette' (which has the
+    // Custom_IBM.pal override at indices 192-199) instead of
+    // ibmPalette (which has vanilla colors at the same indices).
+    // Vanilla vanilla-HARKONNEN slot keeps its vanilla tinted
+    // appearance; the per-house clones for non-HARKONNEN get the
+    // Custom_IBM.pal dark grey on Fremen/Rebels/Neutral slots.
+    {
+        // Clone for each non-HARKONNEN house
+        for(int h = 0; h < NUM_HOUSES; h++) {
+            if(h == HOUSE_HARKONNEN) continue;
+            objPic[ObjPic_Terrain][h][0] = sdl2::surface_ptr{
+                SDL_ConvertSurface(objPic[ObjPic_Terrain][HOUSE_HARKONNEN][0].get(),
+                                   objPic[ObjPic_Terrain][HOUSE_HARKONNEN][0]->format, 0)
+            };
+            if(objPic[ObjPic_Terrain][h][0] && objPic[ObjPic_Terrain][h][0]->format->palette) {
+                // Apply runtime 'palette' to the cloned surface's
+                // embedded palette. This includes the Custom_IBM.pal
+                // override at indices 192-199 (dark grey) which
+                // makes Rebels + Fremen tiles look dark grey instead
+                // of vanilla orange.
+                palette.applyToSurface(objPic[ObjPic_Terrain][h][0].get());
+            }
+        }
+        SDL_Log("DuneCity 1.0.387: per-house terrain atlas remap (Custom_IBM.pal applied to Rebels/Fremen tiles)");
+    }
     objPic[ObjPic_DestroyedStructure][HOUSE_HARKONNEN][0] = icon->getPictureRow2(14, 33, 125, 213, 214, 215, 223, 224, 225, 232, 233, 234, 240, 246, 247);
     objPic[ObjPic_RockDamage][HOUSE_HARKONNEN][0] = icon->getPictureRow(1,6);
     objPic[ObjPic_SandDamage][HOUSE_HARKONNEN][0] = icon->getPictureRow(7,12);

@@ -80,7 +80,16 @@
 #define PALCOLOR_SARDAUKAR 208
 #define PALCOLOR_MERCENARY 224
 #define PALCOLOR_NEUTRAL 128
-#define PALCOLOR_REBELS 192
+// DuneCity 1.0.388: PALCOLOR_REBELS moved off 192 (which is
+// PALCOLOR_FREMEN and would clobber the vanilla Fremen orange).
+// New slot 200-207 is unused by vanilla and is adjacent to
+// the PALCOLOR_FREMEN range so the per-house sprite remap
+// can use houseToPaletteIndex[HOUSE_REBELS]=200 without
+// conflict. Custom_IBM.pal values get written to indices
+// 200-207 instead of 192-199 so the Fremen tint stays vanilla
+// orange and the Rebels tint gets its own dedicated dark grey
+// ramp.
+#define PALCOLOR_REBELS 200
 
 // Colors
 #define COLOR_INVALID COLOR_RGBA(0xDE, 0xAD, 0xBE, 0xEF)

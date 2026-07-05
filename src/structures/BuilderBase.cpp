@@ -337,6 +337,17 @@ void BuilderBase::updateBuildList()
             continue;
         }
 
+        // DuneCity 1.0.364: Troopers + Infantry (Soldiers) are
+        // exclusive to the Tornie mod. Vanilla Dune Legacy has
+        // only basic Soldiers; the WOR build list shows Troopers
+        // (heavy infantry) and Infantry (regular Soldiers) when
+        // Tornie is the active mod. Outside Tornie, hide both.
+        if ((itemID2Add == Unit_Trooper || itemID2Add == Unit_Soldier)
+            && ModManager::instance().getActiveModName() != "Tornie") {
+            removeItem(buildList, iter, itemID2Add);
+            continue;
+        }
+
         // City-sim gate: Starport is a shipyard scaled to a sizable city —
         // require 20000 displayed population (= 1000 internal) before it can
         // be built. Outside city sim there's no population, so no gate.

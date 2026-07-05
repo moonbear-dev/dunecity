@@ -3598,6 +3598,16 @@ GFXManager::GFXManager() {
 
 GFXManager::~GFXManager() = default;
 
+void GFXManager::setHouseColorSwap(int house, int pickedSlot) {
+    if(house < 0 || house >= NUM_HOUSES) return;
+    houseColorSwap[house] = pickedSlot;
+}
+
+int GFXManager::getHouseColorSwap(int house) const {
+    if(house < 0 || house >= NUM_HOUSES) return -1;
+    return houseColorSwap[house];
+}
+
 SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned int z) {
     if(id >= NUM_OBJPICS) {
         THROW(std::invalid_argument, "GFXManager::getZoomedObjPic(): Unit Picture with ID %u is not available!", id);
@@ -3648,7 +3658,15 @@ SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned in
             }
         }
 
-        objPic[id][house][z] = mapSurfaceColorRange(objPic[id][HOUSE_HARKONNEN][z].get(), PALCOLOR_HARKONNEN, houseToPaletteIndex[house]);
+        // DuneCity 1.0.396: respect the per-house color swap set by
+        // Game::initGame via setHouseColorSwap. If the player picked
+        // a non-Original color in CustomGamePlayers, the destination
+        // palette index becomes that picked slot instead of the
+        // house's own slot. If pickedSlot < 0 (Original or no swap
+        // for this game type), use the house's own slot.
+        const int swapSlot = getHouseColorSwap(house);
+        const int destSlot = (swapSlot >= 0) ? swapSlot : houseToPaletteIndex[house];
+        objPic[id][house][z] = mapSurfaceColorRange(objPic[id][HOUSE_HARKONNEN][z].get(), PALCOLOR_HARKONNEN, destSlot);
 
         // DuneCity 1.0.393: for HOUSE_REBELS, re-apply ONLY the
         // 192-199 (Rebels/Fremen shared slot) override from the

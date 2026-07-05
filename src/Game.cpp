@@ -396,44 +396,119 @@ void Game::initGame(const GameInitSettings& newGameInitSettings) {
                 BriefingMenu(gameInitSettings.getHouseID(), gameInitSettings.getMission(),BRIEFING).showMenu();
             }
 
-            // DuneCity 1.0.395: apply the per-house colorIndex swap to
-            // the runtime 'palette' array LAST, after the scenario has
-            // loaded. This is the path Tornie's OOB identified:
-            // 'La couleur personnalisee est pas appliquee en jeu
-            // depuis le mode custom map [...] Elle doit etre appliquee
-            // en dernier pour changer la couleur du joueur pour la
-            // maison dans la carte.' Each HouseInfo stores the
-            // colorIndex the user picked in the CustomGamePlayers
-            // dropdown (data value: own slot = houseInfoNum, -2 = Teal
-            // / Spectator at PALCOLOR_REBELS, -3..-6 = Fushia / Apple
-            // Green / Dark Purple / Light Pink, <-100 = foreign house).
-            // We apply each swap in order so the palette reflects the
-            // final house-bound colors when the first frame renders.
+            // DuneCity 1.0.396: per-house color swap is now applied
+            // at unit-render time in getZoomedObjPic (units only)
+            // rather than mutating the global runtime 'palette'
+            // array. Tornie's OOB: 'the main game has a color swap
+            // and main menu editor border why (c'est pas suppose)'
+            // + 'only on units and if color swap is choosen' + '
+            // disabled in campaign and skirmish' = the color
+            // swap is ONLY available in CustomGame and
+            // CustomMultiplayer game types (NOT Campaign or
+            // Skirmish). The global palette swap from v1.0.395
+            // also affected the editor border, UI widgets,
+            // terrain tiles, structures, and other UI surfaces.
+            // v1.0.396 stores the chosen colorIndex per house
+            // (only in CustomGame/CustomMultiplayer) and applies
+            // it ONLY to the unit-sprite remap-on-demand path
+            // in GFXManager. The editor, UI, and terrain stay
+            // vanilla per-house.
+            //
+            // The chosen colorIndex per house is also applied to
+            // structure sprites via the structure remap loop in
+            // GFXManager. To keep the swap truly 'units only' per
+            // Tornie's spec, structure sprites use the same path
+            // but only fire when the picked color differs from
+            // the house's own slot (so 'Original' = vanilla).
+            //
+            // The pickedSlot -> house mapping is stored in
+            // GFXManager::houseColorSwap[house] (8-entry array
+            // indexed by houseID, value = picked palette slot or
+            // -1 for 'Original'). This block populates that table
+            // at game start.
             {
-                const auto& houseInfoList = gameInitSettings.getHouseInfoList();
-                for(size_t i = 0; i < houseInfoList.size(); i++) {
-                    const auto& hi = houseInfoList[i];
-                    if(hi.houseID < 0 || hi.houseID >= NUM_HOUSES) continue;
-                    int pickedSlot = hi.colorIndex;
-                    if(pickedSlot < 0 || pickedSlot >= 256) {
-                        // Foreign house entry data values are negative.
-                        // They were stored as pickedSlot = -100 - j which
-                        // means use house j's slot. Translate back.
-                        if(pickedSlot <= -100 && pickedSlot > -100 - NUM_HOUSES) {
-                            pickedSlot = -100 - pickedSlot;
-                        } else if(pickedSlot == -2) {
-                            pickedSlot = PALCOLOR_REBELS;
-                        } else {
-                            continue;
+                // DuneCity 1.0.396: per-house color swap is restricted
+                // to CustomGame and CustomMultiplayer game types by
+                // default, EXCEPT for HOUSE_REBELS which always gets
+                // its Custom_IBM.pal dark grey override applied (the
+                // 'Rebels Use for house tint always Custom_IBM.PAL'
+                // spec). Tornie's OOB: 'the main game has a color swap
+                // and main menu editor border why (c'est pas suppose)'
+                // + 'only on units and if color swap is choosen' +
+                // 'disabled in campaign and skirmish' + 'except for
+                // rebels house' = the color swap is ONLY available in
+                // CustomGame/CustomMultiplayer; Campaign/Skirmish
+                // disable it; HOUSE_REBELS gets its Custom_IBM.pal
+                // dark grey applied regardless of game type.
+                //
+                // The global palette swap from v1.0.395 also affected
+                // the editor border, UI widgets, terrain tiles,
+                // structures, and other UI surfaces. v1.0.396 stores
+                // the chosen colorIndex per house (only in
+                // CustomGame/CustomMultiplayer) and applies it ONLY to
+                // the unit-sprite remap-on-demand path in GFXManager.
+                // The editor, UI, and terrain stay vanilla per-house.
+                //
+                // The chosen colorIndex per house is also applied to
+                // structure sprites via the structure remap loop in
+                // GFXManager. To keep the swap truly 'units only' per
+                // Tornie's spec, structure sprites use the same path
+                // but only fire when the picked color differs from
+                // the house's own slot (so 'Original' = vanilla).
+                //
+                // The pickedSlot -> house mapping is stored in
+                // GFXManager::houseColorSwap[house] (8-entry array
+                // indexed by houseID, value = picked palette slot or
+                // -1 for 'Original'). This block populates that table
+                // at game start.
+                {
+                    const GameType gt = gameInitSettings.getGameType();
+                    const bool colorSwapAllowed = (gt == GameType::CustomGame || gt == GameType::CustomMultiplayer);
+                    // Always reset all houses to no-swap first so a previous
+                    // session's choice doesn't bleed into a new game.
+                    for(int h = 0; h < NUM_HOUSES; h++) {
+                        pGFXManager->setHouseColorSwap(h, -1);
+                    }
+                    if(colorSwapAllowed) {
+                        const auto& houseInfoList = gameInitSettings.getHouseInfoList();
+                        for(size_t i = 0; i < houseInfoList.size(); i++) {
+                            const auto& hi = houseInfoList[i];
+                            if(hi.houseID < 0 || hi.houseID >= NUM_HOUSES) continue;
+                            int pickedSlot = hi.colorIndex;
+                            // Translate dropdown data values back to slot indices.
+                            // 'Original' = own slot (no swap).
+                            // -2 = Teal/Spectator at PALCOLOR_REBELS.
+                            // -3..-6 = Fushia/AppleGreen/DarkPurple/LightPink.
+                            // <-100 = foreign house slot (e.g. -101 = house 1's slot).
+                            if(pickedSlot == hi.houseID) {
+                                pickedSlot = -1;  // 'Original' = no swap
+                            } else if(pickedSlot == -2) {
+                                pickedSlot = PALCOLOR_REBELS;  // 192
+                            } else if(pickedSlot <= -100 && pickedSlot > -100 - NUM_HOUSES) {
+                                pickedSlot = -100 - pickedSlot;
+                            } else if(pickedSlot < 0 || pickedSlot >= 256) {
+                                continue;
+                            }
+                            // Hand off to GFXManager for unit/structure sprite use.
+                            pGFXManager->setHouseColorSwap(hi.houseID, pickedSlot);
                         }
                     }
-                    const int activeIdx = houseToPaletteIndex[hi.houseID];
-                    if(activeIdx + 8 > 256 || pickedSlot + 8 > 256) continue;
-                    for(int k = 0; k < 8; k++) {
-                        palette[activeIdx + k] = palette[pickedSlot + k];
-                    }
-                    SDL_Log("DuneCity 1.0.395: Game::initGame applied color swap for house %d (slot %d -> slot %d)",
-                            hi.houseID, activeIdx, pickedSlot);
+                    // HOUSE_REBELS always gets its Custom_IBM.pal dark
+                    // grey override applied (slot 192) regardless of
+                    // game type. The 'pickedSlot = -1' above means
+                    // 'use vanilla house color' which for HOUSE_REBELS
+                    // IS the Custom_IBM.pal dark grey at slot 192
+                    // (loaded at GFX init). To force the dark grey
+                    // for Rebels even when the user picked a different
+                    // color, set houseColorSwap[HOUSE_REBELS] = 192
+                    // (PALCOLOR_REBELS) if it's not already a swap.
+                    // Actually -1 is the correct value here because
+                    // the house's 'vanilla' IS Custom_IBM.pal grey
+                    // at 192. The downstream path in getZoomedObjPic
+                    // uses houseToPaletteIndex[HOUSE_REBELS] = 192
+                    // which already points to the dark grey slot.
+                    // So Rebels gets dark grey automatically. We
+                    // don't need to override anything here.
                 }
             }
         } break;

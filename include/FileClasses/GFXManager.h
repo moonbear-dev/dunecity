@@ -569,6 +569,14 @@ public:
 
     SDL_Texture*     getZoomedObjPic(unsigned int id, int house, unsigned int z);
     SDL_Texture*     getZoomedObjPic(unsigned int id, unsigned int z) { return getZoomedObjPic(id, HOUSE_HARKONNEN, z); };
+    // DuneCity 1.0.396: per-house color swap for unit sprites.
+    // When the user picks a non-'Original' color in CustomGamePlayers,
+    // Game::initGame calls setHouseColorSwap(houseID, pickedSlot).
+    // getZoomedObjPic reads this table and uses pickedSlot instead of
+    // houseToPaletteIndex[house] as the destination palette index.
+    // Default is -1 (no swap, use vanilla house color).
+    void            setHouseColorSwap(int house, int pickedSlot);
+    int             getHouseColorSwap(int house) const;
     zoomable_texture getObjPic(unsigned int id, int house=HOUSE_HARKONNEN);
 
     SDL_Texture*     getSmallDetailPic(unsigned int id);
@@ -600,6 +608,12 @@ private:
 
     // 8-bit surfaces kept in main memory for processing as needed, e.g. color remapping
     std::array<std::array<std::array<sdl2::surface_ptr, NUM_ZOOMLEVEL>, NUM_HOUSES>, NUM_OBJPICS> objPic;
+
+    // DuneCity 1.0.396: per-house color swap table. Index = houseID
+    // (0..NUM_HOUSES-1), value = picked palette slot (>=0) or -1
+    // for no swap (use vanilla house color). Populated at game
+    // start from Game::initGame via setHouseColorSwap().
+    std::array<int, NUM_HOUSES> houseColorSwap;
     std::array<std::array<sdl2::surface_ptr, NUM_HOUSES>, NUM_UIGRAPHICS> uiGraphic;
     std::array<std::array<sdl2::surface_ptr, NUM_HOUSES>, NUM_MAPCHOICEPIECES> mapChoicePieces;
     std::array<std::unique_ptr<Animation>, NUM_ANIMATION> animation{};

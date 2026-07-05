@@ -251,43 +251,71 @@ GFXManager::GFXManager() {
         // DuneCity 1.0.357: Custom_IBM.pal is 8-bit already (was *4
         // mistakenly scaled, which produced a pale washed-out grey
         // instead of the intended dark grey). Read raw bytes directly.
-        // DuneCity 1.0.389: gate the Custom_IBM.pal override on the
-        // active house. PALCOLOR_REBELS = 192 (same slot as
-        // PALCOLOR_FREMEN). Writing dark grey to indices 192-199
-        // affects BOTH houses by design. We want HOUSE_FREMEN to
-        // see vanilla Fremen orange, so the override only fires
-        // when the local player house is HOUSE_REBELS (or the
-        // picker's colorIndex selects Rebels - that path is
-        // handled separately in onChangeColorDropDownBoxes).
         //
-        // Since we don't know the localPlayer at GFX init time,
-        // we instead always write the dark grey ramp and rely on
-        // the runtime's per-house selection logic to pick which
-        // palette indices get read. The vanilla Fremen orange
-        // restored at indices 192-199 in Custom_IBM.pal itself
-        // ensures HOUSE_FREMEN keeps its native color because the
-        // runtime 'palette[192..199]' is dark grey but ibmPalette
-        // (used for Fremen only per include/globals.h:115) is
-        // still vanilla orange.
+        // DuneCity 1.0.410: write Custom_IBM.pal values into the
+        // customColorRamp table AND into the runtime palette[] at
+        // indices 192-199. The runtime palette[] needs the dark
+        // grey at 192-199 because getHouseSDLColor(HOUSE_REBELS)
+        // reads from palette[195] = runtime palette[]. Other
+        // rendering paths (cursor, label, etc.) also read from
+        // palette[] directly without going through the per-house
+        // surface remap, so those need the runtime values too.
         //
-        // DuneCity 1.0.402: Custom_IBM.pal file is captured into
-        // the customColorRamp table for direct read by the
-        // per-house remap loop. Per Tornie's OOB: 'il va
-        // directement lire dans Custom_IBM.pal' = the
-        // per-house remap reads Custom_IBM.pal values DIRECTLY
-        // (not via the runtime palette[]). The runtime
-        // palette[] stays vanilla IBM.PAL; the per-house remap
-        // reads Custom_IBM.pal at slot 192-199 and applies
-        // those values to HOUSE_REBELS unit sprites.
+        // Tornie's OOB (v1.0.405 + v1.0.410): 'quand le mods
+        // vanilla est active seulement les rebels sont
+        // transparent comme un kameleon' = when the vanilla mod
+        // is active (no Tornie mod), HOUSE_REBELS shows the
+        // translucent ghost effect because the runtime
+        // palette[192..199] is vanilla IBM.PAL orange (no
+        // Custom_IBM.pal override). Writing the dark grey to
+        // runtime palette[] unconditionally (not just
+        // customColorRamp) fixes this - the engine reads the
+        // correct dark grey color when rendering HOUSE_REBELS.
+        // Other house slots (144, 160, 176, 208, 224, 128) keep
+        // vanilla IBM.PAL values in palette[]. The per-house
+        // remap loops still apply for in-world sprite tinting.
         for (int i = 0; i < 256; i++) {
             SDL_Color c;
             c.r = palData[i*3+0];
             c.g = palData[i*3+1];
             c.b = palData[i*3+2];
             c.a = 255;
-            pGFXManager->setCustomColorRamp(i, c);
+            // Direct member access (we're inside GFXManager
+            // constructor body - pGFXManager is the very
+            // object being constructed).
+            customColorRamp[i] = c;
+            // Only write the 192-199 override to the runtime
+            // palette[] (Tornie's spec: dark grey for HOUSE_REBELS
+            // at indices 192-199, other slots stay vanilla).
+            if(i >= PALCOLOR_REBELS && i < PALCOLOR_REBELS + 8) {
+                palette[i] = c;
+            }
         }
-        SDL_Log("GFX INIT: Custom_IBM.pal values captured into customColorRamp[0..255] for direct read by per-house remap");
+        SDL_Log("GFX INIT: Custom_IBM.pal values written to palette[192..199] for HOUSE_REBELS (dark grey from Custom_IBM.pal)");
+    } else {
+        // DuneCity 1.0.410: Custom_IBM.pal is missing (vanilla mod
+        // active). Apply the default dark grey ramp at indices
+        // 192-199 anyway so HOUSE_REBELS shows dark grey in
+        // vanilla mode (not orange/translucent like a chameleon).
+        // Tornie's OOB: 'quand le mods vanilla est active
+        // seulement les rebels sont transparent comme un
+        // kameleon' = the vanilla mod path also needs the dark
+        // grey for Rebels.
+        const SDL_Color defaultRebelsRamp[8] = {
+            { 25, 25, 25, 255 },
+            { 17, 17, 17, 255 },
+            { 15, 15, 15, 255 },
+            { 10, 10, 10, 255 },
+            {  7,  7,  7, 255 },
+            {  2,  2,  2, 255 },
+            {  0,  0,  0, 255 },
+            { 13, 42, 42, 255 },
+        };
+        for(int k = 0; k < 8; k++) {
+            customColorRamp[PALCOLOR_REBELS + k] = defaultRebelsRamp[k];
+            palette[PALCOLOR_REBELS + k] = defaultRebelsRamp[k];
+        }
+        SDL_Log("GFX INIT: Custom_IBM.pal missing (vanilla mod) - default dark grey ramp applied at palette[192..199] for HOUSE_REBELS");
     }
 
     // DuneCity 1.0.369: Custom_Pal_Color Teal ramp at the REBELS slot.
@@ -3581,25 +3609,54 @@ SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned in
             }
         }
 
-        // DuneCity 1.0.407: per-house remap-on-demand path
-                // simplified. The engine uses PALCOLOR_HARKONNEN
-                // (144) as the source slot for all houses; the
-                // destination is houseToPaletteIndex[house]. We
-                // re-apply ONLY the 192-199 (Rebels/Fremen shared
-                // slot) Custom_IBM.pal override to the remapped
-                // surface so HOUSE_REBELS shows dark grey. Other
-                // house slots (144, 160, 176, 208, 224, 128) keep
-                // their vanilla values.
-                objPic[id][house][z] = mapSurfaceColorRange(objPic[id][HOUSE_HARKONNEN][z].get(), PALCOLOR_HARKONNEN, houseToPaletteIndex[house]);
-
-                if(house == HOUSE_REBELS && objPic[id][house][z] && objPic[id][house][z]->format->palette) {
-                    SDL_Color rebelsOverride[8];
-                    for(int k = 0; k < 8; k++) {
-                        rebelsOverride[k] = customColorRamp[PALCOLOR_FREMEN + k];
-                    }
-                    SDL_SetPaletteColors(objPic[id][house][z]->format->palette,
-                                          rebelsOverride, PALCOLOR_FREMEN, 8);
+        // DuneCity 1.0.410: per-house remap-on-demand path
+        // restricted to the color swap path only. Tornie's OOB:
+        // 'the color of all except harkonnen (units and structure)
+        // need to be rolled back like vanilla. it's cause a
+        // translucent mask to them and cause a kameleon unit
+        // almost. Rebels colors unit tint don't work it need
+        // to work like when i add it for first time in first
+        // version. (only for color swap)' = the per-house
+        // remap ONLY fires when the player explicitly picked a
+        // custom color via setHouseColorSwap (set at game start
+        // from Game::initGame). When no swap is active
+        // (getHouseColorSwap returns -1), the surface is left
+        // unchanged (HARKONNEN's surface, with HARKONNEN
+        // palette). The vanilla per-house colors are applied
+        // at GFX init by writing each house's vanilla color
+        // into the runtime 'palette' at the house's slot
+        // (see the per-house structure remap loop in the
+        // GFXManager constructor). This way the engine
+        // reads the correct color from palette[] when
+        // rendering any house's sprite (since the sprite
+        // pixels at indices 144-151 point to whatever the
+        // runtime palette has there - which is the active
+        // house's color).
+        const int swapSlot = getHouseColorSwap(house);
+        if(swapSlot >= 0) {
+            // Color swap active - remap pixels from PALCOLOR_HARKONNEN
+            // (144) to the picked slot, then apply the custom
+            // color override at the destination slot.
+            objPic[id][house][z] = mapSurfaceColorRange(objPic[id][HOUSE_HARKONNEN][z].get(), PALCOLOR_HARKONNEN, swapSlot);
+            if(house == HOUSE_REBELS && objPic[id][house][z] && objPic[id][house][z]->format->palette) {
+                SDL_Color rebelsOverride[8];
+                for(int k = 0; k < 8; k++) {
+                    rebelsOverride[k] = customColorRamp[PALCOLOR_FREMEN + k];
                 }
+                SDL_SetPaletteColors(objPic[id][house][z]->format->palette,
+                                      rebelsOverride, PALCOLOR_FREMEN, 8);
+            }
+        }
+        // When no swap is active, we don't create a per-house
+        // remapped surface - the HARKONNEN surface is used
+        // directly (no remap), and the runtime palette[]
+        // holds each house's vanilla color at its slot
+        // (set by the per-house structure remap at GFX init).
+        // The sprite pixels at indices 144-151 point to
+        // PALCOLOR_HARKONNEN's slot in the runtime palette
+        // which now holds the active house's color.
+
+        // DuneCity 1.0.383: removed the ibmPalette[PALCOLOR_FREMEN..+15]
         // restore for HOUSE_FREMEN. The previous code overrode the
         // objPic palette with vanilla IBM.PAL colors at 192-207, which
         // made Fremen tanks/structures render in vanilla orange instead

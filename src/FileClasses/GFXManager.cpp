@@ -2380,13 +2380,14 @@ GFXManager::GFXManager() {
         // 192-199 override from the runtime palette.
         SDL_Color rebelsOverride[8];
             for(int k = 0; k < 8; k++) {
-                // DuneCity 1.0.404: read Custom_IBM.PAL values
-                // from customColorRamp (populated at GFX init
-                // from the Custom_IBM.pal file) instead of
-                // palette[]. The runtime palette[] is vanilla
-                // IBM.PAL after v1.0.398, but customColorRamp
-                // holds the user-uploaded Custom_IBM.PAL values.
-                rebelsOverride[k] = pGFXManager->getCustomColorRamp(PALCOLOR_FREMEN + k);
+                // DuneCity 1.0.405: direct member access (not
+                // pGFXManager->getCustomColorRamp). The terrain
+                // remap runs inside the GFXManager constructor
+                // body - pGFXManager is the very object being
+                // constructed, so calling its methods through
+                // the global pointer is undefined behavior
+                // (matches the v1.0.401 crash signature).
+                rebelsOverride[k] = customColorRamp[PALCOLOR_FREMEN + k];
             }
             for(int h = 0; h < NUM_HOUSES; h++) {
             if(h == HOUSE_HARKONNEN) continue;

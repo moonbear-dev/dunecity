@@ -666,6 +666,56 @@ GFXManager::GFXManager() {
     objPic[ObjPic_RocketTurret][HOUSE_HARKONNEN][0] = icon->getPictureArray(24);
     objPic[ObjPic_Wall][HOUSE_HARKONNEN][0] = icon->getPictureArray(6,25,3,1);
 
+    // DuneCity 1.0.379: per-house remap of structure sprites
+    // (ConstructionYard/Windtrap/Refinery/Barracks/WOR/Radar/
+    // LightFactory/Silo/HeavyFactory/HighTechFactory/IX/
+    // Palace/RepairYard/Starport/GunTurret/RocketTurret/Wall).
+    // Until v1.0.379 only HOUSE_HARKONNEN was populated and the
+    // runtime remap-on-demand path in getZoomedObjPic reads
+    // PALCOLOR_HARKONNEN indices (144-150). Result: every other
+    // house (including HOUSE_REBELS) showed the orange Harkonnen
+    // sprite. This block clones each sprite to every house and
+    // remaps the 8 palette indices PALCOLOR_HARKONNEN..+7 to the
+    // per-house equivalent. Fremen reads from ibmPalette so the
+    // Custom_IBM.pal dark grey doesn't bleed into the Fremen
+    // template (matching the v1.0.371 unit-sprite remap).
+    {
+        static const int structureSprites[] = {
+            ObjPic_ConstructionYard, ObjPic_Windtrap, ObjPic_Refinery,
+            ObjPic_Barracks, ObjPic_WOR, ObjPic_Radar, ObjPic_LightFactory,
+            ObjPic_Silo, ObjPic_HeavyFactory, ObjPic_HighTechFactory,
+            ObjPic_IX, ObjPic_Palace, ObjPic_RepairYard, ObjPic_Starport,
+            ObjPic_GunTurret, ObjPic_RocketTurret, ObjPic_Wall
+        };
+        for (int spec : structureSprites) {
+            if(!objPic[spec][HOUSE_HARKONNEN][0]) continue;
+            for (int h = 0; h < NUM_HOUSES; h++) {
+                if (h == HOUSE_HARKONNEN) continue;
+                // Fremen uses vanilla ibmPalette so the original
+                // orange-gold Harkonnen template doesn't get the
+                // Custom_IBM.pal dark grey override.
+                const Palette& srcPal = (h == HOUSE_FREMEN) ? ibmPalette : palette;
+                objPic[spec][h][0] = sdl2::surface_ptr{
+                    SDL_ConvertSurface(objPic[spec][HOUSE_HARKONNEN][0].get(),
+                                       objPic[spec][HOUSE_HARKONNEN][0]->format, 0)
+                };
+                if (objPic[spec][h][0] && objPic[spec][h][0]->format->palette) {
+                    // 8-cell remap: PALCOLOR_HARKONNEN..+7 to
+                    // houseToPaletteIndex[h]..+7. Each house
+                    // picks up its own color (Harkonnen red,
+                    // Atreides blue/green, Ordos orange, Fremen
+                    // orange, Sardaukar, Mercenary, Neutral,
+                    // Rebels dark grey).
+                    for (int k = 0; k < 8; k++) {
+                        objPic[spec][h][0]->format->palette->colors[PALCOLOR_HARKONNEN + k] =
+                            srcPal[houseToPaletteIndex[h] + k];
+                    }
+                }
+            }
+        }
+        SDL_Log("DuneCity 1.0.379: per-house structure sprite remap (CY/Windtrap/Refinery/Barracks/WOR/Radar/Factories/Palace/Starport/Turrets/Wall)");
+    }
+
     // DuneCity zone sprites — load the full 3×3 Micropolis composites and
     // downscale them to the 2×2 gameplay footprint (32×32 at base zoom).
     // This shows the entire building art rather than a 2×2 center crop.

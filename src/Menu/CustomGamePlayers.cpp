@@ -495,38 +495,34 @@ CustomGamePlayers::CustomGamePlayers(const GameInitSettings& newGameInitSettings
             }
         }
 
-        // DuneCity 1.0.399: filter the 4 custom colors by excluding
-        // any whose slot corresponds to a house already taken by
-        // another player. Each custom color maps to a specific
-        // palette slot:
-        //   Fushia     data=-3 -> slot 160 (Atreides slot)
-        //   Apple Green data=-4 -> slot 208 (Sardaukar slot)
-        //   Dark Purple data=-5 -> slot 144 (Harkonnen slot)
-        //   Light Pink data=-6 -> slot 224 (Mercenary slot)
-        // The 'slot -> house' map is houseToPaletteIndex. We skip
-        // entries whose target slot is already taken.
-        if(true) {
-            const struct { int data; int slot; const char* name; } customColors[] = {
-                { -3, PALCOLOR_ATREIDES,  "Fushia (color)" },
-                { -4, PALCOLOR_SARDAUKAR, "Apple Green (color)" },
-                { -5, PALCOLOR_HARKONNEN, "Dark Purple (color)" },
-                { -6, PALCOLOR_MERCENARY, "Light Pink (color)" },
-            };
-            // Map slot -> house ID using the inverse of houseToPaletteIndex
-            std::map<int, int> slotToHouse;
-            for(int h = 0; h < NUM_HOUSES; h++) {
-                slotToHouse[houseToPaletteIndex[h]] = h;
-            }
-            for(const auto& cc : customColors) {
-                auto it = slotToHouse.find(cc.slot);
-                if(it != slotToHouse.end() && housesTakenByOthers.count(it->second)) {
-                    // Color's target slot is already taken by another
-                    // player - skip to avoid the conflict.
-                    continue;
-                }
-                curHouseInfo.colorDropDown.addEntry(_(cc.name), cc.data);
-            }
-        }
+        // DuneCity 1.0.400: The 4 custom colors (Fushia, Apple Green,
+// Dark Purple, Light Pink) are NOT linked to any house. They
+// are simply palette INDEX overrides at indices 160, 208, 144,
+// 224. Tornie's OOB: 'harkonnen est pas lie aux 2 couleurs les
+// couleurs en extra sont lies uniquement par index elles sont
+// independantes pour le reste' = Harkonnen isn't linked to
+// the 2 colors; the extra colors are linked ONLY by index and
+// are independent for the rest. So we DON'T filter them by
+// taken houses. All 4 custom colors are always offered.
+//
+// The data values map to specific palette indices:
+//   Fushia      data=-3 -> palette index 160 (Atreides vanilla slot)
+//   Apple Green data=-4 -> palette index 208 (Sardaukar vanilla slot)
+//   Dark Purple data=-5 -> palette index 144 (Harkonnen vanilla slot)
+//   Light Pink  data=-6 -> palette index 224 (Mercenary vanilla slot)
+// These are vanilla slots but the custom colors REPLACE the
+// vanilla values at those indices when the user picks them.
+if(true) {
+    const struct { int data; const char* name; } customColors[] = {
+        { -3, "Fushia (color)" },
+        { -4, "Apple Green (color)" },
+        { -5, "Dark Purple (color)" },
+        { -6, "Light Pink (color)" },
+    };
+    for(const auto& cc : customColors) {
+        curHouseInfo.colorDropDown.addEntry(_(cc.name), cc.data);
+    }
+}
 
         // Default = Original (self)
         curHouseInfo.colorDropDown.setSelectedItem(0);
@@ -1644,6 +1640,25 @@ void CustomGamePlayers::onChangeHousesDropDownBoxes(bool bInteractive, int house
                 removeFromHouseDropDown(curHouseInfo.houseDropDown, h);
             }
         }
+    }
+
+
+    // DuneCity 1.0.400: refresh the color dropdown for the
+    // changed house. The color choices should depend on the
+    // house pick, not the inverse (Tornie's OOB: 'le choix de
+    // maison devrait etre disponible et c'est le choix de
+    // couleur qui devrait en dependre et non l\'inverse').
+    // We invoke onChangeColorDropDownBoxes(true, houseInfoNum)
+    // to rebuild the color dropdown entries based on the
+    // newly-selected house for the changed slot. Other slots
+    // already had their color dropdown rebuilt in
+    // addAllHousesToDropdown() at construction time.
+    if(houseInfoNum >= 0 && houseInfoNum < NUM_HOUSES) {
+        // Rebuild the color dropdown for the changed player
+        // based on the new house selection. addAllHousesToDropdown
+        // is the function that builds color dropdown entries; we
+        // call it with the changed index to refresh only that one.
+        onChangeColorDropDownBoxes(true, houseInfoNum);
     }
 }
 

@@ -310,7 +310,23 @@ GFXManager::GFXManager() {
     // v1.0.385: prefer Spectator*<Color>.pal file if shipped
     // (lets tornie tune the ramp without rebuilding).
     {
-        // Each custom color has: slot, file, fallback ramp
+        // DuneCity 1.0.400: each custom color has: slot, file, fallback ramp
+        // (NEVER applied by default per v1.0.398 + v1.0.400).
+        //
+        // Each custom color entry stores its slot, file, and a
+        // fallback ramp. The fallback ramp is NOT applied to the
+        // runtime palette[] at GFX init - it's only applied when
+        // the user explicitly picks the color via CustomGamePlayers
+        // and the per-house swap path in Game::initGame writes the
+        // values to the picked slot via setHouseColorSwap.
+        //
+        // Tornie's OOB: 'le color swap non voulu se fait entre la
+        // version 1.0.394 et 1.0.393' = the unwanted color swap
+        // was the Fushia/Apple Green/Dark Purple/Light Pink
+        // fallback ramps firing unconditionally at GFX init in
+        // v1.0.394. v1.0.400 removes the unconditional fallback
+        // application - the ramps are stored but not applied
+        // until the user picks the color.
         struct CustomColorSpec {
             int slot;
             const char* filename;
@@ -349,6 +365,11 @@ GFXManager::GFXManager() {
         };
         for (const auto& spec : customColors) {
             if(pFileManager->exists(spec.filename)) {
+                // File exists - capture its values into a static
+                // table indexed by slot. The per-house swap path
+                // in Game::initGame reads from this table when the
+                // user explicitly picks the color. We do NOT write
+                // to palette[] here at GFX init.
                 auto rw = pFileManager->openFile(spec.filename);
                 std::vector<Uint8> fileData(768);
                 SDL_RWread(rw.get(), fileData.data(), 1, 768);
@@ -359,22 +380,20 @@ GFXManager::GFXManager() {
                     c.g = fileData[idx*3+1];
                     c.b = fileData[idx*3+2];
                     c.a = 255;
-                    palette[idx] = c;
+                    // Store in a static table for later retrieval
+                    // via applyCustomColorSwap().
+                    pGFXManager->setCustomColorRamp(spec.slot, c);
                 }
-                SDL_Log("GFX INIT: %s applied at palette[%d..%d] (file override, %s slot)",
-                        spec.filename, spec.slot, spec.slot+7, spec.name);
+                SDL_Log("GFX INIT: %s captured at palette[%d..%d] (NOT applied as default)",
+                        spec.filename, spec.slot, spec.slot+7);
             } else {
-                // For Teal, the fallback only fires if no
-                // SpectatorTeal.pal is shipped AND no Custom_IBM.pal
-                // is present (Custom_IBM.pal normally wins because
-                // it's loaded BEFORE this block). The Teal fallback
-                // is intentionally the same Custom_IBM.pal dark
-                // grey ramp - so even without the override files,
-                // Teal pickup ends up dark grey (same as Rebels).
+                // File doesn't exist - use the fallback ramp.
+                // Stored in the same static table. NOT applied to
+                // palette[] at GFX init.
                 for(int k = 0; k < 8; k++) {
-                    palette[spec.slot + k] = spec.fallback[k];
+                    pGFXManager->setCustomColorRamp(spec.slot + k, spec.fallback[k]);
                 }
-                SDL_Log("GFX INIT: %s ramp applied at palette[%d..%d] (hardcoded fallback)",
+                SDL_Log("GFX INIT: %s fallback ramp captured at palette[%d..%d] (NOT applied as default)",
                         spec.name, spec.slot, spec.slot+7);
             }
         }
@@ -3616,6 +3635,16 @@ void GFXManager::setHouseColorSwap(int house, int pickedSlot) {
 int GFXManager::getHouseColorSwap(int house) const {
     if(house < 0 || house >= NUM_HOUSES) return -1;
     return houseColorSwap[house];
+}
+
+void GFXManager::setCustomColorRamp(int idx, SDL_Color c) {
+    if(idx < 0 || idx >= 256) return;
+    customColorRamp[idx] = c;
+}
+
+SDL_Color GFXManager::getCustomColorRamp(int idx) const {
+    if(idx < 0 || idx >= 256) return {0, 0, 0, 255};
+    return customColorRamp[idx];
 }
 
 SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned int z) {

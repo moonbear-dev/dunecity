@@ -39,7 +39,7 @@
 Tile::Tile() {
     type = Terrain_Sand;
 
-    for (auto i = 0; i < NUM_TEAMS; i++) {
+    for (auto i = 0; i < NUM_HOUSES; i++) {
         explored[i] = currentGame->getGameInitSettings().getGameOptions().startWithExploredMap;
         lastAccess[i] = 0;
     }
@@ -69,16 +69,23 @@ Tile::~Tile() = default;
 void Tile::load(InputStream& stream) {
     type = stream.readUint32();
 
+    // DuneCity 1.0.360: savefile format stays at 7 entries for
+    // backward compatibility, but the in-memory array is sized
+    // NUM_HOUSES=8 so HOUSE_REBELS=7 doesn't write out-of-bounds.
+    // We read 7 entries from the stream and initialize the 8th
+    // (HOUSE_REBELS) to default (false / 0).
     stream.readBools(&explored[0], &explored[1], &explored[2], &explored[3], &explored[4], &explored[5], &explored[6]);
+    explored[7] = currentGame->getGameInitSettings().getGameOptions().startWithExploredMap;
 
-    bool bLastAccess[NUM_TEAMS];
+    bool bLastAccess[7];
     stream.readBools(&bLastAccess[0], &bLastAccess[1], &bLastAccess[2], &bLastAccess[3], &bLastAccess[4], &bLastAccess[5], &bLastAccess[6]);
 
-    for (int i = 0; i < NUM_TEAMS; i++) {
+    for (int i = 0; i < 7; i++) {
         if (bLastAccess[i] == true) {
             lastAccess[i] = stream.readUint32();
         }
     }
+    lastAccess[7] = 0;
 
     fogColor = stream.readUint32();
 

@@ -46,6 +46,9 @@
 
 #include <sand.h>
 #include <globals.h>
+#include <set>
+#include <map>
+
 
 
 #define PLAYER_HUMAN        0
@@ -449,13 +452,36 @@ CustomGamePlayers::CustomGamePlayers(const GameInitSettings& newGameInitSettings
         while(curHouseInfo.colorDropDown.getNumEntries() > 0) {
             curHouseInfo.colorDropDown.removeEntry(0);
         }
-        curHouseInfo.colorDropDown.addEntry(_("Original"), i);
+        // DuneCity 1.0.399: filter both house and color dropdowns
+        // separately. The house dropdown is filtered by
+        // boundHousesOnMap (only sections present in the loaded
+        // map). The color dropdown is filtered to exclude
+        // 'Original' entries whose house is already selected by
+        // another player. This avoids the 'conflict between
+        // chosen colors and the list of houses the player can
+        // choose' that Tornie flagged. Custom colors (Teal,
+        // Fushia, etc.) are not house-bound so they're always
+        // offered.
+        // The loop variable is 'i' (from for(int i=0; i<NUM_HOUSES; i++) above).
+        // Compute the set of houses already taken by other players.
+        // We exclude i from the taken set so the current player can
+        // still pick their own house.
+        std::set<int> housesTakenByOthers;
+        for(int j = 0; j < numHouses; j++) {
+            if(j == i) continue;
+            const int selHouse = houseInfo[j].houseDropDown.getSelectedEntryIntData();
+            if(selHouse >= 0 && selHouse < NUM_HOUSES) {
+                housesTakenByOthers.insert(selHouse);
+            }
+        }
+        // Add 'Original' only if this house isn't already taken by
+        // another player.
+        if(housesTakenByOthers.find(i) == housesTakenByOthers.end()) {
+            curHouseInfo.colorDropDown.addEntry(_("Original"), i);
+        }
 
         // DuneCity 1.0.398: Teal entry kept (still goes to slot 192
         // via the per-house swap path in setHouseColorSwap).
-        // The Teal/Ordos-skip logic is removed since Ordos no
-        // longer conflicts with Teal (Teal writes to slot 192,
-        // not 176 in v1.0.395+).
         if(true) {  // always offer Teal
             bool tealUsedBySpectator = false;
             for(int j=0; j<NUM_HOUSES; j++) {
@@ -469,27 +495,35 @@ CustomGamePlayers::CustomGamePlayers(const GameInitSettings& newGameInitSettings
             }
         }
 
-        // DuneCity 1.0.398: REMOVED the foreign-house color entries
-        // from this dropdown. They were named with the house name
-        // (e.g. "Harkonnen") which caused confusion with the house
-        // selection dropdown right next to them - users thought
-        // they were picking the house to play, not picking that
-        // house's color. The CustomGamePlayers color dropdown is
-        // now ONLY: Original + Teal + 4 Custom_IBM.PAL-sourced
-        // colors (Fushia, Apple Green, Dark Purple, Light Pink).
-        // The per-house swap path in Game::initGame
-        // (setHouseColorSwap) handles slot translation so users
-        // pick a color value, not a foreign-house reference.
+        // DuneCity 1.0.399: filter the 4 custom colors by excluding
+        // any whose slot corresponds to a house already taken by
+        // another player. Each custom color maps to a specific
+        // palette slot:
+        //   Fushia     data=-3 -> slot 160 (Atreides slot)
+        //   Apple Green data=-4 -> slot 208 (Sardaukar slot)
+        //   Dark Purple data=-5 -> slot 144 (Harkonnen slot)
+        //   Light Pink data=-6 -> slot 224 (Mercenary slot)
+        // The 'slot -> house' map is houseToPaletteIndex. We skip
+        // entries whose target slot is already taken.
         if(true) {
-            // 4 custom colors sourced from Custom_IBM.PAL at the
-            // user-specified indices (160, 208, 144, 224).
-            const struct { int data; const char* name; } customColors[] = {
-                { -3, "Fushia (color)" },
-                { -4, "Apple Green (color)" },
-                { -5, "Dark Purple (color)" },
-                { -6, "Light Pink (color)" },
+            const struct { int data; int slot; const char* name; } customColors[] = {
+                { -3, PALCOLOR_ATREIDES,  "Fushia (color)" },
+                { -4, PALCOLOR_SARDAUKAR, "Apple Green (color)" },
+                { -5, PALCOLOR_HARKONNEN, "Dark Purple (color)" },
+                { -6, PALCOLOR_MERCENARY, "Light Pink (color)" },
             };
+            // Map slot -> house ID using the inverse of houseToPaletteIndex
+            std::map<int, int> slotToHouse;
+            for(int h = 0; h < NUM_HOUSES; h++) {
+                slotToHouse[houseToPaletteIndex[h]] = h;
+            }
             for(const auto& cc : customColors) {
+                auto it = slotToHouse.find(cc.slot);
+                if(it != slotToHouse.end() && housesTakenByOthers.count(it->second)) {
+                    // Color's target slot is already taken by another
+                    // player - skip to avoid the conflict.
+                    continue;
+                }
                 curHouseInfo.colorDropDown.addEntry(_(cc.name), cc.data);
             }
         }

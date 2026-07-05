@@ -311,14 +311,27 @@ void SinglePlayerSkirmishMenu::onHouseLeft()
 
 void SinglePlayerSkirmishMenu::onHouseRight()
 {
-    if(currentHouseChoiceScrollPos < 4) {
+    // DuneCity 1.0.399: extend the scroll max to allow showing all
+    // 9 entries in the houseOrder array. The previous limit of 4
+    // meant the user could only scroll up to position 3 (positions
+    // 3,4,5 = Sardaukar, Neutral, Rebels) which left the Rebels
+    // entry inaccessible after Neutral. With 9 entries (8 houses +
+    // 1 extra REBELS per v1.0.392), the max scroll position is
+    // sizeof(houseOrder)/sizeof(houseOrder[0]) - 3 = 6 so the last
+    // 3 entries (positions 6, 7, 8 = Neutral, Rebels, Rebels) are
+    // visible. Tornie's OOB: 'q4 pourtant en appuyant sur la fleche
+    // apres neutral elle s'affiche pas' (after neutral, the
+    // Rebels entry doesn't show).
+    constexpr int HOUSE_ORDER_SIZE = sizeof(houseOrder)/sizeof(houseOrder[0]);
+    constexpr int MAX_SCROLL = HOUSE_ORDER_SIZE - 3;
+    if(currentHouseChoiceScrollPos < MAX_SCROLL) {
         currentHouseChoiceScrollPos++;
         selectedButton--;
         onSelectHouseButton(selectedButton);
         updateHouseChoice();
 
         houseLeftButton.setVisible(true);
-        houseRightButton.setVisible( (currentHouseChoiceScrollPos < 4) );
+        houseRightButton.setVisible( (currentHouseChoiceScrollPos < MAX_SCROLL) );
     }
 }
 

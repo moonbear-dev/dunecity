@@ -462,6 +462,22 @@ void Game::initGame(const GameInitSettings& newGameInitSettings) {
                 // -1 for 'Original'). This block populates that table
                 // at game start.
                 {
+                    // DuneCity 1.0.399: RESET all house color swaps to
+                    // -1 before applying the user's choices. Tornie's OOB:
+                    // 'la palette utilisee dans le jeu en entier a un
+                    // color swap et j'aimerais qu'il soit reinitalise'.
+                    // A previous session's setHouseColorSwap could leak
+                    // into a new game if the per-house array wasn't
+                    // reset (which is what made the runtime palette[]
+                    // show a swap across the whole game). v1.0.399
+                    // resets all houses to no-swap before populating
+                    // the per-house swap from this session's choices.
+                    // The Custom_IBM.PAL file is also never applied
+                    // to the runtime palette[] as a default (v1.0.398
+                    // already removed that). The only way a swap
+                    // appears in-game is via the per-house swap path
+                    // gated on CustomGame/CustomMultiplayer + non-
+                    // Original color choice.
                     const GameType gt = gameInitSettings.getGameType();
                     const bool colorSwapAllowed = (gt == GameType::CustomGame || gt == GameType::CustomMultiplayer);
                     // Always reset all houses to no-swap first so a previous
@@ -479,36 +495,24 @@ void Game::initGame(const GameInitSettings& newGameInitSettings) {
                             // 'Original' = own slot (no swap).
                             // -2 = Teal/Spectator at PALCOLOR_REBELS.
                             // -3..-6 = Fushia/AppleGreen/DarkPurple/LightPink.
-                            // <-100 = foreign house slot (e.g. -101 = house 1's slot).
                             if(pickedSlot == hi.houseID) {
                                 pickedSlot = -1;  // 'Original' = no swap
                             } else if(pickedSlot == -2) {
                                 pickedSlot = PALCOLOR_REBELS;  // 192
-                            } else if(pickedSlot <= -100 && pickedSlot > -100 - NUM_HOUSES) {
+                            } else if(pickedSlot < -100 && pickedSlot > -100 - NUM_HOUSES) {
                                 pickedSlot = -100 - pickedSlot;
                             } else if(pickedSlot < 0 || pickedSlot >= 256) {
                                 continue;
                             }
                             // Hand off to GFXManager for unit/structure sprite use.
                             pGFXManager->setHouseColorSwap(hi.houseID, pickedSlot);
+                            SDL_Log("DuneCity 1.0.399: house %d color swap set to slot %d", hi.houseID, pickedSlot);
                         }
                     }
-                    // HOUSE_REBELS always gets its Custom_IBM.pal dark
-                    // grey override applied (slot 192) regardless of
-                    // game type. The 'pickedSlot = -1' above means
-                    // 'use vanilla house color' which for HOUSE_REBELS
-                    // IS the Custom_IBM.pal dark grey at slot 192
-                    // (loaded at GFX init). To force the dark grey
-                    // for Rebels even when the user picked a different
-                    // color, set houseColorSwap[HOUSE_REBELS] = 192
-                    // (PALCOLOR_REBELS) if it's not already a swap.
-                    // Actually -1 is the correct value here because
-                    // the house's 'vanilla' IS Custom_IBM.pal grey
-                    // at 192. The downstream path in getZoomedObjPic
-                    // uses houseToPaletteIndex[HOUSE_REBELS] = 192
-                    // which already points to the dark grey slot.
-                    // So Rebels gets dark grey automatically. We
-                    // don't need to override anything here.
+                    // HOUSE_REBELS keeps its Custom_IBM.pal dark grey
+                    // automatically because houseToPaletteIndex[HOUSE_REBELS] = 192
+                    // which is where the dark grey lives. No explicit
+                    // setHouseColorSwap needed for the default Rebels case.
                 }
             }
         } break;

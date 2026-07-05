@@ -585,42 +585,16 @@ GFXManager::GFXManager() {
         }
     }
 
-    // DuneCity: Tornie custom spice terrain strips — palette-indexed 17×2 tile grids.
-    // Terrain is not house-tinted, so copy to all houses to prevent mapSurfaceColorRange.
-    if(pFileManager->exists("Tornie_SpiceRed.png")) {
-        auto surf = LoadPNG_RW(pFileManager->openFile("Tornie_SpiceRed.png").get());
-        if(surf && surf->format->BitsPerPixel == 8) {
-            ibmPalette.applyToSurface(surf.get()); // terrain tiles use IBM.PAL indices, not BENE.PAL
-            objPic[ObjPic_TerrainRedSpice][HOUSE_HARKONNEN][0] = std::move(surf);
-            for (int h = 1; h < NUM_HOUSES; h++) {
-                objPic[ObjPic_TerrainRedSpice][h][0] = sdl2::surface_ptr{
-                    SDL_ConvertSurface(objPic[ObjPic_TerrainRedSpice][HOUSE_HARKONNEN][0].get(),
-                                       objPic[ObjPic_TerrainRedSpice][HOUSE_HARKONNEN][0]->format, 0)
-                };
-            }
-            SDL_Log("GFXManager: Loaded Tornie_SpiceRed.png (palette-indexed)");
-        } else if(surf) {
-            SDL_Log("GFXManager WARNING: Tornie_SpiceRed.png is not 8-bit palette-indexed (%d bpp), skipped",
-                    surf->format->BitsPerPixel);
-        }
-    }
-    if(pFileManager->exists("Tornie_SpiceGreen.png")) {
-        auto surf = LoadPNG_RW(pFileManager->openFile("Tornie_SpiceGreen.png").get());
-        if(surf && surf->format->BitsPerPixel == 8) {
-            ibmPalette.applyToSurface(surf.get()); // terrain tiles use IBM.PAL indices, not BENE.PAL
-            objPic[ObjPic_TerrainGreenSpice][HOUSE_HARKONNEN][0] = std::move(surf);
-            for (int h = 1; h < NUM_HOUSES; h++) {
-                objPic[ObjPic_TerrainGreenSpice][h][0] = sdl2::surface_ptr{
-                    SDL_ConvertSurface(objPic[ObjPic_TerrainGreenSpice][HOUSE_HARKONNEN][0].get(),
-                                       objPic[ObjPic_TerrainGreenSpice][HOUSE_HARKONNEN][0]->format, 0)
-                };
-            }
-            SDL_Log("GFXManager: Loaded Tornie_SpiceGreen.png (palette-indexed)");
-        } else if(surf) {
-            SDL_Log("GFXManager WARNING: Tornie_SpiceGreen.png is not 8-bit palette-indexed (%d bpp), skipped",
-                    surf->format->BitsPerPixel);
-        }
-    }
+    // DuneCity 1.0.383: Tornie_SpiceRed.png + Tornie_SpiceGreen.png
+    // (Tornie custom spice terrain strips) removed per Tornie spec
+    // 'compare les tuiles de terrain avec la version 1.0.305 car il
+    // reste des traces de tuiles d'épices rouge et verte je ne les
+    // veux pas dans le jeux'. Vanilla v1.0.305 used the standard
+    // Dune Legacy spice fields (loaded from the SCENARIO.PAK / DUNE.PAK).
+    // The Tornie_mod custom strips override those slots with red/green
+    // tinted variants that Tornie doesn't want. We fall back to the
+    // vanilla load path which puts the standard spice art in
+    // ObjPic_TerrainRedSpice / ObjPic_TerrainGreenSpice.
 
     // DuneCity: the Neutral Launcher reuses the standard Launcher body (tank
     // base) and rocket turret art, but red-tinted instead of blue-grey.  Load
@@ -3454,12 +3428,17 @@ SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned in
 
         objPic[id][house][z] = mapSurfaceColorRange(objPic[id][HOUSE_HARKONNEN][z].get(), PALCOLOR_HARKONNEN, houseToPaletteIndex[house]);
 
-        // For Fremen: palette[192] has been overridden with rebels grey by Custom_IBM.pal.
-        // Restore vanilla IBM.PAL colours at 192-207 in this surface's embedded palette so
-        // SDL renders Fremen units with their correct vanilla colour, not rebels grey.
-        if (house == HOUSE_FREMEN && objPic[id][house][z] && objPic[id][house][z]->format->palette) {
-            ibmPalette.applyToSurface(objPic[id][house][z].get(), PALCOLOR_FREMEN, PALCOLOR_FREMEN + 15);
-        }
+        // DuneCity 1.0.383: removed the ibmPalette[PALCOLOR_FREMEN..+15]
+        // restore for HOUSE_FREMEN. The previous code overrode the
+        // objPic palette with vanilla IBM.PAL colors at 192-207, which
+        // made Fremen tanks/structures render in vanilla orange instead
+        // of the intended Custom_IBM.pal dark grey. Tornie's spec
+        // 'Rebels Use for house tint always Custom_IBM.PAL ... au
+        // même indice que les fremens soit 192' confirms both Rebels
+        // AND Fremen should read the Custom_IBM.pal value at 192-199
+        // which is dark grey (96,80,64,48,32,16,8,0). The mapSurfaceColorRange
+        // above already does this via houseToPaletteIndex[house]=192
+        // and the runtime palette[] that has the override applied.
     }
 
     if(objPicTex[id][house][z] == nullptr) {

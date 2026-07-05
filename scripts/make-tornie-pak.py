@@ -102,8 +102,6 @@ ENTRIES = [
     "Tornie_AdvancedWindtrap_gfx_two_frames.png",
     "Tornie_AdvancedWindtrap_icon.png",
     "Tornie_CornerFlag.png",
-    "Tornie_SpiceGreen.png",
-    "Tornie_SpiceRed.png",
     "PaulAtreidesEyes.png",
     "PaulAtreidesMentat.png",
     "PaulAtreidesMouth.png",

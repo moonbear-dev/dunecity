@@ -831,14 +831,35 @@ GFXManager::GFXManager() {
             ObjPic_IX, ObjPic_Palace, ObjPic_RepairYard, ObjPic_Starport,
             ObjPic_GunTurret, ObjPic_RocketTurret, ObjPic_Wall
         };
+        // DuneCity 1.0.404: HOUSE_REBELS ALWAYS reads its color from
+        // Custom_IBM.PAL (slot 192-199 = dark grey) for structure
+        // sprites too. Previously it read from the runtime palette[]
+        // which after v1.0.398 has vanilla IBM.PAL values (orange
+        // Fremen). Now we read from customColorRamp (populated at
+        // GFX init from Custom_IBM.pal) for HOUSE_REBELS. Other
+        // houses fall through to the runtime palette[] or
+        // ibmPalette as before.
         for (int spec : structureSprites) {
             if(!objPic[spec][HOUSE_HARKONNEN][0]) continue;
             for (int h = 0; h < NUM_HOUSES; h++) {
                 if (h == HOUSE_HARKONNEN) continue;
-                // Fremen uses vanilla ibmPalette so the original
-                // orange-gold Harkonnen template doesn't get the
-                // Custom_IBM.pal dark grey override.
-                const Palette& srcPal = (h == HOUSE_FREMEN) ? ibmPalette : palette;
+                Palette srcPalLocal;
+                if (h == HOUSE_REBELS) {
+                    // Build temp palette: vanilla IBM.PAL with
+                    // Custom_IBM.PAL override at indices 192-199
+                    // from customColorRamp.
+                    srcPalLocal = ibmPalette;
+                    for (int k = 0; k < 8; k++) {
+                        srcPalLocal[PALCOLOR_REBELS + k] = customColorRamp[PALCOLOR_REBELS + k];
+                    }
+                } else if (h == HOUSE_FREMEN) {
+                    // Fremen uses vanilla ibmPalette so the
+                    // Custom_IBM.pal dark grey doesn't bleed into
+                    // the Fremen template.
+                    srcPalLocal = ibmPalette;
+                } else {
+                    srcPalLocal = palette;
+                }
                 objPic[spec][h][0] = sdl2::surface_ptr{
                     SDL_ConvertSurface(objPic[spec][HOUSE_HARKONNEN][0].get(),
                                        objPic[spec][HOUSE_HARKONNEN][0]->format, 0)
@@ -849,15 +870,15 @@ GFXManager::GFXManager() {
                     // picks up its own color (Harkonnen red,
                     // Atreides blue/green, Ordos orange, Fremen
                     // orange, Sardaukar, Mercenary, Neutral,
-                    // Rebels dark grey).
+                    // Rebels dark grey from Custom_IBM.PAL).
                     for (int k = 0; k < 8; k++) {
                         objPic[spec][h][0]->format->palette->colors[PALCOLOR_HARKONNEN + k] =
-                            srcPal[houseToPaletteIndex[h] + k];
+                            srcPalLocal[houseToPaletteIndex[h] + k];
                     }
                 }
             }
         }
-        SDL_Log("DuneCity 1.0.379: per-house structure sprite remap (CY/Windtrap/Refinery/Barracks/WOR/Radar/Factories/Palace/Starport/Turrets/Wall)");
+        SDL_Log("DuneCity 1.0.404: per-house structure sprite remap (extended with Custom_IBM.PAL dark grey for HOUSE_REBELS)");
     }
 
     // DuneCity zone sprites — load the full 3×3 Micropolis composites and
@@ -2358,11 +2379,16 @@ GFXManager::GFXManager() {
         // Build a temporary 8-color array holding only the
         // 192-199 override from the runtime palette.
         SDL_Color rebelsOverride[8];
-        for(int k = 0; k < 8; k++) {
-            rebelsOverride[k] = palette[PALCOLOR_FREMEN + k];
-        }
-        // Clone for each non-HARKONNEN house
-        for(int h = 0; h < NUM_HOUSES; h++) {
+            for(int k = 0; k < 8; k++) {
+                // DuneCity 1.0.404: read Custom_IBM.PAL values
+                // from customColorRamp (populated at GFX init
+                // from the Custom_IBM.pal file) instead of
+                // palette[]. The runtime palette[] is vanilla
+                // IBM.PAL after v1.0.398, but customColorRamp
+                // holds the user-uploaded Custom_IBM.PAL values.
+                rebelsOverride[k] = pGFXManager->getCustomColorRamp(PALCOLOR_FREMEN + k);
+            }
+            for(int h = 0; h < NUM_HOUSES; h++) {
             if(h == HOUSE_HARKONNEN) continue;
             objPic[ObjPic_Terrain][h][0] = sdl2::surface_ptr{
                 SDL_ConvertSurface(objPic[ObjPic_Terrain][HOUSE_HARKONNEN][0].get(),
@@ -2377,7 +2403,7 @@ GFXManager::GFXManager() {
                                       rebelsOverride, PALCOLOR_FREMEN, 8);
             }
         }
-        SDL_Log("DuneCity 1.0.387+1.0.393: per-house terrain atlas remap (Custom_IBM.pal 192-199 applied to Rebels/Fremen tiles only)");
+        SDL_Log("DuneCity 1.0.387+1.0.404: per-house terrain atlas remap (Custom_IBM.pal 192-199 applied to Rebels/Fremen tiles only - from customColorRamp table)");
     }
     objPic[ObjPic_DestroyedStructure][HOUSE_HARKONNEN][0] = icon->getPictureRow2(14, 33, 125, 213, 214, 215, 223, 224, 225, 232, 233, 234, 240, 246, 247);
     objPic[ObjPic_RockDamage][HOUSE_HARKONNEN][0] = icon->getPictureRow(1,6);
@@ -3524,7 +3550,24 @@ GFXManager::GFXManager() {
 
     // Advanced Windtrap: use the custom icon PNG if available, otherwise crop
     // frame 0 of the sprite atlas (all 8 frames are identical).
+    // DuneCity 1.0.404: prefer the dedicated editor icon PNG
+    // (Tornie_AdvancedWindtrap_gfx_editor.png) over the in-world
+    // sprite's first frame. The editor icon is a clean 48x48
+    // paletted PNG without animation - matches what v1.0.305 had
+    // as the editor palette icon. Falls back to the in-world
+    // sprite's first frame if the PNG is absent.
     for (int h = 0; h < (int)NUM_HOUSES; ++h) {
+        if (pFileManager->exists("Tornie_AdvancedWindtrap_gfx_editor.png")) {
+            auto editorRaw = LoadPNG_RW(pFileManager->openFile("Tornie_AdvancedWindtrap_gfx_editor.png").get());
+            if (editorRaw) {
+                if (editorRaw->format->palette) {
+                    palette.applyToSurface(editorRaw.get());
+                }
+                uiGraphic[UI_MapEditor_AdvancedWindTrap][h] = std::move(editorRaw);
+                continue;
+            }
+        }
+        // Fallback: take first frame from in-world sprite (no animation)
         if (objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0]) {
             uiGraphic[UI_MapEditor_AdvancedWindTrap][h] = getSubPicture(objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0].get(), 0, 0, 3*D2_TILESIZE, 3*D2_TILESIZE);
         } else {
@@ -3777,7 +3820,12 @@ SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned in
         if(house == HOUSE_REBELS && objPic[id][house][z] && objPic[id][house][z]->format->palette) {
             SDL_Color rebelsOverride[8];
             for(int k = 0; k < 8; k++) {
-                rebelsOverride[k] = palette[PALCOLOR_FREMEN + k];
+                // DuneCity 1.0.404: read Custom_IBM.PAL values
+                // from customColorRamp (populated at GFX init
+                // from the Custom_IBM.pal file) instead of
+                // palette[]. The runtime palette[] is vanilla
+                // IBM.PAL after v1.0.398.
+                rebelsOverride[k] = customColorRamp[PALCOLOR_FREMEN + k];
             }
             SDL_SetPaletteColors(objPic[id][house][z]->format->palette,
                                   rebelsOverride, PALCOLOR_FREMEN, 8);

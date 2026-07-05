@@ -253,6 +253,7 @@ ENTRIES = [
     "QuadIcon.png",
     "Tornie_AdvHouseFlag.png",
     "Tornie_AdvancedWindtrap_gfx.png",
+    "Tornie_AdvancedWindtrap_gfx_editor.png",
     "Tornie_AdvancedWindtrap_gfx_two_frames.png",
     "Tornie_AdvancedWindtrap_icon.png",
     "Tornie_CornerFlag.png",

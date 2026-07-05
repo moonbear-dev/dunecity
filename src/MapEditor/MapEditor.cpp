@@ -1947,26 +1947,22 @@ void MapEditor::drawMap(ScreenBorder* pScreenborder, bool bCompleteMap) {
 
     SDL_Texture* validPlace = nullptr;
     SDL_Texture* invalidPlace = nullptr;
-    SDL_Texture* greyPlace = nullptr;
 
     switch(currentZoomlevel) {
         case 0: {
             validPlace = pGFXManager->getUIGraphic(UI_ValidPlace_Zoomlevel0);
             invalidPlace = pGFXManager->getUIGraphic(UI_InvalidPlace_Zoomlevel0);
-            greyPlace = pGFXManager->getUIGraphic(UI_GreyPlace_Zoomlevel0);
         } break;
 
         case 1: {
             validPlace = pGFXManager->getUIGraphic(UI_ValidPlace_Zoomlevel1);
             invalidPlace = pGFXManager->getUIGraphic(UI_InvalidPlace_Zoomlevel1);
-            greyPlace = pGFXManager->getUIGraphic(UI_GreyPlace_Zoomlevel1);
         } break;
 
         case 2:
         default: {
             validPlace = pGFXManager->getUIGraphic(UI_ValidPlace_Zoomlevel2);
             invalidPlace = pGFXManager->getUIGraphic(UI_InvalidPlace_Zoomlevel2);
-            greyPlace = pGFXManager->getUIGraphic(UI_GreyPlace_Zoomlevel2);
         } break;
     }
 
@@ -2038,8 +2034,6 @@ void MapEditor::drawMap(ScreenBorder* pScreenborder, bool bCompleteMap) {
 
                             if(!map.isInsideMap(pos.x,pos.y) || isTileBlocked(pos.x, pos.y, true, (currentEditorMode.itemID != Structure_Slab1) )) {
                                 image = invalidPlace;
-                            } else if((image != invalidPlace) && (map(pos.x,pos.y) != Terrain_Rock)) {
-                                image = greyPlace;
                             }
                         }
 

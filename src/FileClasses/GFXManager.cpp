@@ -270,24 +270,24 @@ GFXManager::GFXManager() {
         // (used for Fremen only per include/globals.h:115) is
         // still vanilla orange.
         //
-        // DuneCity 1.0.397: REVERTED the unconditional Custom_IBM.pal
-        // load. Tornie's OOB: 'on doit revenir en arriere sur une
-        // chose particuliere n'applique pas la palette Custom_IBM.PAL
-        // sur toute le jeu elle ne doit jamais etre par defaut' =
-        // the Custom_IBM.PAL palette must NEVER be applied by default
-        // to the whole game. It's now loaded ONLY when the player
-        // explicitly picks a custom color via CustomGamePlayers
-        // (the per-house swap path in Game::initGame sets
-        // houseColorSwap[HOUSE_REBELS] = PALCOLOR_REBELS for that
-        // house, which then triggers a targeted write in
-        // getZoomedObjPic). The startup palette stays vanilla
-        // IBM.PAL for all houses; Custom_IBM.pal values are
-        // applied only at unit-render time when a swap is active.
-        // The Custom_IBM.pal file is still loaded (to capture
-        // the values) but NOT applied to the runtime palette[]
-        // at GFX init anymore.
-        (void)palData;  // suppress unused warning; values captured but not applied at GFX init
-        SDL_Log("GFX INIT: Custom_IBM.pal found but NOT applied as default (v1.0.397); values captured for swap-on-demand use");
+        // DuneCity 1.0.402: Custom_IBM.pal file is captured into
+        // the customColorRamp table for direct read by the
+        // per-house remap loop. Per Tornie's OOB: 'il va
+        // directement lire dans Custom_IBM.pal' = the
+        // per-house remap reads Custom_IBM.pal values DIRECTLY
+        // (not via the runtime palette[]). The runtime
+        // palette[] stays vanilla IBM.PAL; the per-house remap
+        // reads Custom_IBM.pal at slot 192-199 and applies
+        // those values to HOUSE_REBELS unit sprites.
+        for (int i = 0; i < 256; i++) {
+            SDL_Color c;
+            c.r = palData[i*3+0];
+            c.g = palData[i*3+1];
+            c.b = palData[i*3+2];
+            c.a = 255;
+            pGFXManager->setCustomColorRamp(i, c);
+        }
+        SDL_Log("GFX INIT: Custom_IBM.pal values captured into customColorRamp[0..255] for direct read by per-house remap");
     }
 
     // DuneCity 1.0.369: Custom_Pal_Color Teal ramp at the REBELS slot.
@@ -438,6 +438,14 @@ GFXManager::GFXManager() {
     // Custom_IBM.pal's dark grey doesn't bleed in.)
     {
         static const struct { int objPicID; const char* name; } tankSprites[] = {
+            // v1.0.402: extended to cover ALL unit sprites so the
+            // per-house color swap applies uniformly. The previous
+            // v1.0.371 list only covered Tank/Quad/Trike/Siege/
+            // Devastator - Infantry/Trooper/Troopers/Saboteur/
+            // Harvester/MCV/Carryall/Frigate/Ornithopter/RocketTrike
+            // fell through to the lazy remap-on-demand path in
+            // getZoomedObjPic which used houseToPaletteIndex[house]
+            // but didn't pick up the CustomGamePlayers color swap.
             {ObjPic_Tank_Base,         "Tank_Base"},
             {ObjPic_Tank_Gun,           "Tank_Gun"},
             {ObjPic_Siegetank_Base,     "Siegetank_Base"},
@@ -446,15 +454,54 @@ GFXManager::GFXManager() {
             {ObjPic_Devastator_Gun,     "Devastator_Gun"},
             {ObjPic_Quad,               "Quad"},
             {ObjPic_Trike,              "Trike"},
+            // v1.0.402: extended unit coverage for color swap
+            {ObjPic_Infantry,           "Infantry"},
+            {ObjPic_Trooper,            "Trooper"},
+            {ObjPic_Troopers,           "Troopers"},
+            {ObjPic_Saboteur,           "Saboteur"},
+            {ObjPic_Harvester,          "Harvester"},
+            {ObjPic_Harvester_Sand,     "Harvester_Sand"},
+            {ObjPic_MCV,                "MCV"},
+            {ObjPic_Carryall,           "Carryall"},
+            {ObjPic_Frigate,            "Frigate"},
+            {ObjPic_Ornithopter,        "Ornithopter"},
+            {ObjPic_RocketTrike,        "RocketTrike"},
+            {ObjPic_DeviatorCustom,     "DeviatorCustom"},
+            {ObjPic_EliteSiegeTankCustom, "EliteSiegeTankCustom"},
+            {ObjPic_FlameTank,          "FlameTank"},
+            {ObjPic_LauncherRed_Base,   "LauncherRed_Base"},
+            {ObjPic_LauncherRed_Gun,    "LauncherRed_Gun"},
         };
         for(auto& spec : tankSprites) {
             if(!objPic[spec.objPicID][HOUSE_HARKONNEN][0]) continue;
             for(int h = 0; h < NUM_HOUSES; h++) {
                 if(h == HOUSE_HARKONNEN) continue;
-                // Fremen uses vanilla ibmPalette so the original
-                // orange-gold Harkonnen template doesn't get the
-                // Custom_IBM.pal dark grey override.
-                const Palette& srcPal = (h == HOUSE_FREMEN) ? ibmPalette : palette;
+                // v1.0.402: HOUSE_REBELS ALWAYS reads its color from
+                // Custom_IBM.PAL (slot 192-199 = dark grey) unless
+                // the user explicitly picked a different color in
+                // the custom-map dropdown. Since v1.0.398 removed
+                // the unconditional Custom_IBM.pal load from GFX
+                // init, we read the values from the captured
+                // customColorRamp table (populated at GFX init).
+                // The table holds Custom_IBM.PAL bytes at indices
+                // 192-199 (or the hardcoded fallback ramp for Teal).
+                Palette srcPalLocal;
+                if(h == HOUSE_REBELS) {
+                    // Build a temp palette from customColorRamp for
+                    // slots 192-199. The remaining slots keep
+                    // vanilla IBM.PAL values (read from ibmPalette).
+                    srcPalLocal = ibmPalette;
+                    for(int k = 0; k < 8; k++) {
+                        srcPalLocal[PALCOLOR_REBELS + k] = customColorRamp[PALCOLOR_REBELS + k];
+                    }
+                } else if(h == HOUSE_FREMEN) {
+                    // Fremen uses vanilla ibmPalette so the
+                    // Custom_IBM.pal dark grey override doesn't
+                    // bleed in (Fremen keeps its vanilla orange).
+                    srcPalLocal = ibmPalette;
+                } else {
+                    srcPalLocal = palette;
+                }
                 objPic[spec.objPicID][h][0] = sdl2::surface_ptr{
                     SDL_ConvertSurface(objPic[spec.objPicID][HOUSE_HARKONNEN][0].get(),
                                        objPic[spec.objPicID][HOUSE_HARKONNEN][0]->format, 0)
@@ -465,15 +512,15 @@ GFXManager::GFXManager() {
                     // picks up its own color (Harkonnen red,
                     // Atreides blue/green, Ordos orange, Fremen
                     // orange, Sardaukar, Mercenary, Neutral,
-                    // Rebels dark grey).
+                    // Rebels dark grey from Custom_IBM.PAL).
                     for(int k = 0; k < 8; k++) {
                         objPic[spec.objPicID][h][0]->format->palette->colors[PALCOLOR_HARKONNEN + k] =
-                            srcPal[houseToPaletteIndex[h] + k];
+                            srcPalLocal[houseToPaletteIndex[h] + k];
                     }
                 }
             }
         }
-        SDL_Log("DuneCity 1.0.371: per-house unit sprite remap (Tank/Quad/Trike/Siege/Devastator)");
+        SDL_Log("DuneCity 1.0.402: per-house unit sprite remap (extended to 22 unit types incl. Infantry/Troopers/Saboteur/Harvester/MCV/Carryall/Frigate/Ornithopter)");
     }
 
     // DuneCity: the Rocket Trike in-world sprite.

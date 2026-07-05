@@ -232,7 +232,17 @@ CustomGamePlayers::CustomGamePlayers(const GameInitSettings& newGameInitSettings
             addToHouseDropDown(curHouseInfo.houseDropDown, housetype, true);
             curHouseInfo.houseDropDown.setEnabled(bServer);
         } else {
+            // DuneCity 1.0.402: boundHousesOnMap is empty in custom
+            // map mode (no [Harkonnen]/[Atreides]/etc. sections in the
+            // map file). The previous code only added HOUSE_INVALID
+            // ("Random") to the dropdown - users couldn't pick a
+            // specific house. v1.0.402 populates the dropdown with
+            // ALL 8 houses so the player can choose any. Random is
+            // still added first as the default.
             addToHouseDropDown(curHouseInfo.houseDropDown, HOUSE_INVALID, true);
+            for(int h = 0; h < NUM_HOUSES; h++) {
+                addToHouseDropDown(curHouseInfo.houseDropDown, h);
+            }
             curHouseInfo.houseDropDown.setEnabled(bServer);
         }
         curHouseInfo.houseDropDown.setOnSelectionChange(std::bind(&CustomGamePlayers::onChangeHousesDropDownBoxes, this, std::placeholders::_1, i));

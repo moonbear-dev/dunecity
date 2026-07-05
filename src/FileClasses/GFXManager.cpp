@@ -3289,30 +3289,30 @@ GFXManager::GFXManager() {
         }
     }
 
-    // Brush-size pen buttons — scale each down by 20px from native 31×31 → 11×11.
+    // DuneCity 1.0.391: brush-size pen buttons.
+    // MapEditorPen{1,3,5}x{1,3,5}.png are 24x24 RGBA previews
+    // generated at GFX init time. Each shows the actual sand
+    // tile cell layout that the brush will paint: 1x1 = 1
+    // cell, 3x3 = 3x3 cells, 5x5 = 5x5 cells. Tornie's spec
+    // 'visual size of tile brush in sidebar then 3 and then 2'
+    // (i.e. pen 1, pen 3, pen 5 sized visually to match the
+    // brush size in tiles, not abstract icons). The center
+    // cell is highlighted in a lighter orange to mark the
+    // brush origin.
     {
         const int penIds[] = { UI_MapEditor_Pen1x1, UI_MapEditor_Pen3x3, UI_MapEditor_Pen5x5 };
         const char* penFiles[] = { "MapEditorPen1x1.png", "MapEditorPen3x3.png", "MapEditorPen5x5.png" };
         for (int i = 0; i < 3; i++) {
             auto raw = LoadPNG_RW(pFileManager->openFile(penFiles[i]).get());
-            if (raw && raw->w > 20 && raw->h > 20) {
-                int newW = raw->w - 20;
-                int newH = raw->h - 20;
-                sdl2::surface_ptr scaled{ SDL_CreateRGBSurface(0, newW, newH,
-                    raw->format->BitsPerPixel,
-                    raw->format->Rmask, raw->format->Gmask, raw->format->Bmask, raw->format->Amask) };
-                if (scaled) {
-                    if (raw->format->palette && scaled->format->palette)
-                        SDL_SetPaletteColors(scaled->format->palette, raw->format->palette->colors, 0, raw->format->palette->ncolors);
-                    SDL_BlitScaled(raw.get(), nullptr, scaled.get(), nullptr);
-                    SDL_SetColorKey(scaled.get(), SDL_TRUE, 0);
-                    uiGraphic[penIds[i]][HOUSE_HARKONNEN] = std::move(scaled);
-                }
-            } else if (raw) {
+            if (raw) {
+                // Load as-is (24x24 RGBA, transparent background).
+                // The PenHBox uses the surface dimensions directly
+                // for the button size via SymbolButton::setSize.
                 SDL_SetColorKey(raw.get(), SDL_TRUE, 0);
                 uiGraphic[penIds[i]][HOUSE_HARKONNEN] = std::move(raw);
             }
         }
+        SDL_Log("DuneCity 1.0.391: brush-size pen icons loaded (24x24 RGBA, 1/3/5 cells visible)");
     }
 
     // DuneCity: map-editor icons for SimCity-style buildings exposed when the

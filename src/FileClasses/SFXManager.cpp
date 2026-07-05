@@ -121,19 +121,26 @@ void SFXManager::loadEnglishVoice() {
                 HouseNameChunk = getChunkFromFile("NNEU.VOC", "ANEU.VOC");
                 break; // Neutral house name call - NNEU.VOC is the dedicated Neutral sound
             case HOUSE_REBELS:
-                HouseString = "R";
-                // DuneCity 1.0.388: use the dedicated RREBELS.VOC
-                // voice sample for HOUSE_REBELS instead of falling
-                // through to HARK.VOC. The RREBELS.VOC file ships in
-                // data/ + mods/Tornie/data/ + Tornie.PAK from
-                // v1.0.352 era. Falling back to HARK.VOC if the
-                // custom voice isn't present keeps vanilla behaviour.
-                if(pFileManager->exists("RREBELS.VOC")) {
-                    HouseNameChunk = getChunkFromFile("RREBELS.VOC");
-                } else {
+                // DuneCity 1.0.392: use Harkonnen's "H" HouseString
+                // prefix for non-house-name voice calls (HARVEST,
+                // UNIT, DEPLOY, etc.). Tornie's spec: 'Le jeu cherche
+                // les sons de la faction Rebelle a l'ouverture (il
+                // ne les trouvent pas)' - the R-prefixed VOC files
+                // (RHARVEST.VOC, RUNIT.VOC, etc.) don't ship with
+                // the mod, so the game fails to find them at GFX
+                // init. Using "H" prefix reuses the Harkonnen voice
+                // files (HHARVEST.VOC, etc.) which DO ship in
+                // DUNE.PAK. The HOUSE_NAME voice (RREBELS.VOC)
+                // stays as the dedicated Rebels sample from
+                // v1.0.388.
+                HouseString = "H";
+                HouseNameChunk = getChunkFromFile("RREBELS.VOC");
+                if(!HouseNameChunk) {
+                    // Fall back to Harkonnen voice if RREBELS.VOC
+                    // is missing.
                     HouseNameChunk = getChunkFromFile("HARK.VOC");
                 }
-                break; // Rebels uses Harkonnen voice
+                break;
             default:
                 break;
         }

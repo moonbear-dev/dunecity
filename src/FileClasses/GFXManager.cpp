@@ -3583,6 +3583,21 @@ SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned in
 
         objPic[id][house][z] = mapSurfaceColorRange(objPic[id][HOUSE_HARKONNEN][z].get(), PALCOLOR_HARKONNEN, houseToPaletteIndex[house]);
 
+        // DuneCity 1.0.392: for HOUSE_REBELS, re-apply the runtime
+        // 'palette' (which has the Custom_IBM.pal dark grey override
+        // at indices 192-199) to the remapped surface's embedded
+        // palette. Tornie's spec: 'il est pris encore une fois sur
+        // IBM.PAL' - the objPic remap-on-demand path in
+        // mapSurfaceColorRange copies the source's palette to the
+        // destination surface. If the source's palette at 192-199
+        // is still the vanilla IBM.PAL (orange Fremen), the
+        // destination ends up orange too. Re-applying 'palette'
+        // forces the Custom_IBM.pal values onto the remapped
+        // surface so HOUSE_REBELS shows dark grey.
+        if(house == HOUSE_REBELS && objPic[id][house][z] && objPic[id][house][z]->format->palette) {
+            palette.applyToSurface(objPic[id][house][z].get());
+        }
+
         // DuneCity 1.0.383: removed the ibmPalette[PALCOLOR_FREMEN..+15]
         // restore for HOUSE_FREMEN. The previous code overrode the
         // objPic palette with vanilla IBM.PAL colors at 192-207, which

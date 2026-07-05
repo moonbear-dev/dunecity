@@ -27,7 +27,15 @@
 #include <GameInitSettings.h>
 #include <sand.h>
 
-static const int houseOrder[] = { HOUSE_ATREIDES, HOUSE_ORDOS, HOUSE_HARKONNEN, HOUSE_MERCENARY, HOUSE_FREMEN, HOUSE_SARDAUKAR, HOUSE_NEUTRAL, HOUSE_REBELS, HOUSE_REBELS };
+// DuneCity 1.0.403: removed duplicate HOUSE_REBELS at the end
+// of the array. The v1.0.392 array was { ATR, ORD, HARK, MER, F, S, N, R, R }
+// which gave the skirmish carousel 9 entries with 2x Rebels.
+// Tornie's OOB: 'the caroussel of skirmish has two rebels
+// campaign (one only is needed)'. The 8-house set is correct.
+// Campaign mode uses the same 8-house set per v1.0.358 (REGIONR
+// as the player house); skirmish uses these for human-vs-AI
+// matchups where each side picks one house.
+static const int houseOrder[] = { HOUSE_ATREIDES, HOUSE_ORDOS, HOUSE_HARKONNEN, HOUSE_MERCENARY, HOUSE_FREMEN, HOUSE_SARDAUKAR, HOUSE_NEUTRAL, HOUSE_REBELS };
 
 namespace {
 const char* const kSupportPlayerClasses[] = {

@@ -105,14 +105,19 @@ static const int houseToPaletteIndex[NUM_HOUSES] = { PALCOLOR_HARKONNEN, PALCOLO
 static const char houseChar[] = { 'H', 'A', 'O', 'F', 'S', 'M', 'N', 'R' };   ///< character for each house
 
 /// Returns the SDL_Color for the given house at palette offset.
-/// Returns the SDL_Color for the given house at palette offset.
 /// Houses 1..7 use the vanilla ibmPalette so the editor shows the
 /// correct vanilla colour.  The 8th house (HOUSE_REBELS) reads from
 /// the runtime 'palette' which has been overridden by Custom_IBM.pal
 /// at indices 192-199 with a dark-grey/black ramp. Fremen keeps
 /// using ibmPalette so the orange vanilla colour shows through.
+///
+/// DuneCity 1.0.408: HOUSE_FREMEN still reads from ibmPalette
+/// (vanilla orange). Only HOUSE_REBELS reads from the runtime
+/// 'palette' (Custom_IBM.pal values). Tornie's OOB clarification
+/// 'i correct my sentence' = the getHouseSDLColor function
+/// should keep Fremen on ibmPalette and Rebels on palette.
 inline SDL_Color getHouseSDLColor(int house, int offset = 3) {
-    const Palette& pal = (house == HOUSE_FREMEN) ? ibmPalette : palette;
+    const Palette& pal = (house == HOUSE_REBELS) ? palette : ibmPalette;
     return pal[houseToPaletteIndex[house] + offset];
 }
 

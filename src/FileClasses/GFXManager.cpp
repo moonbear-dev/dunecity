@@ -382,7 +382,14 @@ GFXManager::GFXManager() {
                     c.a = 255;
                     // Store in a static table for later retrieval
                     // via applyCustomColorSwap().
-                    pGFXManager->setCustomColorRamp(spec.slot, c);
+                    // DuneCity 1.0.401: direct member access instead
+                    // of pGFXManager->setCustomColorRamp (which is a
+                    // recursion - we're inside GFXManager's constructor).
+                    // The pGFXManager global is not yet valid during
+                    // construction.
+                    if(spec.slot >= 0 && spec.slot < 256) {
+                        customColorRamp[spec.slot] = c;
+                    }
                 }
                 SDL_Log("GFX INIT: %s captured at palette[%d..%d] (NOT applied as default)",
                         spec.filename, spec.slot, spec.slot+7);
@@ -391,7 +398,10 @@ GFXManager::GFXManager() {
                 // Stored in the same static table. NOT applied to
                 // palette[] at GFX init.
                 for(int k = 0; k < 8; k++) {
-                    pGFXManager->setCustomColorRamp(spec.slot + k, spec.fallback[k]);
+                    // DuneCity 1.0.401: same direct member access fix.
+                    if(spec.slot + k >= 0 && spec.slot + k < 256) {
+                        customColorRamp[spec.slot + k] = spec.fallback[k];
+                    }
                 }
                 SDL_Log("GFX INIT: %s fallback ramp captured at palette[%d..%d] (NOT applied as default)",
                         spec.name, spec.slot, spec.slot+7);

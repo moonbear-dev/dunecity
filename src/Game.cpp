@@ -295,6 +295,14 @@ void Game::logPerformance(const char* format, ...) {
 void Game::initGame(const GameInitSettings& newGameInitSettings) {
     gameInitSettings = newGameInitSettings;
 
+    // DuneCity 1.0.482: re-add cache invalidation on game init
+    // to fix the "units/buildings invisible at first launch" bug
+    // from v1.0.480. The uiGraphic cache is NOT cleared (avoids
+    // the black mentat bug from v1.0.465).
+    if(pGFXManager) {
+        pGFXManager->invalidateAllSpriteTextures();
+    }
+
     // The host's mod choice is the source of truth for whether the
     // city-sim feature flag is on — not whatever mod the local player
     // happens to have active in their main menu. This matters most for

@@ -3665,6 +3665,25 @@ static void applyRebelsTint(SDL_Surface* surface) {
     }
 }
 
+void GFXManager::invalidateAllSpriteTextures() {
+    // DuneCity 1.0.482: re-add the v1.0.465 cache invalidation
+    // for objPicTex and objPic only (NOT uiGraphic). This fixes
+    // the "units/buildings invisible at first launch" bug
+    // reported in v1.0.480. The uiGraphic cache is preserved
+    // to avoid the "black mentat" bug from v1.0.465.
+    SDL_Log("GFXManager::invalidateAllSpriteTextures(): clearing objPicTex + objPic caches (uiGraphic preserved)");
+    for(int id = 0; id < NUM_OBJPICS; id++) {
+        for(int h = 0; h < NUM_HOUSES; h++) {
+            for(unsigned int z = 0; z < NUM_ZOOMLEVEL; z++) {
+                objPicTex[id][h][z].reset();
+                objPic[id][h][z].reset();
+            }
+        }
+    }
+    // uiGraphic NOT cleared (avoids black mentat bug from v1.0.465)
+}
+
+
 SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned int z) {
     if(id >= NUM_OBJPICS) {
         THROW(std::invalid_argument, "GFXManager::getZoomedObjPic(): Unit Picture with ID %u is not available!", id);

@@ -3592,7 +3592,22 @@ GFXManager::~GFXManager() = default;
 
 void GFXManager::setHouseColorSwap(int house, int pickedSlot) {
     if(house < 0 || house >= NUM_HOUSES) return;
+    // DuneCity 1.0.417: invalidate the texture cache for this
+    // house when the color swap changes. The cached textures
+    // hold the surface palette at the time of creation; if
+    // the user changes the color swap, the surface palette
+    // is remapped but the texture still shows the old colors.
+    // Clearing the texture forces getZoomedObjPic to recreate
+    // the texture from the remapped surface on next render.
+    int oldSwap = houseColorSwap[house];
     houseColorSwap[house] = pickedSlot;
+    if(oldSwap != pickedSlot) {
+        for(int id = 0; id < NUM_OBJPICS; id++) {
+            for(int z = 0; z < NUM_ZOOMLEVEL; z++) {
+                objPicTex[id][house][z].reset();
+            }
+        }
+    }
 }
 
 int GFXManager::getHouseColorSwap(int house) const {

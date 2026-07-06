@@ -319,19 +319,15 @@ GFXManager::GFXManager() {
         // seulement les rebels sont transparent comme un
         // kameleon' = the vanilla mod path also needs the dark
         // grey for Rebels.
-        // DuneCity 1.0.433: vanilla IBM.PAL[192..199] is kept in the
-        // runtime palette. The Custom_IBM.pal dark grey for
-        // HOUSE_REBELS is applied per-sprite in the lazy remap
-        // (getZoomedObjPic) via customColorRamp[192..199]. This
-        // way FREMEN units (which share slot 192) keep their
-        // vanilla orange tint, and REBELS units get the dark
-        // grey tint from customColorRamp. The runtime
-        // palette[192..199] stays vanilla (orange) for
-        // FREMEN's getHouseSDLColor + general engine reads.
+        // DuneCity 1.0.435: REBELS dark grey is captured in
+        // customColorRamp[192..199] for the per-sprite
+        // surface palette write in getZoomedObjPic. The
+        // runtime palette[192..199] stays vanilla IBM.PAL
+        // (Fremen orange) so FREMEN keeps its native tint.
         for(int k = 0; k < 8; k++) {
             customColorRamp[PALCOLOR_REBELS + k] = defaultRebelsRamp[k];
         }
-        SDL_Log("GFX INIT: Custom_IBM.pal missing (vanilla mod) - default dark grey ramp captured in customColorRamp[192..199] for HOUSE_REBELS (runtime palette[192..199] stays vanilla Fremen orange)");
+        SDL_Log("GFX INIT: Custom_IBM.pal missing (vanilla mod) - default dark grey in customColorRamp[192..199] (runtime palette[192..199] stays vanilla Fremen orange)");
     }
 
     // DuneCity 1.0.369: Custom_Pal_Color Teal ramp at the REBELS slot.

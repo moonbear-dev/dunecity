@@ -752,47 +752,7 @@ GFXManager::GFXManager() {
     // as source so the translucent mask effect doesn't
     // happen. HOUSE_REBELS additionally gets the
     // Custom_IBM.pal dark grey written to indices 192-199.
-    {
-        static const int structureSprites[] = {
-            ObjPic_ConstructionYard, ObjPic_Windtrap, ObjPic_Refinery,
-            ObjPic_Barracks, ObjPic_WOR, ObjPic_Radar, ObjPic_LightFactory,
-            ObjPic_Silo, ObjPic_HeavyFactory, ObjPic_HighTechFactory,
-            ObjPic_IX, ObjPic_Palace, ObjPic_RepairYard, ObjPic_Starport,
-            ObjPic_GunTurret, ObjPic_RocketTurret, ObjPic_Wall
-        };
-        for (int spec : structureSprites) {
-            if(!objPic[spec][HOUSE_HARKONNEN][0]) continue;
-            for (int h = 0; h < NUM_HOUSES; h++) {
-                if (h == HOUSE_HARKONNEN) continue;
-                objPic[spec][h][0] = sdl2::surface_ptr{
-                    SDL_ConvertSurface(objPic[spec][HOUSE_HARKONNEN][0].get(),
-                                       objPic[spec][HOUSE_HARKONNEN][0]->format, 0)
-                };
-                if (!objPic[spec][h][0] || !objPic[spec][h][0]->format->palette) continue;
-                int destSlot = houseToPaletteIndex[h];
-                objPic[spec][h][0] = mapSurfaceColorRange(
-                    objPic[spec][h][0].get(),
-                    PALCOLOR_HARKONNEN, destSlot);
-                // Apply house's vanilla color from ibmPalette
-                // to the surface palette at the destination slot
-                // (avoids the translucent mask effect that
-                // palette[] caused).
-                for (int k = 0; k < 8; k++) {
-                    objPic[spec][h][0]->format->palette->colors[destSlot + k] =
-                        ibmPalette[destSlot + k];
-                }
-                // HOUSE_REBELS additionally gets the
-                // Custom_IBM.pal dark grey.
-                if (h == HOUSE_REBELS) {
-                    for (int k = 0; k < 8; k++) {
-                        objPic[spec][h][0]->format->palette->colors[PALCOLOR_REBELS + k] =
-                            customColorRamp[PALCOLOR_REBELS + k];
-                    }
-                }
-            }
-        }
-        SDL_Log("DuneCity 1.0.413: per-house structure sprite remap restored (vanilla colors via ibmPalette, Custom_IBM.pal dark grey for HOUSE_REBELS)");
-    }
+
     // DuneCity 1.0.420: normalize the HARKONNEN source palette
     // so all house palette slots have vanilla Harkonnen red.
     // Without this, the HARKONNEN surface (which is the source

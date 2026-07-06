@@ -3884,6 +3884,18 @@ SDL_Surface* GFXManager::getUIGraphicSurface(unsigned int id, int house) {
         }
 
         uiGraphic[id][house] = mapSurfaceColorRange(uiGraphic[id][HOUSE_HARKONNEN].get(), PALCOLOR_HARKONNEN, houseToPaletteIndex[house]);
+        // DuneCity 1.0.433: write the Custom_IBM.pal dark grey to
+        // the surface palette for HOUSE_REBELS editor icons.
+        // Without this, the remap above shifts pixel values to
+        // 192-199 but the surface palette at 192-199 stays
+        // vanilla Fremen orange (copied from the source). Same
+        // fix as in getZoomedObjPic for in-game units/structures.
+        if(house == HOUSE_REBELS && uiGraphic[id][house] && uiGraphic[id][house]->format->palette) {
+            for(int k = 0; k < 8; k++) {
+                uiGraphic[id][house]->format->palette->colors[PALCOLOR_REBELS + k] =
+                    customColorRamp[PALCOLOR_REBELS + k];
+            }
+        }
         // Restore vanilla IBM.PAL at 192-207 for Fremen so rebels grey doesn't corrupt Fremen UI graphics
         if (house == HOUSE_FREMEN && uiGraphic[id][house] && uiGraphic[id][house]->format->palette) {
             ibmPalette.applyToSurface(uiGraphic[id][house].get(), PALCOLOR_FREMEN, PALCOLOR_FREMEN + 15);

@@ -3679,29 +3679,37 @@ SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned in
         // slot instead of the house's own slot.
         objPic[id][house][z] = mapSurfaceColorRange(objPic[id][HOUSE_HARKONNEN][z].get(), PALCOLOR_HARKONNEN, destSlot);
 
-        // DuneCity 1.0.426: HOUSE_REBELS needs the Custom_IBM.pal
-        // dark grey written to the SURFACE palette at
-        // PALCOLOR_REBELS..+7 (192-199) so the engine reads the
-        // dark grey color instead of the source's vanilla
-        // Fremen orange. Without this, the surface palette at
-        // 192-199 stays as vanilla Fremen orange (copied from
-        // the source via SDL_ConvertSurface), and the remapped
-        // pixels at 192-199 render as orange instead of dark
-        // grey. The runtime palette[] has the dark grey at
-        // 192-199 (set by v1.0.410), but the engine reads from
-        // the SURFACE palette, not the runtime palette.
+        // DuneCity 1.0.427: write the destination slot's color
+        // to the SURFACE palette so the engine reads the
+        // correct color when rendering. SDL_CreateTextureFromSurface
+        // uses the surface's own palette (not the runtime
+        // palette). The surface palette at destSlot is
+        // unchanged from the source (Harkonnen red at all
+        // slots) so pixel values at destSlot read Harkonnen
+        // red - that's why all non-Harkonnen houses showed
+        // Harkonnen red instead of their own color.
         //
-        // Tornie's screenshot v1.0.425 showed the 8th house
-        // (HOUSE_REBELS) Construction Yard rendered as ORANGE
-        // instead of dark grey - the visible bug.
-        // The fix writes the Custom_IBM.pal dark grey
-        // (customColorRamp[192..199]) to the surface palette at
-        // PALCOLOR_REBELS..+7 so the engine reads the correct
-        // color.
-        if(house == HOUSE_REBELS && objPic[id][house][z] && objPic[id][house][z]->format->palette) {
+        // The fix writes ibmPalette[destSlot + k] (vanilla
+        // house color) to the surface palette at destSlot +
+        // k. For HOUSE_REBELS, use customColorRamp[192..199]
+        // (Custom_IBM.pal dark grey) instead.
+        //
+        // Tornie's OOB v1.0.427: 'le bug des couleurs bizarre
+        // n'est pas reparre et on ne peut pas rien voir en
+        // jeu' = the bizarre color bug is not fixed, can't
+        // see anything in-game. The bug is that ALL non-
+        // Harkonnen houses show Harkonnen red because the
+        // surface palette isn't updated to match the
+        // destination slot.
+        if(objPic[id][house][z] && objPic[id][house][z]->format->palette) {
             for(int k = 0; k < 8; k++) {
-                objPic[id][house][z]->format->palette->colors[PALCOLOR_REBELS + k] =
-                    customColorRamp[PALCOLOR_REBELS + k];
+                if(house == HOUSE_REBELS) {
+                    objPic[id][house][z]->format->palette->colors[destSlot + k] =
+                        customColorRamp[PALCOLOR_REBELS + k];
+                } else {
+                    objPic[id][house][z]->format->palette->colors[destSlot + k] =
+                        ibmPalette[destSlot + k];
+                }
             }
         }
 

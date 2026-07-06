@@ -3699,22 +3699,31 @@ SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned in
         // house slot, so all surfaces stayed at HARKONNEN's
         // slot (144-151) and the engine read HARKONNEN red
         // for everything.
-        //
-        // DuneCity 1.0.470: removed the v1.0.464 surface
-        // palette write. Tornie's OOB: 'the tint function
-        // maybe corrupted' - the surface palette write was
-        // causing color corruption on the hardware renderer
-        // path because it modified the surface palette to a
-        // state inconsistent with the runtime palette. The
-        // v1.0.305 path works correctly via the runtime
-        // palette read (SDL2 hardware renderer uses the
-        // global runtime palette at the remapped slot).
-        //
-        // The runtime palette[destSlot..+7] has the correct
-        // color (vanilla for 7 houses, Custom_IBM.PAL
-        // greyscale at 52-59 for REBELS). No surface write
-        // is needed - the engine reads from runtime palette.
         objPic[id][house][z] = mapSurfaceColorRange(objPic[id][HOUSE_HARKONNEN][z].get(), PALCOLOR_HARKONNEN, destSlot);
+
+        // DuneCity 1.0.471: re-add the surface palette write
+        // for ALL houses. Tornie's OOB (v1.0.470 test): 'toutes
+        // les team bizarres sauf harkonnen' = all teams bizarre
+        // except Harkonnen. This is because the SDL2 hardware
+        // renderer uses the surface palette (not the runtime
+        // palette) when rendering the texture. The surface
+        // palette was HARKONNEN's at all slots (from the
+        // SDL_ConvertSurface copy), so all houses except
+        // HARKONNEN read HARKONNEN's red.
+        //
+        // The v1.0.464 surface palette write was the correct
+        // approach but was removed in v1.0.470. v1.0.471
+        // re-adds it. The runtime palette has the right color
+        // at each house's slot (vanilla for 7 houses, Custom_
+        // IBM.PAL greyscale at 52-59 for REBELS). Writing
+        // palette[destSlot..+7] to the surface palette
+        // ensures the hardware renderer reads the right color.
+        if(objPic[id][house][z] && objPic[id][house][z]->format->palette) {
+            for(int k = 0; k < 8; k++) {
+                objPic[id][house][z]->format->palette->colors[destSlot + k] =
+                    palette[destSlot + k];
+            }
+        }
 
 // DuneCity 1.0.383: removed the ibmPalette[PALCOLOR_FREMEN..+15]
         // restore for HOUSE_FREMEN. The previous code overrode the

@@ -3705,15 +3705,19 @@ SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned in
         // for everything.
         objPic[id][house][z] = mapSurfaceColorRange(objPic[id][HOUSE_HARKONNEN][z].get(), PALCOLOR_HARKONNEN, destSlot);
 
-        // DuneCity 1.0.462: for HOUSE_REBELS, also write
-        // Custom_IBM.PAL[52..59] dark grey ramp to the
-        // surface palette at destSlot..+7. This ensures
-        // the surface palette read path also shows dark grey
-        // for REBELS (not just the runtime palette read path).
-        if(house == HOUSE_REBELS && objPic[id][house][z] && objPic[id][house][z]->format->palette) {
+        // DuneCity 1.0.464: write palette[destSlot..destSlot+7] to
+        // the surface palette for ALL houses. SDL_CreateTextureFromSurface
+        // uses the surface palette (not the runtime palette), so the
+        // surface palette at destSlot must contain the right color.
+        // For REBELS: palette[52..59] = true greyscale dark ramp.
+        // For other houses: palette[destSlot..destSlot+7] = vanilla
+        // IBM.PAL color at that slot (which is the house's own color).
+        // This fixes the multi-color ghost bug (Tornie's OOB: 'color
+        // tint for non-rebels/non-harkonnen tint are strange').
+        if(objPic[id][house][z] && objPic[id][house][z]->format->palette) {
             for(int k = 0; k < 8; k++) {
                 objPic[id][house][z]->format->palette->colors[destSlot + k] =
-                    palette[52 + k];
+                    palette[destSlot + k];
             }
         }
 

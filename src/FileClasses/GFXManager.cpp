@@ -251,189 +251,75 @@ GFXManager::GFXManager() {
         // DuneCity 1.0.357: Custom_IBM.pal is 8-bit already (was *4
         // mistakenly scaled, which produced a pale washed-out grey
         // instead of the intended dark grey). Read raw bytes directly.
+        // DuneCity 1.0.389: gate the Custom_IBM.pal override on the
+        // active house. PALCOLOR_REBELS = 192 (same slot as
+        // PALCOLOR_FREMEN). Writing dark grey to indices 192-199
+        // affects BOTH houses by design. We want HOUSE_FREMEN to
+        // see vanilla Fremen orange, so the override only fires
+        // when the local player house is HOUSE_REBELS (or the
+        // picker's colorIndex selects Rebels - that path is
+        // handled separately in onChangeColorDropDownBoxes).
         //
-        // DuneCity 1.0.410: write Custom_IBM.pal values into the
-        // customColorRamp table AND into the runtime palette[] at
-        // indices 192-199. The runtime palette[] needs the dark
-        // grey at 192-199 because getHouseSDLColor(HOUSE_REBELS)
-        // reads from palette[195] = runtime palette[]. Other
-        // rendering paths (cursor, label, etc.) also read from
-        // palette[] directly without going through the per-house
-        // surface remap, so those need the runtime values too.
-        //
-        // Tornie's OOB (v1.0.405 + v1.0.410): 'quand le mods
-        // vanilla est active seulement les rebels sont
-        // transparent comme un kameleon' = when the vanilla mod
-        // is active (no Tornie mod), HOUSE_REBELS shows the
-        // translucent ghost effect because the runtime
-        // palette[192..199] is vanilla IBM.PAL orange (no
-        // Custom_IBM.pal override). Writing the dark grey to
-        // runtime palette[] unconditionally (not just
-        // customColorRamp) fixes this - the engine reads the
-        // correct dark grey color when rendering HOUSE_REBELS.
-        // Other house slots (144, 160, 176, 208, 224, 128) keep
-        // vanilla IBM.PAL values in palette[]. The per-house
-        // remap loops still apply for in-world sprite tinting.
-        for (int i = 0; i < 256; i++) {
+        // Since we don't know the localPlayer at GFX init time,
+        // we instead always write the dark grey ramp and rely on
+        // the runtime's per-house selection logic to pick which
+        // palette indices get read. The vanilla Fremen orange
+        // restored at indices 192-199 in Custom_IBM.pal itself
+        // ensures HOUSE_FREMEN keeps its native color because the
+        // runtime 'palette[192..199]' is dark grey but ibmPalette
+        // (used for Fremen only per include/globals.h:115) is
+        // still vanilla orange.
+        for (int i = PALCOLOR_REBELS; i < PALCOLOR_REBELS + 8; ++i) {
             SDL_Color c;
             c.r = palData[i*3+0];
             c.g = palData[i*3+1];
             c.b = palData[i*3+2];
             c.a = 255;
-            // Direct member access (we're inside GFXManager
-            // constructor body - pGFXManager is the very
-            // object being constructed).
-            customColorRamp[i] = c;
-            // Only write the 192-199 override to the runtime
-            // palette[] (Tornie's spec: dark grey for HOUSE_REBELS
-            // at indices 192-199, other slots stay vanilla).
-            if(i >= PALCOLOR_REBELS && i < PALCOLOR_REBELS + 8) {
-                palette[i] = c;
-            }
+            palette[i] = c;
         }
-        SDL_Log("GFX INIT: Custom_IBM.pal values written to palette[192..199] for HOUSE_REBELS (dark grey from Custom_IBM.pal)");
-    } else {
-        // DuneCity 1.0.410: Custom_IBM.pal is missing (vanilla mod
-        // active). Apply the default dark grey ramp at indices
-        // 192-199 anyway so HOUSE_REBELS shows dark grey in
-        // vanilla mode (not orange/translucent like a chameleon).
-        // Tornie's OOB: 'quand le mods vanilla est active
-        // seulement les rebels sont transparent comme un
-        // kameleon' = the vanilla mod path also needs the dark
-        // grey for Rebels.
-        const SDL_Color defaultRebelsRamp[8] = {
-            { 25, 25, 25, 255 },
-            { 17, 17, 17, 255 },
-            { 15, 15, 15, 255 },
-            { 10, 10, 10, 255 },
-            {  7,  7,  7, 255 },
-            {  2,  2,  2, 255 },
-            {  0,  0,  0, 255 },
-            { 13, 42, 42, 255 },
-        };
-        for(int k = 0; k < 8; k++) {
-            customColorRamp[PALCOLOR_REBELS + k] = defaultRebelsRamp[k];
-            palette[PALCOLOR_REBELS + k] = defaultRebelsRamp[k];
-        }
-        SDL_Log("GFX INIT: Custom_IBM.pal missing (vanilla mod) - default dark grey ramp applied at palette[192..199] for HOUSE_REBELS");
+        SDL_Log("GFX INIT: Custom_IBM.pal applied (rebels dark-grey/black range 192-199)");
     }
 
-    // DuneCity 1.0.369: Custom_Pal_Color Teal ramp at the REBELS slot.
+    // DuneCity 1.0.369: Custom_Pal_Color Teal ramp at index 240.
     // The dropdown's 'Teal' entry (data=-2) was originally mapped
     // to slot 176 (= PALCOLOR_ORDOS) but that clobbered the
     // vanilla OrdOs green ramp. v1.0.373 moves Teal to 240-247
     // which is unused by vanilla + not reserved for a faction.
-    // v1.0.393 moves Teal BACK to 176-183 per Tornie's OOB.
-    // v1.0.395 moves Teal to PALCOLOR_REBELS (192-199) per Tornie's
-    // OOB: 'Les indices des couleurs spectateur et de Rebels
-    // proviennent tous du fichier Custom_IBM.Pal' = the Spectator
-    // (Teal) and Rebels color slots both come from Custom_IBM.PAL
-    // index 192. So Teal = slot 192 (REBELS), and the Ordos slot
-    // 176 is left untouched so vanilla Ordos stays green. Rebels
-    // gets Custom_IBM.PAL dark grey at 192 from the existing
-    // override load (not from Teal ramp - they're now both at
-    // slot 192).
-    // v1.0.394: 4 new colors (Fushia 160, Apple_Green 208, Dark
-    // Purple 144, Light Pink 224) added per Tornie's OOB.
-    // v1.0.385: prefer Spectator*<Color>.pal file if shipped
-    // (lets tornie tune the ramp without rebuilding).
+    // Dropdown data value stays -2 (the slot index is wired in
+    // the dropdown -> onChangeColorDropDownBoxes hot-patch).
+    // v1.0.385: prefer SpectatorTeal.pal file if shipped (lets
+    // tornie tune the teal ramp without rebuilding). Falls back to
+    // the v1.0.369 hardcoded teal ramp if the file is absent.
     {
-        // DuneCity 1.0.400: each custom color has: slot, file, fallback ramp
-        // (NEVER applied by default per v1.0.398 + v1.0.400).
-        //
-        // Each custom color entry stores its slot, file, and a
-        // fallback ramp. The fallback ramp is NOT applied to the
-        // runtime palette[] at GFX init - it's only applied when
-        // the user explicitly picks the color via CustomGamePlayers
-        // and the per-house swap path in Game::initGame writes the
-        // values to the picked slot via setHouseColorSwap.
-        //
-        // Tornie's OOB: 'le color swap non voulu se fait entre la
-        // version 1.0.394 et 1.0.393' = the unwanted color swap
-        // was the Fushia/Apple Green/Dark Purple/Light Pink
-        // fallback ramps firing unconditionally at GFX init in
-        // v1.0.394. v1.0.400 removes the unconditional fallback
-        // application - the ramps are stored but not applied
-        // until the user picks the color.
-        struct CustomColorSpec {
-            int slot;
-            const char* filename;
-            SDL_Color fallback[8];
-            const char* name;
-        };
-        const CustomColorSpec customColors[] = {
-            // Fushia (Atreides slot) - data value -3
-            { PALCOLOR_ATREIDES, "SpectatorFushia.pal",
-              { {255,  0,255,255}, {240,  0,240,255}, {220,  0,220,255}, {200,  0,200,255},
-                {180,  0,180,255}, {160,  0,160,255}, {140,  0,140,255}, {120,  0,120,255} },
-              "Fushia" },
-            // Apple_Green (Sardaukar slot) - data value -4
-            { PALCOLOR_SARDAUKAR, "SpectatorAppleGreen.pal",
-              { {  0,255, 64,255}, {  0,240, 56,255}, {  0,220, 48,255}, {  0,200, 40,255},
-                {  0,180, 32,255}, {  0,160, 24,255}, {  0,140, 16,255}, {  0,120,  8,255} },
-              "Apple Green" },
-            // Dark Purple (Harkonnen slot) - data value -5
-            { PALCOLOR_HARKONNEN, "SpectatorDarkPurple.pal",
-              { { 96,  0,144,255}, { 80,  0,128,255}, { 64,  0,112,255}, { 48,  0, 96,255},
-                { 32,  0, 80,255}, { 24,  0, 64,255}, { 16,  0, 48,255}, {  8,  0, 32,255} },
-              "Dark Purple" },
-            // Light Pink (Mercenary slot) - data value -6
-            { PALCOLOR_MERCENARY, "SpectatorLightPink.pal",
-              { {255,192,203,255}, {255,200,213,255}, {255,208,223,255}, {255,216,233,255},
-                {255,224,233,255}, {255,232,233,255}, {255,240,233,255}, {255,248,233,255} },
-              "Light Pink" },
-            // Teal (REBELS slot per v1.0.395) - data value -2.
-            // Shares slot 192 with the Custom_IBM.PAL dark grey
-            // Rebels override. The Teal ramp overrides the dark
-            // grey if a SpectatorTeal.pal file is shipped.
-            { PALCOLOR_REBELS, "SpectatorTeal.pal",
-              { {0,220,220,255}, {0,200,200,255}, {0,180,180,255}, {0,160,160,255},
-                {0,140,140,255}, {0,120,120,255}, {0,100,100,255}, {0, 80, 80,255} },
-              "Teal" },
-        };
-        for (const auto& spec : customColors) {
-            if(pFileManager->exists(spec.filename)) {
-                // File exists - capture its values into a static
-                // table indexed by slot. The per-house swap path
-                // in Game::initGame reads from this table when the
-                // user explicitly picks the color. We do NOT write
-                // to palette[] here at GFX init.
-                auto rw = pFileManager->openFile(spec.filename);
-                std::vector<Uint8> fileData(768);
-                SDL_RWread(rw.get(), fileData.data(), 1, 768);
-                for(int k = 0; k < 8; k++) {
-                    int idx = spec.slot + k;
-                    SDL_Color c;
-                    c.r = fileData[idx*3+0];
-                    c.g = fileData[idx*3+1];
-                    c.b = fileData[idx*3+2];
-                    c.a = 255;
-                    // Store in a static table for later retrieval
-                    // via applyCustomColorSwap().
-                    // DuneCity 1.0.401: direct member access instead
-                    // of pGFXManager->setCustomColorRamp (which is a
-                    // recursion - we're inside GFXManager's constructor).
-                    // The pGFXManager global is not yet valid during
-                    // construction.
-                    if(spec.slot >= 0 && spec.slot < 256) {
-                        customColorRamp[spec.slot] = c;
-                    }
-                }
-                SDL_Log("GFX INIT: %s captured at palette[%d..%d] (NOT applied as default)",
-                        spec.filename, spec.slot, spec.slot+7);
-            } else {
-                // File doesn't exist - use the fallback ramp.
-                // Stored in the same static table. NOT applied to
-                // palette[] at GFX init.
-                for(int k = 0; k < 8; k++) {
-                    // DuneCity 1.0.401: same direct member access fix.
-                    if(spec.slot + k >= 0 && spec.slot + k < 256) {
-                        customColorRamp[spec.slot + k] = spec.fallback[k];
-                    }
-                }
-                SDL_Log("GFX INIT: %s fallback ramp captured at palette[%d..%d] (NOT applied as default)",
-                        spec.name, spec.slot, spec.slot+7);
+        if(pFileManager->exists("SpectatorTeal.pal")) {
+            auto tealRw = pFileManager->openFile("SpectatorTeal.pal");
+            std::vector<Uint8> tealData(768);
+            SDL_RWread(tealRw.get(), tealData.data(), 1, 768);
+            for(int k = 0; k < 8; k++) {
+                int idx = 240 + k;
+                SDL_Color c;
+                c.r = tealData[idx*3+0];
+                c.g = tealData[idx*3+1];
+                c.b = tealData[idx*3+2];
+                c.a = 255;
+                palette[idx] = c;
             }
+            SDL_Log("GFX INIT: SpectatorTeal.pal applied at palette[240..247] (file override)");
+        } else {
+            const SDL_Color tealRamp[8] = {
+                {  0, 220, 220, 255 },
+                {  0, 200, 200, 255 },
+                {  0, 180, 180, 255 },
+                {  0, 160, 160, 255 },
+                {  0, 140, 140, 255 },
+                {  0, 120, 120, 255 },
+                {  0, 100, 100, 255 },
+                {  0,  80,  80, 255 },
+            };
+            for(int k = 0; k < 8; k++) {
+                palette[240 + k] = tealRamp[k];
+            }
+            SDL_Log("GFX INIT: Teal ramp applied at palette[240..247] (hardcoded fallback)");
         }
     }
 
@@ -454,7 +340,55 @@ GFXManager::GFXManager() {
     objPic[ObjPic_Quad][HOUSE_HARKONNEN][0] = units->getPictureArray(8,1,GROUNDUNIT_ROW(0));
     objPic[ObjPic_Trike][HOUSE_HARKONNEN][0] = units->getPictureArray(8,1,GROUNDUNIT_ROW(5));
 
-
+    // DuneCity 1.0.371: per-house remap of unit sprites
+    // (Tank/Quad/Trike). The default Dune Legacy load leaves only
+    // HOUSE_HARKONNEN populated and the runtime remap-on-demand
+    // path in getZoomedObjPic also reads PALCOLOR_HARKONNEN
+    // indices. Result: every other house (including HOUSE_REBELS)
+    // shows the orange Harkonnen sprite. This block clones each
+    // sprite to every house and remaps the 8 palette indices
+    // PALCOLOR_HARKONNEN..+7 to the per-house equivalent.
+    // (Fremen is treated specially - reads from ibmPalette so
+    // Custom_IBM.pal's dark grey doesn't bleed in.)
+    {
+        static const struct { int objPicID; const char* name; } tankSprites[] = {
+            {ObjPic_Tank_Base,         "Tank_Base"},
+            {ObjPic_Tank_Gun,           "Tank_Gun"},
+            {ObjPic_Siegetank_Base,     "Siegetank_Base"},
+            {ObjPic_Siegetank_Gun,      "Siegetank_Gun"},
+            {ObjPic_Devastator_Base,    "Devastator_Base"},
+            {ObjPic_Devastator_Gun,     "Devastator_Gun"},
+            {ObjPic_Quad,               "Quad"},
+            {ObjPic_Trike,              "Trike"},
+        };
+        for(auto& spec : tankSprites) {
+            if(!objPic[spec.objPicID][HOUSE_HARKONNEN][0]) continue;
+            for(int h = 0; h < NUM_HOUSES; h++) {
+                if(h == HOUSE_HARKONNEN) continue;
+                // Fremen uses vanilla ibmPalette so the original
+                // orange-gold Harkonnen template doesn't get the
+                // Custom_IBM.pal dark grey override.
+                const Palette& srcPal = (h == HOUSE_FREMEN) ? ibmPalette : palette;
+                objPic[spec.objPicID][h][0] = sdl2::surface_ptr{
+                    SDL_ConvertSurface(objPic[spec.objPicID][HOUSE_HARKONNEN][0].get(),
+                                       objPic[spec.objPicID][HOUSE_HARKONNEN][0]->format, 0)
+                };
+                if(objPic[spec.objPicID][h][0] && objPic[spec.objPicID][h][0]->format->palette) {
+                    // 8-cell remap: PALCOLOR_HARKONNEN..+7 to
+                    // houseToPaletteIndex[h]..+7. Each house
+                    // picks up its own color (Harkonnen red,
+                    // Atreides blue/green, Ordos orange, Fremen
+                    // orange, Sardaukar, Mercenary, Neutral,
+                    // Rebels dark grey).
+                    for(int k = 0; k < 8; k++) {
+                        objPic[spec.objPicID][h][0]->format->palette->colors[PALCOLOR_HARKONNEN + k] =
+                            srcPal[houseToPaletteIndex[h] + k];
+                    }
+                }
+            }
+        }
+        SDL_Log("DuneCity 1.0.371: per-house unit sprite remap (Tank/Quad/Trike/Siege/Devastator)");
+    }
 
     // DuneCity: the Rocket Trike in-world sprite.
     // Preferred path: RocketTrikeMask.png as 8-bit palette-indexed strip — load
@@ -662,8 +596,8 @@ GFXManager::GFXManager() {
     // Tiles must match the vanilla SiegeTank (same frame count/dimensions) so blitToScreen
     // picks up the correct frame offsets.  Uses ibmPalette (not benePalette) because the
     // sprite is authored against IBM.PAL indices just like all other vehicle sprites.
-    if(pFileManager->exists("EliteSiegeTank.png")) {
-        auto estRaw = LoadPNG_RW(pFileManager->openFile("EliteSiegeTank.png").get());
+    if(pFileManager->exists("Tornie_EliteSiegeTank.png")) {
+        auto estRaw = LoadPNG_RW(pFileManager->openFile("Tornie_EliteSiegeTank.png").get());
         if(estRaw && estRaw->format->BitsPerPixel == 8) {
             ibmPalette.applyToSurface(estRaw.get());
             objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][0] = std::move(estRaw);
@@ -743,14 +677,19 @@ GFXManager::GFXManager() {
     objPic[ObjPic_RocketTurret][HOUSE_HARKONNEN][0] = icon->getPictureArray(24);
     objPic[ObjPic_Wall][HOUSE_HARKONNEN][0] = icon->getPictureArray(6,25,3,1);
 
-    // DuneCity 1.0.413: per-house clone of the structure
-    // sprites (was deleted in v1.0.407). Each non-HARKONNEN
-    // house gets a clone of each structure sprite with pixel
-    // values remapped from PALCOLOR_HARKONNEN (144) to the
-    // house's own slot. The remap uses ibmPalette[] (vanilla)
-    // as source so the translucent mask effect doesn't
-    // happen. HOUSE_REBELS additionally gets the
-    // Custom_IBM.pal dark grey written to indices 192-199.
+    // DuneCity 1.0.379: per-house remap of structure sprites
+    // (ConstructionYard/Windtrap/Refinery/Barracks/WOR/Radar/
+    // LightFactory/Silo/HeavyFactory/HighTechFactory/IX/
+    // Palace/RepairYard/Starport/GunTurret/RocketTurret/Wall).
+    // Until v1.0.379 only HOUSE_HARKONNEN was populated and the
+    // runtime remap-on-demand path in getZoomedObjPic reads
+    // PALCOLOR_HARKONNEN indices (144-150). Result: every other
+    // house (including HOUSE_REBELS) showed the orange Harkonnen
+    // sprite. This block clones each sprite to every house and
+    // remaps the 8 palette indices PALCOLOR_HARKONNEN..+7 to the
+    // per-house equivalent. Fremen reads from ibmPalette so the
+    // Custom_IBM.pal dark grey doesn't bleed into the Fremen
+    // template (matching the v1.0.371 unit-sprite remap).
     {
         static const int structureSprites[] = {
             ObjPic_ConstructionYard, ObjPic_Windtrap, ObjPic_Refinery,
@@ -763,69 +702,30 @@ GFXManager::GFXManager() {
             if(!objPic[spec][HOUSE_HARKONNEN][0]) continue;
             for (int h = 0; h < NUM_HOUSES; h++) {
                 if (h == HOUSE_HARKONNEN) continue;
+                // Fremen uses vanilla ibmPalette so the original
+                // orange-gold Harkonnen template doesn't get the
+                // Custom_IBM.pal dark grey override.
+                const Palette& srcPal = (h == HOUSE_FREMEN) ? ibmPalette : palette;
                 objPic[spec][h][0] = sdl2::surface_ptr{
                     SDL_ConvertSurface(objPic[spec][HOUSE_HARKONNEN][0].get(),
                                        objPic[spec][HOUSE_HARKONNEN][0]->format, 0)
                 };
-                if (!objPic[spec][h][0] || !objPic[spec][h][0]->format->palette) continue;
-                int destSlot = houseToPaletteIndex[h];
-                objPic[spec][h][0] = mapSurfaceColorRange(
-                    objPic[spec][h][0].get(),
-                    PALCOLOR_HARKONNEN, destSlot);
-                // Apply house's vanilla color from ibmPalette
-                // to the surface palette at the destination slot
-                // (avoids the translucent mask effect that
-                // palette[] caused).
-                for (int k = 0; k < 8; k++) {
-                    objPic[spec][h][0]->format->palette->colors[destSlot + k] =
-                        ibmPalette[destSlot + k];
-                }
-                // HOUSE_REBELS additionally gets the
-                // Custom_IBM.pal dark grey.
-                if (h == HOUSE_REBELS) {
+                if (objPic[spec][h][0] && objPic[spec][h][0]->format->palette) {
+                    // 8-cell remap: PALCOLOR_HARKONNEN..+7 to
+                    // houseToPaletteIndex[h]..+7. Each house
+                    // picks up its own color (Harkonnen red,
+                    // Atreides blue/green, Ordos orange, Fremen
+                    // orange, Sardaukar, Mercenary, Neutral,
+                    // Rebels dark grey).
                     for (int k = 0; k < 8; k++) {
-                        objPic[spec][h][0]->format->palette->colors[PALCOLOR_REBELS + k] =
-                            customColorRamp[PALCOLOR_REBELS + k];
+                        objPic[spec][h][0]->format->palette->colors[PALCOLOR_HARKONNEN + k] =
+                            srcPal[houseToPaletteIndex[h] + k];
                     }
                 }
             }
         }
-        SDL_Log("DuneCity 1.0.413: per-house structure sprite remap restored (vanilla colors via ibmPalette, Custom_IBM.pal dark grey for HOUSE_REBELS)");
+        SDL_Log("DuneCity 1.0.379: per-house structure sprite remap (CY/Windtrap/Refinery/Barracks/WOR/Radar/Factories/Palace/Starport/Turrets/Wall)");
     }
-    // DuneCity 1.0.420: normalize the HARKONNEN source palette
-    // so all house palette slots have vanilla Harkonnen red.
-    // Without this, the HARKONNEN surface (which is the source
-    // for all per-house lazy remaps) keeps the source's vanilla
-    // palette with all house colors at their slots. If the
-    // engine ever reads the HARKONNEN surface (e.g. when the
-    // texture cache is invalidated by setHouseColorSwap and
-    // getZoomedObjPic recreates the texture from the source),
-    // pixels at the OTHER house slots (160 Atreides blue,
-    // 176 Ordos green, etc.) would still read their vanilla
-    // colors and create the multi-color ghost effect on
-    // HARKONNEN units too. By normalizing the HARKONNEN
-    // surface palette to have vanilla Harkonnen red at all
-    // 7 house slots, the source is consistent and the
-    // lazy remap clones derived from it will all have
-    // the correct color regardless of which slot any
-    // pixel falls into.
-
-    // DuneCity 1.0.421: per-house clone of UI_MapEditor_*
-    // icons. The vanilla code only creates uiGraphic at
-    // HOUSE_HARKONNEN. The editor sidebar requests the
-    // icon for the active house via
-    // getUIGraphicSurface(UI_MapEditor_Tank, newHouse)
-    // (see MapEditorInterface.cpp:1539), which returns
-    // null for non-HARKONNEN houses. The fix clones
-    // each UI_MapEditor_* graphic for all 8 houses
-    // using the per-house lazy remap path (mapSurfaceColorRange
-    // + surface palette write). For REBELS, the Custom_IBM.pal
-    // dark grey is applied.
-
-
-
-
-
 
     // DuneCity zone sprites — load the full 3×3 Micropolis composites and
     // downscale them to the 2×2 gameplay footprint (32×32 at base zoom).
@@ -2298,8 +2198,34 @@ GFXManager::GFXManager() {
     objPic[ObjPic_SandwormShimmerTemp][HOUSE_HARKONNEN][0] = units1->getPicture(10);
     objPic[ObjPic_Terrain][HOUSE_HARKONNEN][0] = icon->getPictureRow(124,209,NUM_TERRAIN_TILES_X);
 
-
-
+    // DuneCity 1.0.387: per-house clone of the terrain atlas so the
+    // visible tile tint for a Rebels player matches the Custom_IBM.pal
+    // dark grey (not vanilla Fremen orange). The atlas's surface
+    // palette is updated to use the runtime 'palette' (which has the
+    // Custom_IBM.pal override at indices 192-199) instead of
+    // ibmPalette (which has vanilla colors at the same indices).
+    // Vanilla vanilla-HARKONNEN slot keeps its vanilla tinted
+    // appearance; the per-house clones for non-HARKONNEN get the
+    // Custom_IBM.pal dark grey on Fremen/Rebels/Neutral slots.
+    {
+        // Clone for each non-HARKONNEN house
+        for(int h = 0; h < NUM_HOUSES; h++) {
+            if(h == HOUSE_HARKONNEN) continue;
+            objPic[ObjPic_Terrain][h][0] = sdl2::surface_ptr{
+                SDL_ConvertSurface(objPic[ObjPic_Terrain][HOUSE_HARKONNEN][0].get(),
+                                   objPic[ObjPic_Terrain][HOUSE_HARKONNEN][0]->format, 0)
+            };
+            if(objPic[ObjPic_Terrain][h][0] && objPic[ObjPic_Terrain][h][0]->format->palette) {
+                // Apply runtime 'palette' to the cloned surface's
+                // embedded palette. This includes the Custom_IBM.pal
+                // override at indices 192-199 (dark grey) which
+                // makes Rebels + Fremen tiles look dark grey instead
+                // of vanilla orange.
+                palette.applyToSurface(objPic[ObjPic_Terrain][h][0].get());
+            }
+        }
+        SDL_Log("DuneCity 1.0.387: per-house terrain atlas remap (Custom_IBM.pal applied to Rebels/Fremen tiles)");
+    }
     objPic[ObjPic_DestroyedStructure][HOUSE_HARKONNEN][0] = icon->getPictureRow2(14, 33, 125, 213, 214, 215, 223, 224, 225, 232, 233, 234, 240, 246, 247);
     objPic[ObjPic_RockDamage][HOUSE_HARKONNEN][0] = icon->getPictureRow(1,6);
     objPic[ObjPic_SandDamage][HOUSE_HARKONNEN][0] = icon->getPictureRow(7,12);
@@ -3279,8 +3205,43 @@ GFXManager::GFXManager() {
     uiGraphic[UI_MapEditor_SiegeTank][HOUSE_HARKONNEN] = combinePictures(getSubFrame(objPic[ObjPic_Siegetank_Base][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(), getSubFrame(objPic[ObjPic_Siegetank_Gun][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(), 2, -4);
     uiGraphic[UI_MapEditor_Launcher][HOUSE_HARKONNEN] = combinePictures(getSubFrame(objPic[ObjPic_Tank_Base][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(), getSubFrame(objPic[ObjPic_Launcher_Gun][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(), 3, 0);
     uiGraphic[UI_MapEditor_Devastator][HOUSE_HARKONNEN] = combinePictures(getSubFrame(objPic[ObjPic_Devastator_Base][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(), getSubFrame(objPic[ObjPic_Devastator_Gun][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(), 2, -4);
-
-
+    // DuneCity 1.0.372: guard the editor icon combinePictures
+    // calls. If either source objPic is null (vanilla UNITS2.SHP
+    // row missing, FlameTank/Sonictank_Gun/etc. failed to load),
+    // the resulting uiGraphic stays null and getUIGraphicSurface
+    // throws 'UI Graphic with ID %u is not loaded!' which Tornie's
+    // log captured as the editor-not-opening bug. v1.0.371 added
+    // the v1.0.358 editor crash wrapper that catches the throw
+    // silently, so the editor never opens. The fix is to fall
+    // back to a vanilla placeholder (TANK_Gun) so the entry is
+    // never null.
+    {
+        auto* pTankBase = objPic[ObjPic_Tank_Base][HOUSE_HARKONNEN][0] ? objPic[ObjPic_Tank_Base][HOUSE_HARKONNEN][0].get() : objPic[ObjPic_Tank_Gun][HOUSE_HARKONNEN][0].get();
+        auto* pSonicGun = objPic[ObjPic_Sonictank_Gun][HOUSE_HARKONNEN][0] ? objPic[ObjPic_Sonictank_Gun][HOUSE_HARKONNEN][0].get() : objPic[ObjPic_Tank_Gun][HOUSE_HARKONNEN][0].get();
+        auto* pLauncherGun = objPic[ObjPic_Launcher_Gun][HOUSE_HARKONNEN][0] ? objPic[ObjPic_Launcher_Gun][HOUSE_HARKONNEN][0].get() : objPic[ObjPic_Tank_Gun][HOUSE_HARKONNEN][0].get();
+        auto* pDevastatorGun = objPic[ObjPic_Devastator_Gun][HOUSE_HARKONNEN][0] ? objPic[ObjPic_Devastator_Gun][HOUSE_HARKONNEN][0].get() : objPic[ObjPic_Tank_Gun][HOUSE_HARKONNEN][0].get();
+        auto* pSiegetankBase = objPic[ObjPic_Siegetank_Base][HOUSE_HARKONNEN][0] ? objPic[ObjPic_Siegetank_Base][HOUSE_HARKONNEN][0].get() : objPic[ObjPic_Tank_Gun][HOUSE_HARKONNEN][0].get();
+        if(pTankBase && pSonicGun) {
+            uiGraphic[UI_MapEditor_SonicTank][HOUSE_HARKONNEN] = combinePictures(getSubFrame(pTankBase, 0, 0, 8, 1).get(),
+                                                                                    getSubFrame(pSonicGun, 0, 0, 8, 1).get(),
+                                                                                    3, 1);
+        }
+        if(pTankBase && pDevastatorGun) {
+            uiGraphic[UI_MapEditor_Devastator][HOUSE_HARKONNEN] = combinePictures(getSubFrame(pTankBase, 0, 0, 8, 1).get(),
+                                                                                     getSubFrame(pDevastatorGun, 0, 0, 8, 1).get(),
+                                                                                     2, -4);
+        }
+        if(pTankBase && pLauncherGun) {
+            uiGraphic[UI_MapEditor_Launcher][HOUSE_HARKONNEN] = combinePictures(getSubFrame(pTankBase, 0, 0, 8, 1).get(),
+                                                                                  getSubFrame(pLauncherGun, 0, 0, 8, 1).get(),
+                                                                                  3, 0);
+        }
+        if(pSiegetankBase && pLauncherGun) {
+            uiGraphic[UI_MapEditor_SiegeTank][HOUSE_HARKONNEN] = combinePictures(getSubFrame(pSiegetankBase, 0, 0, 8, 1).get(),
+                                                                                    getSubFrame(pLauncherGun, 0, 0, 8, 1).get(),
+                                                                                    2, -4);
+        }
+    }
     uiGraphic[UI_MapEditor_Deviator][HOUSE_HARKONNEN] = combinePictures(getSubFrame(objPic[ObjPic_Tank_Base][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(), getSubFrame(objPic[ObjPic_Launcher_Gun][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(), 3, 0);
     uiGraphic[UI_MapEditor_Deviator][HOUSE_HARKONNEN] = combinePictures(uiGraphic[UI_MapEditor_Deviator][HOUSE_HARKONNEN].get(), objPic[ObjPic_Star][HOUSE_HARKONNEN][1].get(),
                                                                   uiGraphic[UI_MapEditor_Deviator][HOUSE_HARKONNEN]->w - objPic[ObjPic_Star][HOUSE_HARKONNEN][1]->w,
@@ -3410,24 +3371,7 @@ GFXManager::GFXManager() {
 
     // Advanced Windtrap: use the custom icon PNG if available, otherwise crop
     // frame 0 of the sprite atlas (all 8 frames are identical).
-    // DuneCity 1.0.404: prefer the dedicated editor icon PNG
-    // (Tornie_AdvancedWindtrap_gfx_editor.png) over the in-world
-    // sprite's first frame. The editor icon is a clean 48x48
-    // paletted PNG without animation - matches what v1.0.305 had
-    // as the editor palette icon. Falls back to the in-world
-    // sprite's first frame if the PNG is absent.
     for (int h = 0; h < (int)NUM_HOUSES; ++h) {
-        if (pFileManager->exists("Tornie_AdvancedWindtrap_gfx_editor.png")) {
-            auto editorRaw = LoadPNG_RW(pFileManager->openFile("Tornie_AdvancedWindtrap_gfx_editor.png").get());
-            if (editorRaw) {
-                if (editorRaw->format->palette) {
-                    palette.applyToSurface(editorRaw.get());
-                }
-                uiGraphic[UI_MapEditor_AdvancedWindTrap][h] = std::move(editorRaw);
-                continue;
-            }
-        }
-        // Fallback: take first frame from in-world sprite (no animation)
         if (objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0]) {
             uiGraphic[UI_MapEditor_AdvancedWindTrap][h] = getSubPicture(objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0].get(), 0, 0, 3*D2_TILESIZE, 3*D2_TILESIZE);
         } else {
@@ -3587,103 +3531,6 @@ GFXManager::GFXManager() {
 
 GFXManager::~GFXManager() = default;
 
-void GFXManager::setHouseColorSwap(int house, int pickedSlot) {
-    if(house < 0 || house >= NUM_HOUSES) return;
-    // DuneCity 1.0.417: invalidate the texture cache for this
-    // house when the color swap changes. The cached textures
-    // hold the surface palette at the time of creation; if
-    // the user changes the color swap, the surface palette
-    // is remapped but the texture still shows the old colors.
-    // Clearing the texture forces getZoomedObjPic to recreate
-    // the texture from the remapped surface on next render.
-    int oldSwap = houseColorSwap[house];
-    houseColorSwap[house] = pickedSlot;
-    if(oldSwap != pickedSlot) {
-        for(int id = 0; id < NUM_OBJPICS; id++) {
-            for(int z = 0; z < NUM_ZOOMLEVEL; z++) {
-                objPicTex[id][house][z].reset();
-            }
-        }
-    }
-}
-
-int GFXManager::getHouseColorSwap(int house) const {
-    if(house < 0 || house >= NUM_HOUSES) return -1;
-    return houseColorSwap[house];
-}
-
-void GFXManager::setCustomColorRamp(int idx, SDL_Color c) {
-    if(idx < 0 || idx >= 256) return;
-    customColorRamp[idx] = c;
-}
-
-SDL_Color GFXManager::getCustomColorRamp(int idx) const {
-    if(idx < 0 || idx >= 256) return {0, 0, 0, 255};
-    return customColorRamp[idx];
-}
-
-// DuneCity 1.0.476: apply greyscale + 75% darker transformation
-// to a surface for HOUSE_REBELS tint. The surface must be
-// 8-bit palette-indexed (the result of mapSurfaceColorRange).
-//
-// Algorithm (v1.0.480: 100% desaturation):
-//   For each pixel in the surface:
-//     - If the pixel value is in the REBELS color slot range
-//       (houseToPaletteIndex[HOUSE_REBELS] to +7, currently 52-59):
-//       - Get the current color (r, g, b) from the surface palette
-//       - 100% desaturate to true greyscale: R = G = B = (R+G+B)/3
-//         (simple average, NOT Rec. 601 luminance which leaves
-//         a slight color tint)
-//       - Darken 75%: r, g, b *= 0.25
-//       - Write the new color back to the surface palette at the
-//         REBELS slot position
-//     - Else: keep the pixel as-is (preserves structure details,
-//       black outlines, terrain, etc.)
-static void applyRebelsTint(SDL_Surface* surface) {
-    if(!surface || !surface->format || !surface->format->palette) {
-        return;
-    }
-    const int rebelsBase = houseToPaletteIndex[HOUSE_REBELS];
-    for(int k = 0; k < 8; k++) {
-        SDL_Color c = surface->format->palette->colors[rebelsBase + k];
-        // 100% desaturation: simple RGB average (R == G == B)
-        // This is the most common desaturate-to-greyscale method
-        // and produces true grey (no color hue).
-        // The previous v1.0.476 used Rec. 601 luminance which
-        // gave a slight color tint because the formula weights
-        // channels differently (0.299, 0.587, 0.114) - the result
-        // is perceptually-correct but not a pure grey.
-        // Tornie's OOB: 'desaturate 100% for rebels tint color
-        // not just a bit' = use the simple average for full
-        // desaturation.
-        const Uint8 grey = (Uint8)((c.r + c.g + c.b) / 3);
-        // Darken 75% (multiply by 0.25)
-        const Uint8 dark = (Uint8)(grey * 0.25);
-        surface->format->palette->colors[rebelsBase + k].r = dark;
-        surface->format->palette->colors[rebelsBase + k].g = dark;
-        surface->format->palette->colors[rebelsBase + k].b = dark;
-    }
-}
-
-void GFXManager::invalidateAllSpriteTextures() {
-    // DuneCity 1.0.482: re-add the v1.0.465 cache invalidation
-    // for objPicTex and objPic only (NOT uiGraphic). This fixes
-    // the "units/buildings invisible at first launch" bug
-    // reported in v1.0.480. The uiGraphic cache is preserved
-    // to avoid the "black mentat" bug from v1.0.465.
-    SDL_Log("GFXManager::invalidateAllSpriteTextures(): clearing objPicTex + objPic caches (uiGraphic preserved)");
-    for(int id = 0; id < NUM_OBJPICS; id++) {
-        for(int h = 0; h < NUM_HOUSES; h++) {
-            for(unsigned int z = 0; z < NUM_ZOOMLEVEL; z++) {
-                objPicTex[id][h][z].reset();
-                objPic[id][h][z].reset();
-            }
-        }
-    }
-    // uiGraphic NOT cleared (avoids black mentat bug from v1.0.465)
-}
-
-
 SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned int z) {
     if(id >= NUM_OBJPICS) {
         THROW(std::invalid_argument, "GFXManager::getZoomedObjPic(): Unit Picture with ID %u is not available!", id);
@@ -3712,21 +3559,10 @@ SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned in
                 // (Deviator / Flame Tank / Sonic / Elite Siege don't have a vanilla
                 // equivalent, but we can render something rather than crash the whole
                 // scenario load. Siege tank is the closest generic heavy unit.)
-                // DuneCity 1.0.478: extended Tornie unit fallback to
-                // cover ANY missing unit sprite ID. Siegetank_Gun is
-                // the vanilla Heavy Siege Tank sprite (loaded from
-                // DUNE.PAK units2 row 15) - always present, always
-                // 8 frames, always available. Used as the generic
-                // heavy unit placeholder for any missing unit
-                // sprite ID when in Tornie mod / custom game.
-                // Tornie's OOB: 'unit siegetank_gun is what?' = the
-                // Heavy Siege Tank unit. The vanilla unit is HP=300
-                // Price=600 Dmg=30 Rng=5 Build=96. Strong enough to
-                // be a reasonable placeholder for any missing unit.
-                // The previous v1.0.305-era 4-ID hardcoded list
-                // (Deviator, Flame, Sonic, EliteSiege) didn't
-                // include ID 70 which is why the v1.0.477 fix
-                // generalized the fallback.
+                // DuneCity 1.0.486: generic fallback for ANY missing
+                // unit sprite ID (extends the v1.0.392 4-ID list).
+                // Use Siege tank as the generic heavy unit placeholder.
+                // Fixes the ID 70 crash from custom Tornie units.
                 if(objPic[ObjPic_Siegetank_Gun][HOUSE_HARKONNEN][z]) {
                     SDL_Log("GFXManager::getZoomedObjPic(): Unit Picture with ID %u not loaded, falling back to Siegetank_Gun (Heavy Siege Tank placeholder)", id);
                     objPic[id][HOUSE_HARKONNEN][z] = sdl2::surface_ptr{
@@ -3739,62 +3575,21 @@ SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned in
             }
         }
 
-        // DuneCity 1.0.411: per-house remap-on-demand path
-        // restored. The HARKONNEN surface has pixel values at
-        // indices 144-151 (HARKONNEN's color slot). We remap
-        // those pixel values to the active house's slot so
-        // each house shows their own color. The runtime
-        // palette[] holds each house's vanilla color at the
-        // house's slot (e.g. Atreides blue at 160, Ordos
-        // green at 176, etc.) so the engine reads the
-        // correct color from palette[] when rendering the
-        // remapped surface.
-        //
-        // For HOUSE_REBELS with no active color swap, the
-        // remap goes to PALCOLOR_FREMEN (192) and the
-        // surface gets the Custom_IBM.pal dark grey written
-        // to indices 192-199 (from customColorRamp). This
-        // matches Tornie's first-version behavior.
-        //
-        // For color swap (setHouseColorSwap set to a non-1
-        // value), the remap goes to the picked slot instead
-        // of the house's own slot.
-        int destSlot = houseToPaletteIndex[house];
-        int swapSlot = getHouseColorSwap(house);
-        if(swapSlot >= 0) {
-            destSlot = swapSlot;
-        }
-        // DuneCity 1.0.423: v1.0.305 vanilla remap path
-        // (no surface palette write). The engine reads
-        // from the RUNTIME palette (not the surface
-        // palette) which already has the right color at
-        // each house's slot. The v1.0.416-420 surface
-        // palette writes broke things (multi-color ghost,
-        // translucent Harkonnen). Tornie's OOB: 'le systeme
-        // d'avant fonctionnait bien et la tout ne marche
-        // plus... par exemple en 1.0.305 j'avais pas de
-        // problemes avec les couleurs' = the v1.0.305
-        // system worked perfectly, restore it.
-        //
-        // For HOUSE_REBELS with no active color swap,
-        // the remap goes to PALCOLOR_FREMEN (192) and
-        // the runtime palette[] at 192-199 has the
-        // Custom_IBM.pal dark grey (set in v1.0.410).
-        // For color swap (setHouseColorSwap set to a
-        // non-1 value), the remap goes to the picked
-        // slot instead of the house's own slot.
-        objPic[id][house][z] = mapSurfaceColorRange(objPic[id][HOUSE_HARKONNEN][z].get(), PALCOLOR_HARKONNEN, destSlot);
+        objPic[id][house][z] = mapSurfaceColorRange(objPic[id][HOUSE_HARKONNEN][z].get(), PALCOLOR_HARKONNEN, houseToPaletteIndex[house]);
 
-        // DuneCity 1.0.476: apply greyscale + 75% darker
-        // transformation to the remapped surface for HOUSE_REBELS.
-        // Per Tornie's OOB: 'don't forget the function for rebels
-        // for color transformation (graysicale and 75% darker)'.
-        // This is the v1.0.173 pure remap pattern for all 7 vanilla
-        // houses (no surface palette write) plus a REBELS-specific
-        // post-processing pass that desaturates the surface and
-        // darkens it by 75% to get the dark grey look.
-        if(house == HOUSE_REBELS) {
-            applyRebelsTint(objPic[id][house][z].get());
+        // DuneCity 1.0.392: for HOUSE_REBELS, re-apply the runtime
+        // 'palette' (which has the Custom_IBM.pal dark grey override
+        // at indices 192-199) to the remapped surface's embedded
+        // palette. Tornie's spec: 'il est pris encore une fois sur
+        // IBM.PAL' - the objPic remap-on-demand path in
+        // mapSurfaceColorRange copies the source's palette to the
+        // destination surface. If the source's palette at 192-199
+        // is still the vanilla IBM.PAL (orange Fremen), the
+        // destination ends up orange too. Re-applying 'palette'
+        // forces the Custom_IBM.pal values onto the remapped
+        // surface so HOUSE_REBELS shows dark grey.
+        if(house == HOUSE_REBELS && objPic[id][house][z] && objPic[id][house][z]->format->palette) {
+            palette.applyToSurface(objPic[id][house][z].get());
         }
 
         // DuneCity 1.0.383: removed the ibmPalette[PALCOLOR_FREMEN..+15]
@@ -3878,25 +3673,6 @@ zoomable_texture GFXManager::getObjPic(unsigned int id, int house) {
         THROW(std::invalid_argument, "GFXManager::getObjPic(): Unit Picture with ID %u is not available!", id);
     }
 
-    // DuneCity 1.0.415: Advanced Windtrap in-map preview uses
-    // the same icon as the editor palette
-    // (Tornie_AdvancedWindtrap_gfx_editor.png) = static 48x48
-    // paletted PNG with no animation and no magenta color
-    // cycle. This matches v1.0.305 behavior where the in-map
-    // preview shows the static editor icon (not the 2-frame
-    // animated in-world sprite). Tornie's OOB: 'Advanced
-    // windtrap editor tile and in map editor on terrain need
-    // to be same. Take both from Icon file i talk in previous.'
-    if(id == ObjPic_AdvancedWindTrap && pFileManager->exists("Tornie_AdvancedWindtrap_gfx_editor.png") && objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0] == nullptr) {
-        auto editorRaw = LoadPNG_RW(pFileManager->openFile("Tornie_AdvancedWindtrap_gfx_editor.png").get());
-        if(editorRaw) {
-            if(editorRaw->format->palette) {
-                palette.applyToSurface(editorRaw.get());
-            }
-            objPic[ObjPic_AdvancedWindTrap][HOUSE_HARKONNEN][0] = std::move(editorRaw);
-        }
-    }
-
     for(int z = 0; z < NUM_ZOOMLEVEL; z++) {
         if(objPicTex[id][house][z] == nullptr) {
             getZoomedObjPic(id, house, z);  // no assignment as the return value is already stored in objPicTex
@@ -3956,20 +3732,6 @@ SDL_Surface* GFXManager::getUIGraphicSurface(unsigned int id, int house) {
         }
 
         uiGraphic[id][house] = mapSurfaceColorRange(uiGraphic[id][HOUSE_HARKONNEN].get(), PALCOLOR_HARKONNEN, houseToPaletteIndex[house]);
-        // DuneCity 1.0.481: apply REBELS tint to UI graphic for
-        // editor preview. Tornie's OOB: 'i was talking for this
-        // message about 1.475' + 'except for rebel desaturating,
-        // it's work about the correct colors in tile view' =
-        // the editor colors work, the tile view colors are
-        // correct, but the REBELS desaturation doesn't show.
-        // The getZoomedObjPic path already has applyRebelsTint
-        // (v1.0.480) but getUIGraphicSurface didn't - so the
-        // editor preview of REBELS structures didn't show the
-        // dark grey desaturation. This v1.0.481 fix adds the
-        // applyRebelsTint call to the UI graphic path too.
-        if(house == HOUSE_REBELS) {
-            applyRebelsTint(uiGraphic[id][house].get());
-        }
         // Restore vanilla IBM.PAL at 192-207 for Fremen so rebels grey doesn't corrupt Fremen UI graphics
         if (house == HOUSE_FREMEN && uiGraphic[id][house] && uiGraphic[id][house]->format->palette) {
             ibmPalette.applyToSurface(uiGraphic[id][house].get(), PALCOLOR_FREMEN, PALCOLOR_FREMEN + 15);

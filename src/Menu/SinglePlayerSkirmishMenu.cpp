@@ -27,15 +27,7 @@
 #include <GameInitSettings.h>
 #include <sand.h>
 
-// DuneCity 1.0.403: removed duplicate HOUSE_REBELS at the end
-// of the array. The v1.0.392 array was { ATR, ORD, HARK, MER, F, S, N, R, R }
-// which gave the skirmish carousel 9 entries with 2x Rebels.
-// Tornie's OOB: 'the caroussel of skirmish has two rebels
-// campaign (one only is needed)'. The 8-house set is correct.
-// Campaign mode uses the same 8-house set per v1.0.358 (REGIONR
-// as the player house); skirmish uses these for human-vs-AI
-// matchups where each side picks one house.
-static const int houseOrder[] = { HOUSE_ATREIDES, HOUSE_ORDOS, HOUSE_HARKONNEN, HOUSE_MERCENARY, HOUSE_FREMEN, HOUSE_SARDAUKAR, HOUSE_NEUTRAL, HOUSE_REBELS };
+static const int houseOrder[] = { HOUSE_ATREIDES, HOUSE_ORDOS, HOUSE_HARKONNEN, HOUSE_MERCENARY, HOUSE_FREMEN, HOUSE_SARDAUKAR, HOUSE_NEUTRAL, HOUSE_REBELS, HOUSE_REBELS };
 
 namespace {
 const char* const kSupportPlayerClasses[] = {
@@ -319,27 +311,14 @@ void SinglePlayerSkirmishMenu::onHouseLeft()
 
 void SinglePlayerSkirmishMenu::onHouseRight()
 {
-    // DuneCity 1.0.399: extend the scroll max to allow showing all
-    // 9 entries in the houseOrder array. The previous limit of 4
-    // meant the user could only scroll up to position 3 (positions
-    // 3,4,5 = Sardaukar, Neutral, Rebels) which left the Rebels
-    // entry inaccessible after Neutral. With 9 entries (8 houses +
-    // 1 extra REBELS per v1.0.392), the max scroll position is
-    // sizeof(houseOrder)/sizeof(houseOrder[0]) - 3 = 6 so the last
-    // 3 entries (positions 6, 7, 8 = Neutral, Rebels, Rebels) are
-    // visible. Tornie's OOB: 'q4 pourtant en appuyant sur la fleche
-    // apres neutral elle s'affiche pas' (after neutral, the
-    // Rebels entry doesn't show).
-    constexpr int HOUSE_ORDER_SIZE = sizeof(houseOrder)/sizeof(houseOrder[0]);
-    constexpr int MAX_SCROLL = HOUSE_ORDER_SIZE - 3;
-    if(currentHouseChoiceScrollPos < MAX_SCROLL) {
+    if(currentHouseChoiceScrollPos < 4) {
         currentHouseChoiceScrollPos++;
         selectedButton--;
         onSelectHouseButton(selectedButton);
         updateHouseChoice();
 
         houseLeftButton.setVisible(true);
-        houseRightButton.setVisible( (currentHouseChoiceScrollPos < MAX_SCROLL) );
+        houseRightButton.setVisible( (currentHouseChoiceScrollPos < 4) );
     }
 }
 

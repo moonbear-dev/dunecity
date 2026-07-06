@@ -46,9 +46,6 @@
 
 #include <sand.h>
 #include <globals.h>
-#include <set>
-#include <map>
-
 
 
 #define PLAYER_HUMAN        0
@@ -232,17 +229,7 @@ CustomGamePlayers::CustomGamePlayers(const GameInitSettings& newGameInitSettings
             addToHouseDropDown(curHouseInfo.houseDropDown, housetype, true);
             curHouseInfo.houseDropDown.setEnabled(bServer);
         } else {
-            // DuneCity 1.0.402: boundHousesOnMap is empty in custom
-            // map mode (no [Harkonnen]/[Atreides]/etc. sections in the
-            // map file). The previous code only added HOUSE_INVALID
-            // ("Random") to the dropdown - users couldn't pick a
-            // specific house. v1.0.402 populates the dropdown with
-            // ALL 8 houses so the player can choose any. Random is
-            // still added first as the default.
             addToHouseDropDown(curHouseInfo.houseDropDown, HOUSE_INVALID, true);
-            for(int h = 0; h < NUM_HOUSES; h++) {
-                addToHouseDropDown(curHouseInfo.houseDropDown, h);
-            }
             curHouseInfo.houseDropDown.setEnabled(bServer);
         }
         curHouseInfo.houseDropDown.setOnSelectionChange(std::bind(&CustomGamePlayers::onChangeHousesDropDownBoxes, this, std::placeholders::_1, i));
@@ -462,37 +449,16 @@ CustomGamePlayers::CustomGamePlayers(const GameInitSettings& newGameInitSettings
         while(curHouseInfo.colorDropDown.getNumEntries() > 0) {
             curHouseInfo.colorDropDown.removeEntry(0);
         }
-        // DuneCity 1.0.399: filter both house and color dropdowns
-        // separately. The house dropdown is filtered by
-        // boundHousesOnMap (only sections present in the loaded
-        // map). The color dropdown is filtered to exclude
-        // 'Original' entries whose house is already selected by
-        // another player. This avoids the 'conflict between
-        // chosen colors and the list of houses the player can
-        // choose' that Tornie flagged. Custom colors (Teal,
-        // Fushia, etc.) are not house-bound so they're always
-        // offered.
-        // The loop variable is 'i' (from for(int i=0; i<NUM_HOUSES; i++) above).
-        // Compute the set of houses already taken by other players.
-        // We exclude i from the taken set so the current player can
-        // still pick their own house.
-        std::set<int> housesTakenByOthers;
-        for(int j = 0; j < numHouses; j++) {
-            if(j == i) continue;
-            const int selHouse = houseInfo[j].houseDropDown.getSelectedEntryIntData();
-            if(selHouse >= 0 && selHouse < NUM_HOUSES) {
-                housesTakenByOthers.insert(selHouse);
-            }
-        }
-        // Add 'Original' only if this house isn't already taken by
-        // another player.
-        if(housesTakenByOthers.find(i) == housesTakenByOthers.end()) {
-            curHouseInfo.colorDropDown.addEntry(_("Original"), i);
-        }
+        curHouseInfo.colorDropDown.addEntry(_("Original"), i);
 
-        // DuneCity 1.0.398: Teal entry kept (still goes to slot 192
-        // via the per-house swap path in setHouseColorSwap).
-        if(true) {  // always offer Teal
+        // Add a "Teal" entry for spec / extra color picked from the
+        // tornie-tornie-mod svan058/dunelegacy.com color stack at
+        // index 176 (custom pal color). Teal is opt-in below.
+        // DuneCity 1.0.371: Ordos skips Teal entirely (the user
+        // instruction: 'Normal Ordos don't need a color swapping
+        // for teal (only if chosen)' - the dropdown shouldn't even
+        // present Teal as an option for HOUSE_ORDOS).
+        if(i != HOUSE_ORDOS) {
             bool tealUsedBySpectator = false;
             for(int j=0; j<NUM_HOUSES; j++) {
                 if(houseInfo[j].colorDropDown.getSelectedEntryIntData() == -2) {
@@ -501,81 +467,15 @@ CustomGamePlayers::CustomGamePlayers(const GameInitSettings& newGameInitSettings
                 }
             }
             if(!tealUsedBySpectator) {
-                curHouseInfo.colorDropDown.addEntry(_("Teal (color)"), -2);
+                curHouseInfo.colorDropDown.addEntry(_("Teal"), -2);
             }
         }
 
-        // DuneCity 1.0.414: reactivate all color swap options in
-        // custom maps. The color dropdown offers all 8 vanilla
-        // house color slots (Harkonnen, Atreides, Ordos, Fremen,
-        // Sardaukar, Mercenary, Neutral, Rebels) plus the
-        // previously added Teal/Fushia/Apple Green/Dark Purple/
-        // Light Pink entries. All players see all options (not
-        // just spectators as in v1.0.409). The foreign-house
-        // color entries were removed in v1.0.398 because they
-        // caused confusion with the house selection dropdown.
-        //
-        // Tornie's OOB: 'si c'est cette fonction la pourrais-ton
-        // reactiver la fonction de Colors swap dans les custom
-        // maps et activer toutes les possibilites non prises
-        // pour les couleurs dans la liste' = the user wants
-        // the color swap dropdown entries (which were filtered
-        // in v1.0.398 to only Original/Teal/4 custom colors)
-        // reactivated with all 8 house color options available
-        // for color swap (you can pick any of the 8 vanilla
-        // house color slots for your player).
-        //
-        // The data values map to specific palette indices:
-        //   Original   data= i   -> house's own slot (no swap)
-        //   Teal       data=-2  -> palette index 192 (Rebels slot)
-        //   Fushia     data=-3  -> palette index 160 (Atreides slot)
-        //   App Green  data=-4  -> palette index 208 (Sardaukar slot)
-        //   Dark Purp  data=-5  -> palette index 144 (Harkonnen slot)
-        //   Light Pink data=-6  -> palette index 224 (Mercenary slot)
-        //   Harkonnen  data=-7  -> palette index 144 (Harkonnen slot, vanilla)
-        //   Atreides   data=-8  -> palette index 160 (Atreides slot, vanilla)
-        //   Ordos      data=-9  -> palette index 176 (Ordos slot, vanilla)
-        //   Fremen     data=-10 -> palette index 192 (Fremen slot, vanilla)
-        //   Sardaukar  data=-11 -> palette index 208 (Sardaukar slot, vanilla)
-        //   Mercenary  data=-12 -> palette index 224 (Mercenary slot, vanilla)
-        //   Neutral    data=-13 -> palette index 128 (Neutral slot, vanilla)
-        curHouseInfo.colorDropDown.addEntry(_("Original"), i);
-        // Teal is only offered once (per-slot), but the
-        // tealUsedBySpectator check is no longer needed since
-        // we removed the spectator filter in v1.0.414.
-        curHouseInfo.colorDropDown.addEntry(_("Teal (color)"), -2);
-        // The 4 Custom_IBM.pal-sourced colors (Fushia, Apple
-        // Green, Dark Purple, Light Pink) - always offered
-        // for all players (no spectator filter in v1.0.414).
-        {
-            const struct { int data; const char* name; } customColors[] = {
-                { -3, "Fushia (color)" },
-                { -4, "Apple Green (color)" },
-                { -5, "Dark Purple (color)" },
-                { -6, "Light Pink (color)" },
-            };
-            for(const auto& cc : customColors) {
-                curHouseInfo.colorDropDown.addEntry(_(cc.name), cc.data);
-            }
-        }
-        // The 7 vanilla house color slots (Harkonnen, Atreides,
-        // Ordos, Fremen, Sardaukar, Mercenary, Neutral) - always
-        // offered for all players. The user can pick any of these
-        // to swap their player's color to that house's vanilla
-        // color slot.
-        {
-            const struct { int data; int slot; const char* name; } houseColors[] = {
-                { -7,  PALCOLOR_HARKONNEN, "Harkonnen color" },
-                { -8,  PALCOLOR_ATREIDES,  "Atreides color" },
-                { -9,  PALCOLOR_ORDOS,     "Ordos color" },
-                { -10, PALCOLOR_FREMEN,    "Fremen color" },
-                { -11, PALCOLOR_SARDAUKAR, "Sardaukar color" },
-                { -12, PALCOLOR_MERCENARY, "Mercenary color" },
-                { -13, PALCOLOR_NEUTRAL,   "Neutral color" },
-            };
-            for(const auto& hc : houseColors) {
-                curHouseInfo.colorDropDown.addEntry(_(hc.name), hc.data);
-            }
+        // For now, list each house's index as the available
+        // swap targets (the same palette slot each house
+        // originally used).
+        for(int j=0; j<NUM_HOUSES; j++) {
+            curHouseInfo.colorDropDown.addEntry(getHouseNameByNumber((HOUSETYPE) j), -100 - j);
         }
 
         // Default = Original (self)
@@ -1695,25 +1595,6 @@ void CustomGamePlayers::onChangeHousesDropDownBoxes(bool bInteractive, int house
             }
         }
     }
-
-
-    // DuneCity 1.0.400: refresh the color dropdown for the
-    // changed house. The color choices should depend on the
-    // house pick, not the inverse (Tornie's OOB: 'le choix de
-    // maison devrait etre disponible et c'est le choix de
-    // couleur qui devrait en dependre et non l\'inverse').
-    // We invoke onChangeColorDropDownBoxes(true, houseInfoNum)
-    // to rebuild the color dropdown entries based on the
-    // newly-selected house for the changed slot. Other slots
-    // already had their color dropdown rebuilt in
-    // addAllHousesToDropdown() at construction time.
-    if(houseInfoNum >= 0 && houseInfoNum < NUM_HOUSES) {
-        // Rebuild the color dropdown for the changed player
-        // based on the new house selection. addAllHousesToDropdown
-        // is the function that builds color dropdown entries; we
-        // call it with the changed index to refresh only that one.
-        onChangeColorDropDownBoxes(true, houseInfoNum);
-    }
 }
 
 void CustomGamePlayers::onChangeTeamDropDownBoxes(bool bInteractive, int houseInfoNum) {
@@ -1762,41 +1643,10 @@ void CustomGamePlayers::onChangeColorDropDownBoxes(bool bInteractive, int houseI
         // 'Original' - restore own slot
         pickedSlot = houseInfoNum;
     } else if(selected == -2) {
-        // Teal: pick the v1.0.395 REBELS slot at 192-199 (was
-        // PALCOLOR_ORDOS at 176 in v1.0.393, and 240 in v1.0.373).
-        // Tornie's OOB: 'Les indices des couleurs spectateur et
-        // de Rebels proviennent tous du fichier Custom_IBM.Pal' =
-        // the Spectator (Teal) and Rebels color slots both come
-        // from Custom_IBM.PAL index 192. So Teal = slot 192.
-        // The runtime palette[192..199] has Custom_IBM.PAL dark
-        // grey for the standard Rebels look, or teal ramp if
-        // SpectatorTeal.pal is shipped. Both end up writing to
-        // the same slot, so the dropdown's Teal entry surfaces
-        // whatever color is at slot 192 at runtime.
-        pickedSlot = PALCOLOR_REBELS;  // 192
-    } else if(selected <= -7 && selected >= -13) {
-        // DuneCity 1.0.414: vanilla house color slots for color
-        // swap. The user picks one of the 7 vanilla house colors
-        // (Harkonnen, Atreides, Ordos, Fremen, Sardaukar,
-        // Mercenary, Neutral) to swap the active house's color
-        // to that house's vanilla color slot.
-        //   Harkonnen  data=-7  -> PALCOLOR_HARKONNEN (144)
-        //   Atreides   data=-8  -> PALCOLOR_ATREIDES  (160)
-        //   Ordos      data=-9  -> PALCOLOR_ORDOS     (176)
-        //   Fremen     data=-10 -> PALCOLOR_FREMEN    (192)
-        //   Sardaukar  data=-11 -> PALCOLOR_SARDAUKAR (208)
-        //   Mercenary  data=-12 -> PALCOLOR_MERCENARY (224)
-        //   Neutral    data=-13 -> PALCOLOR_NEUTRAL   (128)
-        const int vanillaSlotMap[7] = {
-            PALCOLOR_HARKONNEN,  // -7
-            PALCOLOR_ATREIDES,   // -8
-            PALCOLOR_ORDOS,      // -9
-            PALCOLOR_FREMEN,     // -10
-            PALCOLOR_SARDAUKAR,  // -11
-            PALCOLOR_MERCENARY,  // -12
-            PALCOLOR_NEUTRAL,    // -13
-        };
-        pickedSlot = vanillaSlotMap[-7 - selected];  // -7 -> 0, -8 -> 1, ..., -13 -> 6
+        // Teal: pick the v1.0.373 Teal slot at 240-247 (was 176
+        // in v1.0.369 but that clobbered the OrdOs vanilla green
+        // ramp so picking Teal left Ordos tinted teal).
+        pickedSlot = 240;
     } else if(selected <= -100 && selected > -100 - NUM_HOUSES) {
         // Foreign house slot
         pickedSlot = -100 - selected;

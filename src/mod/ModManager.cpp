@@ -811,7 +811,11 @@ void ModManager::seedTornieFromDefaults() {
     SDL_Log("ModManager: Seeding Tornie mod from install defaults...");
 
     std::string torniePath = getModPath(TORNIE_MOD_NAME);
-    std::string installModsPath = getDuneLegacyDataDir() + "/../mods/" + TORNIE_MOD_NAME;
+    // Source: the mods directory itself (where the mod lives
+    // in the install). The TORNIE_MOD_NAME folder is already
+    // there at install time. For Windows + Linux the path is
+    // just <data_dir>/mods/Tornie/
+    std::string installModsPath = getDuneLegacyDataDir() + "/mods/" + TORNIE_MOD_NAME;
 
     createDir(torniePath);
 

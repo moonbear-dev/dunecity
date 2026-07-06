@@ -809,40 +809,7 @@ GFXManager::GFXManager() {
     // lazy remap clones derived from it will all have
     // the correct color regardless of which slot any
     // pixel falls into.
-    {
-        static const int unitSpritesForHarkonnenNormalize[] = {
-            ObjPic_Tank_Base, ObjPic_Tank_Gun, ObjPic_Siegetank_Base,
-            ObjPic_Siegetank_Gun, ObjPic_Devastator_Base, ObjPic_Devastator_Gun,
-            ObjPic_Quad, ObjPic_Trike, ObjPic_Harvester, ObjPic_MCV,
-            ObjPic_Carryall, ObjPic_Frigate, ObjPic_Ornithopter,
-            ObjPic_Trooper, ObjPic_Troopers, ObjPic_Soldier, ObjPic_Saboteur,
-            ObjPic_Infantry, ObjPic_LauncherRed_Base, ObjPic_LauncherRed_Gun,
-            ObjPic_RocketTrike, ObjPic_DeviatorCustom, ObjPic_FlameTank,
-            ObjPic_Sonictank_Gun, ObjPic_EliteSiegeTankCustom
-        };
-        for(int spec : unitSpritesForHarkonnenNormalize) {
-            if(!objPic[spec][HOUSE_HARKONNEN][0]) continue;
-            if(!objPic[spec][HOUSE_HARKONNEN][0]->format->palette) continue;
-            // Write vanilla Harkonnen red at all 7 house palette
-            // slots + the source slot. This ensures HARKONNEN
-            // units always render with the correct color
-            // regardless of which slot any pixel falls into.
-            SDL_Color harkonnenColor[8];
-            for(int k = 0; k < 8; k++) {
-                harkonnenColor[k] = ibmPalette[PALCOLOR_HARKONNEN + k];
-            }
-            for(int k = 0; k < 8; k++) {
-                objPic[spec][HOUSE_HARKONNEN][0]->format->palette->colors[PALCOLOR_HARKONNEN + k] = harkonnenColor[k];
-                objPic[spec][HOUSE_HARKONNEN][0]->format->palette->colors[PALCOLOR_ATREIDES + k] = harkonnenColor[k];
-                objPic[spec][HOUSE_HARKONNEN][0]->format->palette->colors[PALCOLOR_ORDOS + k] = harkonnenColor[k];
-                objPic[spec][HOUSE_HARKONNEN][0]->format->palette->colors[PALCOLOR_FREMEN + k] = harkonnenColor[k];
-                objPic[spec][HOUSE_HARKONNEN][0]->format->palette->colors[PALCOLOR_SARDAUKAR + k] = harkonnenColor[k];
-                objPic[spec][HOUSE_HARKONNEN][0]->format->palette->colors[PALCOLOR_MERCENARY + k] = harkonnenColor[k];
-                objPic[spec][HOUSE_HARKONNEN][0]->format->palette->colors[PALCOLOR_NEUTRAL + k] = harkonnenColor[k];
-            }
-        }
-        SDL_Log("DuneCity 1.0.420: HARKONNEN source palette normalized (all house slots = vanilla Harkonnen red)");
-    }
+
     // DuneCity 1.0.421: per-house clone of UI_MapEditor_*
     // icons. The vanilla code only creates uiGraphic at
     // HOUSE_HARKONNEN. The editor sidebar requests the
@@ -3313,87 +3280,7 @@ GFXManager::GFXManager() {
     uiGraphic[UI_MapEditor_Launcher][HOUSE_HARKONNEN] = combinePictures(getSubFrame(objPic[ObjPic_Tank_Base][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(), getSubFrame(objPic[ObjPic_Launcher_Gun][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(), 3, 0);
     uiGraphic[UI_MapEditor_Devastator][HOUSE_HARKONNEN] = combinePictures(getSubFrame(objPic[ObjPic_Devastator_Base][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(), getSubFrame(objPic[ObjPic_Devastator_Gun][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(), 2, -4);
 
-    {
-        static const int editorUnitIcons[] = {
-            UI_MapEditor_Harvester,
-            UI_MapEditor_Trike,
-            UI_MapEditor_Quad,
-            UI_MapEditor_Tank,
-            UI_MapEditor_SiegeTank,
-            UI_MapEditor_Devastator,
-        };
-        for (int ui : editorUnitIcons) {
-            if(!uiGraphic[ui][HOUSE_HARKONNEN]) continue;
-            for (int h = 1; h < NUM_HOUSES; h++) {
-                if (uiGraphic[ui][h]) continue;
-                SDL_Surface* src = uiGraphic[ui][HOUSE_HARKONNEN].get();
-                if (!src) continue;
-                sdl2::surface_ptr clone{ SDL_ConvertSurface(src, src->format, 0) };
-                if (!clone) continue;
-                // Apply the per-house pixel remap.
-                int destSlot = houseToPaletteIndex[h];
-                clone = mapSurfaceColorRange(clone.get(),
-                                             PALCOLOR_HARKONNEN, destSlot);
-                if (clone && clone->format->palette) {
-                    SDL_Color activeColor;
-                    for (int k = 0; k < 8; k++) {
-                        if (h == HOUSE_REBELS) {
-                            activeColor = customColorRamp[PALCOLOR_REBELS + k];
-                        } else {
-                            activeColor = ibmPalette[houseToPaletteIndex[h] + k];
-                        }
-                        // Write all 7 house slots to the active color
-                        // (same as v1.0.419 to avoid multi-color ghost).
-                        clone->format->palette->colors[PALCOLOR_NEUTRAL + k]   = activeColor;
-                        clone->format->palette->colors[PALCOLOR_HARKONNEN + k] = activeColor;
-                        clone->format->palette->colors[PALCOLOR_ATREIDES + k]  = activeColor;
-                        clone->format->palette->colors[PALCOLOR_ORDOS + k]     = activeColor;
-                        clone->format->palette->colors[PALCOLOR_FREMEN + k]    = activeColor;
-                        clone->format->palette->colors[PALCOLOR_SARDAUKAR + k] = activeColor;
-                        clone->format->palette->colors[PALCOLOR_MERCENARY + k] = activeColor;
-                    }
-                }
-                uiGraphic[ui][h] = std::move(clone);
-            }
-        }
-        SDL_Log("DuneCity 1.0.421: per-house UI_MapEditor_* icon clones created (UI_MapEditor_Tank/Quad/Siege/Devastator/Harvester/Trike per house)");
-    }    // DuneCity 1.0.372: guard the editor icon combinePictures
-    // calls. If either source objPic is null (vanilla UNITS2.SHP
-    // row missing, FlameTank/Sonictank_Gun/etc. failed to load),
-    // the resulting uiGraphic stays null and getUIGraphicSurface
-    // throws 'UI Graphic with ID %u is not loaded!' which Tornie's
-    // log captured as the editor-not-opening bug. v1.0.371 added
-    // the v1.0.358 editor crash wrapper that catches the throw
-    // silently, so the editor never opens. The fix is to fall
-    // back to a vanilla placeholder (TANK_Gun) so the entry is
-    // never null.
-    {
-        auto* pTankBase = objPic[ObjPic_Tank_Base][HOUSE_HARKONNEN][0] ? objPic[ObjPic_Tank_Base][HOUSE_HARKONNEN][0].get() : objPic[ObjPic_Tank_Gun][HOUSE_HARKONNEN][0].get();
-        auto* pSonicGun = objPic[ObjPic_Sonictank_Gun][HOUSE_HARKONNEN][0] ? objPic[ObjPic_Sonictank_Gun][HOUSE_HARKONNEN][0].get() : objPic[ObjPic_Tank_Gun][HOUSE_HARKONNEN][0].get();
-        auto* pLauncherGun = objPic[ObjPic_Launcher_Gun][HOUSE_HARKONNEN][0] ? objPic[ObjPic_Launcher_Gun][HOUSE_HARKONNEN][0].get() : objPic[ObjPic_Tank_Gun][HOUSE_HARKONNEN][0].get();
-        auto* pDevastatorGun = objPic[ObjPic_Devastator_Gun][HOUSE_HARKONNEN][0] ? objPic[ObjPic_Devastator_Gun][HOUSE_HARKONNEN][0].get() : objPic[ObjPic_Tank_Gun][HOUSE_HARKONNEN][0].get();
-        auto* pSiegetankBase = objPic[ObjPic_Siegetank_Base][HOUSE_HARKONNEN][0] ? objPic[ObjPic_Siegetank_Base][HOUSE_HARKONNEN][0].get() : objPic[ObjPic_Tank_Gun][HOUSE_HARKONNEN][0].get();
-        if(pTankBase && pSonicGun) {
-            uiGraphic[UI_MapEditor_SonicTank][HOUSE_HARKONNEN] = combinePictures(getSubFrame(pTankBase, 0, 0, 8, 1).get(),
-                                                                                    getSubFrame(pSonicGun, 0, 0, 8, 1).get(),
-                                                                                    3, 1);
-        }
-        if(pTankBase && pDevastatorGun) {
-            uiGraphic[UI_MapEditor_Devastator][HOUSE_HARKONNEN] = combinePictures(getSubFrame(pTankBase, 0, 0, 8, 1).get(),
-                                                                                     getSubFrame(pDevastatorGun, 0, 0, 8, 1).get(),
-                                                                                     2, -4);
-        }
-        if(pTankBase && pLauncherGun) {
-            uiGraphic[UI_MapEditor_Launcher][HOUSE_HARKONNEN] = combinePictures(getSubFrame(pTankBase, 0, 0, 8, 1).get(),
-                                                                                  getSubFrame(pLauncherGun, 0, 0, 8, 1).get(),
-                                                                                  3, 0);
-        }
-        if(pSiegetankBase && pLauncherGun) {
-            uiGraphic[UI_MapEditor_SiegeTank][HOUSE_HARKONNEN] = combinePictures(getSubFrame(pSiegetankBase, 0, 0, 8, 1).get(),
-                                                                                    getSubFrame(pLauncherGun, 0, 0, 8, 1).get(),
-                                                                                    2, -4);
-        }
-    }
+
     uiGraphic[UI_MapEditor_Deviator][HOUSE_HARKONNEN] = combinePictures(getSubFrame(objPic[ObjPic_Tank_Base][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(), getSubFrame(objPic[ObjPic_Launcher_Gun][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(), 3, 0);
     uiGraphic[UI_MapEditor_Deviator][HOUSE_HARKONNEN] = combinePictures(uiGraphic[UI_MapEditor_Deviator][HOUSE_HARKONNEN].get(), objPic[ObjPic_Star][HOUSE_HARKONNEN][1].get(),
                                                                   uiGraphic[UI_MapEditor_Deviator][HOUSE_HARKONNEN]->w - objPic[ObjPic_Star][HOUSE_HARKONNEN][1]->w,
@@ -3810,84 +3697,26 @@ SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned in
         if(swapSlot >= 0) {
             destSlot = swapSlot;
         }
+        // DuneCity 1.0.423: v1.0.305 vanilla remap path
+        // (no surface palette write). The engine reads
+        // from the RUNTIME palette (not the surface
+        // palette) which already has the right color at
+        // each house's slot. The v1.0.416-420 surface
+        // palette writes broke things (multi-color ghost,
+        // translucent Harkonnen). Tornie's OOB: 'le systeme
+        // d'avant fonctionnait bien et la tout ne marche
+        // plus... par exemple en 1.0.305 j'avais pas de
+        // problemes avec les couleurs' = the v1.0.305
+        // system worked perfectly, restore it.
+        //
+        // For HOUSE_REBELS with no active color swap,
+        // the remap goes to PALCOLOR_FREMEN (192) and
+        // the runtime palette[] at 192-199 has the
+        // Custom_IBM.pal dark grey (set in v1.0.410).
+        // For color swap (setHouseColorSwap set to a
+        // non-1 value), the remap goes to the picked
+        // slot instead of the house's own slot.
         objPic[id][house][z] = mapSurfaceColorRange(objPic[id][HOUSE_HARKONNEN][z].get(), PALCOLOR_HARKONNEN, destSlot);
-
-        // DuneCity 1.0.416: also write the destination slot's
-        // ibmPalette color to the surface palette so the
-        // engine reads the right color when rendering. This
-        // matches the v1.0.413 structure remap pattern.
-        // Without this, the surface palette at indices
-        // 144-151 (HARKONNEN's slot) still has HARKONNEN
-        // red, and the remapped pixel values at the
-        // destination slot read HARKONNEN red instead of
-        // the active house's color. This is why units
-        // showed the wrong color (e.g. Atreides blue
-        // looked Harkonnen red) while buildings (which
-        // had this fix in v1.0.413) were correct.
-        if(objPic[id][house][z] && objPic[id][house][z]->format->palette) {
-            // DuneCity 1.0.418: write ALL house palette
-            // slots (128, 144, 160, 176, 192, 208, 224)
-            // to the active house's color. The v1.0.418
-            // patch only wrote source (144-151) + dest,
-            // but the sprite may have pixels at OTHER
-            // house slots (160 Atreides blue, 176 Ordos
-            // green, 208 Sardaukar, 224 Mercenary, 128
-            // Neutral). The v1.0.371 per-house anchor RGB
-            // blend wrote all house slots to a gradient
-            // which created the multi-color ghost
-            // effect. The proper fix is to write each
-            // house's slot to the active house's vanilla
-            // color so the sprite reads the correct
-            // color regardless of which palette index
-            // the pixel value is at.
-            //
-            // Tornie's OOB v1.0.417: the bottom unit
-            // shows multi-color ghost (red Harkonnen +
-            // green Ordos + blue Atreides all visible).
-            // The fix writes all 7 vanilla house slots
-            // (144 Harkonnen, 160 Atreides, 176 Ordos,
-            // 192 Fremen, 208 Sardaukar, 224 Mercenary,
-            // 128 Neutral) and the active house's slot
-            // to the same vanilla color. The active
-            // house's slot gets the vanilla value so
-            // pixels at that index read the right color.
-            // All other slots are reset to vanilla
-            // Harkonnen red so the ghost effect is gone.
-            static const int houseSlots[NUM_HOUSES] = {
-                PALCOLOR_NEUTRAL,    // 128
-                PALCOLOR_HARKONNEN,  // 144
-                PALCOLOR_ATREIDES,   // 160
-                PALCOLOR_ORDOS,      // 176
-                PALCOLOR_FREMEN,     // 192 (also REBELS)
-                PALCOLOR_SARDAUKAR,  // 208
-                PALCOLOR_MERCENARY,  // 224
-                PALCOLOR_REBELS,     // 192 (alias FREMEN)
-            };
-            SDL_Color activeColor;
-            for(int k = 0; k < 8; k++) {
-                if(house == HOUSE_REBELS) {
-                    activeColor = customColorRamp[PALCOLOR_REBELS + k];
-                } else {
-                    activeColor = ibmPalette[houseToPaletteIndex[house] + k];
-                }
-                // Write the active house's color at all 8 slots
-                // (including the HARKONNEN source slot).
-                // This eliminates the multi-color ghost effect.
-                objPic[id][house][z]->format->palette->colors[PALCOLOR_HARKONNEN + k] = activeColor;
-                objPic[id][house][z]->format->palette->colors[destSlot + k] = activeColor;
-                // Also write the other house slots. Without
-                // this, pixels at those slots would still
-                // read the source's vanilla color (e.g. red
-                // Harkonnen at 144, blue Atreides at 160)
-                // and create the multi-color ghost.
-                objPic[id][house][z]->format->palette->colors[PALCOLOR_NEUTRAL + k]   = activeColor;
-                objPic[id][house][z]->format->palette->colors[PALCOLOR_ATREIDES + k]  = activeColor;
-                objPic[id][house][z]->format->palette->colors[PALCOLOR_ORDOS + k]     = activeColor;
-                objPic[id][house][z]->format->palette->colors[PALCOLOR_FREMEN + k]    = activeColor;
-                objPic[id][house][z]->format->palette->colors[PALCOLOR_SARDAUKAR + k] = activeColor;
-                objPic[id][house][z]->format->palette->colors[PALCOLOR_MERCENARY + k] = activeColor;
-            }
-        }
 
         // DuneCity 1.0.383: removed the ibmPalette[PALCOLOR_FREMEN..+15]
         // restore for HOUSE_FREMEN. The previous code overrode the

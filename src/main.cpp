@@ -1067,19 +1067,36 @@ int main(int argc, char *argv[]) {
                 palette = LoadPalette_RW(pFileManager->openFile("IBM.PAL").get());
                 ibmPalette = palette;  // save vanilla IBM.PAL before any mod overrides
 
-                // DuneCity 1.0.455: no runtime palette override.
-                // The runtime palette stays vanilla IBM.PAL for all
-                // 8 houses. REBELS tint via per-house remap at the
-                // tile sprite surface (uses the runtime palette
-                // at houseToPaletteIndex[house] which is 30 for
-                // REBELS). The vanilla IBM.PAL[30..37] colors are
-                // whatever vanilla has there (no override).
-                // The v1.0.444-454 runtime palette override caused
-                // crashes during mission load (DUNE4, DUNE18) due
-                // to cached textures referencing stale palette state.
-                // The override is removed - REBELS tint comes from
-                // the per-sprite surface palette write in Tile.cpp
-                // (already at line 67 in v1.0.447 era).
+                // DuneCity 1.0.461: write Custom_IBM.PAL[52..59]
+                // (sat0/dark75 ramp) to runtime palette[52..59]
+                // for REBELS tint. The vanilla IBM.PAL[52..59]
+                // (reddish dark colors at slots 52-59 in vanilla
+                // IBM.PAL) is overwritten with the dark grey ramp
+                // from Custom_IBM.PAL. This is the runtime path
+                // for REBELS tint at index 52 (v1.0.460).
+                //
+                // The previous v1.0.444-454 runtime palette override
+                // caused crashes during mission load due to texture
+                // cache corruption. The override was reverted in
+                // v1.0.455. Now we re-apply the override with a
+                // different mechanism: only REBELS slot (52-59) is
+                // overridden, the rest of the palette stays vanilla.
+                // This matches the v1.0.410 fix that worked
+                // correctly before the regression.
+                if(pFileManager->exists("Custom_IBM.pal")) {
+                    auto palRw = pFileManager->openFile("Custom_IBM.pal");
+                    std::vector<Uint8> palData(768);
+                    SDL_RWread(palRw.get(), palData.data(), 1, 768);
+                    for(int k = 0; k < 8; k++) {
+                        SDL_Color c;
+                        c.r = palData[(52 + k) * 3 + 0];
+                        c.g = palData[(52 + k) * 3 + 1];
+                        c.b = palData[(52 + k) * 3 + 2];
+                        c.a = 255;
+                        palette[52 + k] = c;
+                    }
+                    SDL_Log("GFX INIT: REBELS dark grey ramp written to palette[52..59] from Custom_IBM.PAL[52..59] (sat0/dark75)");
+                }
 
                 SDL_Log("Setting video mode...");
                 setVideoMode(currentDisplayIndex);

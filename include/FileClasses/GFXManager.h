@@ -587,8 +587,6 @@ public:
     void            setCustomColorRamp(int idx, SDL_Color c);
     SDL_Color       getCustomColorRamp(int idx) const;
     zoomable_texture getObjPic(unsigned int id, int house=HOUSE_HARKONNEN);
-return objPic[id][house][z] ? objPic[id][house][z].get() : nullptr;
-    }
 
     SDL_Texture*     getSmallDetailPic(unsigned int id);
     SDL_Texture*     getTinyPicture(unsigned int id);

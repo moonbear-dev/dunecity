@@ -89,6 +89,13 @@ std::vector<std::string> FileManager::getNeededFiles() {
         "INTRO.PAK",
         "INTROVOC.PAK",
         "SOUND.PAK",
+        // DuneCity 1.0.489: Tornie.PAK is the Tornie mod's
+        // assets pack. Contains the custom units (Deviator,
+        // Flame Tank, Sonic Tank, Elite Siege Tank), buildings
+        // (Advanced Windtrap), palettes, campaigns, etc.
+        // Tornie's OOB: 'Tornie.Pak is on the list of Pak?' =
+        // no, it wasn't - now it is.
+        "Tornie.PAK",
     };
 
     std::string LanguagePakFiles = (pTextManager != nullptr) ? _("LanguagePakFiles") : "";

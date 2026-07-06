@@ -792,6 +792,58 @@ GFXManager::GFXManager() {
         }
         SDL_Log("DuneCity 1.0.413: per-house structure sprite remap restored (vanilla colors via ibmPalette, Custom_IBM.pal dark grey for HOUSE_REBELS)");
     }
+    // DuneCity 1.0.420: normalize the HARKONNEN source palette
+    // so all house palette slots have vanilla Harkonnen red.
+    // Without this, the HARKONNEN surface (which is the source
+    // for all per-house lazy remaps) keeps the source's vanilla
+    // palette with all house colors at their slots. If the
+    // engine ever reads the HARKONNEN surface (e.g. when the
+    // texture cache is invalidated by setHouseColorSwap and
+    // getZoomedObjPic recreates the texture from the source),
+    // pixels at the OTHER house slots (160 Atreides blue,
+    // 176 Ordos green, etc.) would still read their vanilla
+    // colors and create the multi-color ghost effect on
+    // HARKONNEN units too. By normalizing the HARKONNEN
+    // surface palette to have vanilla Harkonnen red at all
+    // 7 house slots, the source is consistent and the
+    // lazy remap clones derived from it will all have
+    // the correct color regardless of which slot any
+    // pixel falls into.
+    {
+        static const int unitSpritesForHarkonnenNormalize[] = {
+            ObjPic_Tank_Base, ObjPic_Tank_Gun, ObjPic_Siegetank_Base,
+            ObjPic_Siegetank_Gun, ObjPic_Devastator_Base, ObjPic_Devastator_Gun,
+            ObjPic_Quad, ObjPic_Trike, ObjPic_Harvester, ObjPic_MCV,
+            ObjPic_Carryall, ObjPic_Frigate, ObjPic_Ornithopter,
+            ObjPic_Trooper, ObjPic_Troopers, ObjPic_Soldier, ObjPic_Saboteur,
+            ObjPic_Infantry, ObjPic_LauncherRed_Base, ObjPic_LauncherRed_Gun,
+            ObjPic_RocketTrike, ObjPic_DeviatorCustom, ObjPic_FlameTank,
+            ObjPic_Sonictank_Gun, ObjPic_EliteSiegeTankCustom
+        };
+        for(int spec : unitSpritesForHarkonnenNormalize) {
+            if(!objPic[spec][HOUSE_HARKONNEN][0]) continue;
+            if(!objPic[spec][HOUSE_HARKONNEN][0]->format->palette) continue;
+            // Write vanilla Harkonnen red at all 7 house palette
+            // slots + the source slot. This ensures HARKONNEN
+            // units always render with the correct color
+            // regardless of which slot any pixel falls into.
+            SDL_Color harkonnenColor[8];
+            for(int k = 0; k < 8; k++) {
+                harkonnenColor[k] = ibmPalette[PALCOLOR_HARKONNEN + k];
+            }
+            for(int k = 0; k < 8; k++) {
+                objPic[spec][HOUSE_HARKONNEN][0]->format->palette->colors[PALCOLOR_HARKONNEN + k] = harkonnenColor[k];
+                objPic[spec][HOUSE_HARKONNEN][0]->format->palette->colors[PALCOLOR_ATREIDES + k] = harkonnenColor[k];
+                objPic[spec][HOUSE_HARKONNEN][0]->format->palette->colors[PALCOLOR_ORDOS + k] = harkonnenColor[k];
+                objPic[spec][HOUSE_HARKONNEN][0]->format->palette->colors[PALCOLOR_FREMEN + k] = harkonnenColor[k];
+                objPic[spec][HOUSE_HARKONNEN][0]->format->palette->colors[PALCOLOR_SARDAUKAR + k] = harkonnenColor[k];
+                objPic[spec][HOUSE_HARKONNEN][0]->format->palette->colors[PALCOLOR_MERCENARY + k] = harkonnenColor[k];
+                objPic[spec][HOUSE_HARKONNEN][0]->format->palette->colors[PALCOLOR_NEUTRAL + k] = harkonnenColor[k];
+            }
+        }
+        SDL_Log("DuneCity 1.0.420: HARKONNEN source palette normalized (all house slots = vanilla Harkonnen red)");
+    }
+
 
 
 

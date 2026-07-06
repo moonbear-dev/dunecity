@@ -124,7 +124,7 @@ static const int houseToPaletteIndex[NUM_HOUSES] = { PALCOLOR_HARKONNEN, PALCOLO
 // 12, 12 (the 8th slot repeats 12 per Tornie's OOB 'last
 // is 12 again'). These 7 unique dark grey colors give
 // REBELS a dark grey tint matching the Tornie mod aesthetic.
-static const int REBELS_TINT_INDICES[8] = { 28, 29, 30, 31, 122, 175, 12, 12 };    ///< IBM.PAL indices for REBELS tint ramp
+static const int REBELS_TINT_INDICES[8] = { 27, 28, 29, 30, 31, 122, 175, 12 };    ///< IBM.PAL indices for REBELS tint ramp
 static const char houseChar[] = { 'H', 'A', 'O', 'F', 'S', 'M', 'N', 'R' };   ///< character for each house
 
 /// Returns the SDL_Color for the given house at palette offset.

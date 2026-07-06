@@ -101,22 +101,20 @@ EXTERN bool debug;                                      ///< is set for debuggin
 
 
 // constants
-// DuneCity 1.0.445: REBELS uses palette index 30 (start of
-// the per-house ramp). The 8 colors at 30-37 are overridden
-// at GFX init from the specific IBM.PAL indices Tornie picked:
-// 28, 29, 30, 31, 122, 175, 12 (7 colors) + the closest match
-// from 30-37 for the 8th slot to keep the ramp size at 8.
+// DuneCity 1.0.460: REBELS uses palette index 52 (was 30
+// in v1.0.444-459). The colors at 52-59 in Custom_IBM.PAL
+// are now the desaturated + 75% darker version of the
+// original (saturation 0%, darker 75% per Tornie's OOB).
+// This gives REBELS a darker, greyscale ramp that
+// preserves the logical color hue while being much
+// darker than the vanilla house colors.
 //
-// Tornie's OOB: 'Rebels colors index is 28,29,30,31,122,175,12
-// from IBM.PAL' = pick those 7 specific dark grey colors from
-// vanilla IBM.PAL as the REBELS tint. We pad to 8 entries by
-// using 30-37 in vanilla order for the missing slot.
-//
-// All 8 houses read from the SAME palette via houseToPaletteIndex[].
-// REBELS starts at index 30 (which already holds one of Tornie's
-// picked colors at index 30). The other 7 picked colors populate
-// 31-37. No custom overrides elsewhere.
-static const int houseToPaletteIndex[NUM_HOUSES] = { PALCOLOR_HARKONNEN, PALCOLOR_ATREIDES, PALCOLOR_ORDOS, PALCOLOR_FREMEN, PALCOLOR_SARDAUKAR, PALCOLOR_MERCENARY, PALCOLOR_NEUTRAL, 30 };    ///< the base colors for the different houses (REBELS = 30)
+// Tornie's OOB: 'le nouvel indice est 52 mais je
+// voudrais juste ajuste en faisant ceci : saturation
+// 0% et darker 75%' = use new index 52 and adjust
+// the colors with saturation 0% (greyscale) and
+// darker 75%.
+static const int houseToPaletteIndex[NUM_HOUSES] = { PALCOLOR_HARKONNEN, PALCOLOR_ATREIDES, PALCOLOR_ORDOS, PALCOLOR_FREMEN, PALCOLOR_SARDAUKAR, PALCOLOR_MERCENARY, PALCOLOR_NEUTRAL, 52 };    ///< the base colors for the different houses (REBELS = 52)
 
 // DuneCity 1.0.445: Tornie's picked REBELS tint indices
 // from vanilla IBM.PAL. Tornie specified the 8 indices to

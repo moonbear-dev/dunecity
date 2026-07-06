@@ -2269,33 +2269,7 @@ GFXManager::GFXManager() {
     // (PALCOLOR_HARKONNEN to houseToPaletteIndex[house]) and the
     // surface palette at destSlot set to ibmPalette[destSlot]
     // (vanilla house color).
-    {
-        for(int h = 0; h < NUM_HOUSES; h++) {
-            if(h == HOUSE_HARKONNEN) continue;
-            if(!objPic[ObjPic_Terrain][HOUSE_HARKONNEN][0]) continue;
-            objPic[ObjPic_Terrain][h][0] = sdl2::surface_ptr{
-                SDL_ConvertSurface(objPic[ObjPic_Terrain][HOUSE_HARKONNEN][0].get(),
-                                   objPic[ObjPic_Terrain][HOUSE_HARKONNEN][0]->format, 0)
-            };
-            if(!objPic[ObjPic_Terrain][h][0]) continue;
-            int destSlot = houseToPaletteIndex[h];
-            objPic[ObjPic_Terrain][h][0] = mapSurfaceColorRange(
-                objPic[ObjPic_Terrain][h][0].get(),
-                PALCOLOR_HARKONNEN, destSlot);
-            if(objPic[ObjPic_Terrain][h][0]->format->palette) {
-                for(int k = 0; k < 8; k++) {
-                    if(h == HOUSE_REBELS) {
-                        objPic[ObjPic_Terrain][h][0]->format->palette->colors[destSlot + k] =
-                            customColorRamp[PALCOLOR_REBELS + k];
-                    } else {
-                        objPic[ObjPic_Terrain][h][0]->format->palette->colors[destSlot + k] =
-                            ibmPalette[destSlot + k];
-                    }
-                }
-            }
-        }
-        SDL_Log("DuneCity 1.0.428: per-house terrain atlas remap restored");
-    }
+
 
 
 

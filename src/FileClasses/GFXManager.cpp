@@ -293,20 +293,14 @@ GFXManager::GFXManager() {
             c.g = palData[i*3+1];
             c.b = palData[i*3+2];
             c.a = 255;
-            // Direct member access (we're inside GFXManager
-            // constructor body - pGFXManager is the very
-            // object being constructed).
             customColorRamp[i] = c;
-            // Only write the 192-199 override to the runtime
-            // palette[] (Tornie's spec: dark grey for HOUSE_REBELS
-            // at indices 192-199, other slots stay vanilla).
-            // DuneCity 1.0.433: only write to customColorRamp.
-            // The runtime palette[192..199] stays vanilla IBM.PAL
-            // (Fremen orange) so FREMEN units keep their vanilla
-            // tint. The REBELS tint is applied per-sprite in
-            // getZoomedObjPic via customColorRamp.
+            // DuneCity 1.0.442: write Custom_IBM.pal[192..199] to
+            // the runtime palette so getHouseSDLColor(HOUSE_REBELS)
+            // returns the dark grey. Restores the v1.0.410 fix.
+            // FREMEN shares slot 192 (Tornie accepted FREMEN reads
+            // dark grey too in exchange for REBELS tint).
             if(i >= PALCOLOR_REBELS && i < PALCOLOR_REBELS + 8) {
-                customColorRamp[i] = c;
+                palette[i] = c;
             }
         }
         SDL_Log("GFX INIT: Custom_IBM.pal values captured in customColorRamp[192..199] (runtime palette[192..199] stays vanilla Fremen orange for FREMEN)");

@@ -3691,48 +3691,25 @@ SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned in
         // slot instead of the house's own slot.
         objPic[id][house][z] = mapSurfaceColorRange(objPic[id][HOUSE_HARKONNEN][z].get(), PALCOLOR_HARKONNEN, destSlot);
 
-        // DuneCity 1.0.431: write ALL house palette slots to the
-        // active house's color. Tornie's screenshot showed the
-        // multi-color ghost effect (red Harkonnen + green Ordos +
-        // blue Atreides all visible on the same unit) on placed
-        // units/structures in the map editor. The v1.0.427 fix
-        // only wrote the dest slot but pixels at OTHER house
-        // slots (160 Atreides blue, 176 Ordos green, 208
-        // Sardaukar, 224 Mercenary) still read the source's
-        // vanilla colors. The fix writes all 7 vanilla house
-        // palette slots to the active house's vanilla color
-        // (matches v1.0.419 anti-ghost pattern that was
-        // rolled back to v1.0.305 in v1.0.423).
-        //
-        // The active house's color is copied to:
-        // - PALCOLOR_HARKONNEN (144)
-        // - PALCOLOR_ATREIDES (160)
-        // - PALCOLOR_ORDOS (176)
-        // - PALCOLOR_FREMEN (192) [also REBELS]
-        // - PALCOLOR_SARDAUKAR (208)
-        // - PALCOLOR_MERCENARY (224)
-        // - PALCOLOR_NEUTRAL (128)
-        // plus the destination slot (same as one of the above
-        // for the active house). The active house's slot gets
-        // the vanilla value so pixels at that index read the
-        // right color. All other slots are reset to the active
-        // house's color so the ghost effect is gone.
-        if(objPic[id][house][z] && objPic[id][house][z]->format->palette) {
-            SDL_Color activeColor;
+        // DuneCity 1.0.405: for HOUSE_REBELS with no color swap,
+        // write the Custom_IBM.pal dark grey to the surface
+        // palette at PALCOLOR_REBELS..+7 (192-199). The remap
+        // above shifts pixels 144-151 to 192-199, but the
+        // surface palette at 192-199 stays as vanilla Fremen
+        // orange (copied from the source). Without this write,
+        // pixel value 192 reads vanilla orange instead of
+        // dark grey. The runtime palette[] has the dark grey
+        // (set in v1.0.410 from Custom_IBM.pal), but the
+        // engine reads from the surface palette, not the
+        // runtime palette. Other houses don't need this
+        // because their surface palette at destSlot is also
+        // vanilla (the engine reads what the runtime palette
+        // has at destSlot via SDL_CreateTextureFromSurface
+        // which uses the surface palette at conversion time).
+        if(house == HOUSE_REBELS && objPic[id][house][z] && objPic[id][house][z]->format->palette) {
             for(int k = 0; k < 8; k++) {
-                if(house == HOUSE_REBELS) {
-                    activeColor = customColorRamp[PALCOLOR_REBELS + k];
-                } else {
-                    activeColor = ibmPalette[houseToPaletteIndex[house] + k];
-                }
-                objPic[id][house][z]->format->palette->colors[PALCOLOR_HARKONNEN + k] = activeColor;
-                objPic[id][house][z]->format->palette->colors[destSlot + k] = activeColor;
-                objPic[id][house][z]->format->palette->colors[PALCOLOR_NEUTRAL + k]   = activeColor;
-                objPic[id][house][z]->format->palette->colors[PALCOLOR_ATREIDES + k]  = activeColor;
-                objPic[id][house][z]->format->palette->colors[PALCOLOR_ORDOS + k]     = activeColor;
-                objPic[id][house][z]->format->palette->colors[PALCOLOR_FREMEN + k]    = activeColor;
-                objPic[id][house][z]->format->palette->colors[PALCOLOR_SARDAUKAR + k] = activeColor;
-                objPic[id][house][z]->format->palette->colors[PALCOLOR_MERCENARY + k] = activeColor;
+                objPic[id][house][z]->format->palette->colors[PALCOLOR_REBELS + k] =
+                    customColorRamp[PALCOLOR_REBELS + k];
             }
         }
 

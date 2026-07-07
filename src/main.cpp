@@ -610,6 +610,20 @@ void logOutputFunction(void *userdata, int category, SDL_LogPriority priority, c
     */
     fprintf(stderr, "%s\n", message);
     fflush(stderr);
+
+    // DuneCity 1.0.501: mirror all SDL logs to dunecity-crash.log next to the
+    // executable. On Windows release builds stderr isn't visible, so a silent
+    // crash in the async GFXManager/SFXManager loaders left users (Tornie)
+    // staring at a black screen with no diagnostic. The log file gives Stefan
+    // something to attach to a bug report.
+    static FILE* logFile = nullptr;
+    if(logFile == nullptr) {
+        logFile = fopen("dunecity-crash.log", "w");
+    }
+    if(logFile != nullptr) {
+        fprintf(logFile, "%s\n", message);
+        fflush(logFile);
+    }
 }
 
 void showMissingFilesMessageBox() {
@@ -1091,8 +1105,37 @@ int main(int argc, char *argv[]) {
                 auto gfxManagerFut = std::async(std::launch::async, []() { return std::make_unique<GFXManager>(); } );
                 auto sfxManagerFut = std::async(std::launch::async, []() { return std::make_unique<SFXManager>(); } );
 
-                pGFXManager = gfxManagerFut.get();
-                pSFXManager = sfxManagerFut.get();
+                // DuneCity 1.0.501: catch any exception from the async loaders
+                // so a failed load produces a visible error dialog + log file
+                // entry instead of the silent death that 1.0.499 had (Tornie
+                // OOB: "game doesn't launch, no alert, just nothing").
+                try {
+                    pGFXManager = gfxManagerFut.get();
+                } catch(const std::exception& e) {
+                    std::string msg = std::string("GFXManager failed to initialize:\n\n") + e.what()
+                                    + "\n\nA required data file is probably missing or the bundled PAK is corrupt."
+                                    + "\nSee dunecity-crash.log next to the executable for the full SDL log.";
+                    SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "%s", msg.c_str());
+                    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "DuneCity — graphics load failed", msg.c_str(), nullptr);
+                    THROW(std::runtime_error, "%s", msg.c_str());
+                } catch(...) {
+                    SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "GFXManager failed to initialize: unknown exception");
+                    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "DuneCity — graphics load failed",
+                                              "GFXManager threw an unknown exception. See dunecity-crash.log.", nullptr);
+                    THROW(std::runtime_error, "GFXManager unknown exception");
+                }
+
+                try {
+                    pSFXManager = sfxManagerFut.get();
+                } catch(const std::exception& e) {
+                    // SFX is non-fatal: log and continue with a null manager so the
+                    // game at least shows the menu. Audio will be silent but visible.
+                    SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "SFXManager failed to initialize: %s — continuing without audio", e.what());
+                    pSFXManager = nullptr;
+                } catch(...) {
+                    SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "SFXManager threw an unknown exception — continuing without audio");
+                    pSFXManager = nullptr;
+                }
 #else
                 // g++ does not provide std::launch::async on all platforms
                 pGFXManager = std::make_unique<GFXManager>();

@@ -196,11 +196,24 @@ void MainMenu::refreshModVersionLabel()
     ModManager& modManager = ModManager::instance();
     if (modManager.isInitialized()) {
         activeModName = modManager.getActiveModName();
-        ModInfo info = modManager.getModInfo(activeModName);
-        if (!info.displayName.empty()) {
-            modDisplayName = info.displayName;
-        } else if (!info.name.empty()) {
-            modDisplayName = info.name;
+        // v1.0.510: defensive null guard. Tornie's ModInfo.displayName was
+        // observed empty on some mod bundles (Tornie was registered but
+        // the ModInfo was never populated past init). Reading an empty
+        // string then concatenating with "\nv" was crashing in some
+        // label rendering paths downstream. Fall back to the raw mod
+        // name in that case.
+        try {
+            ModInfo info = modManager.getModInfo(activeModName);
+            if (!info.displayName.empty()) {
+                modDisplayName = info.displayName;
+            } else if (!info.name.empty()) {
+                modDisplayName = info.name;
+            } else if (!activeModName.empty()) {
+                modDisplayName = activeModName;
+            }
+        } catch (const std::exception& e) {
+            SDL_Log("MainMenu: refreshModVersionLabel failed: %s — using raw mod name", e.what());
+            modDisplayName = activeModName.empty() ? "Unknown" : activeModName;
         }
     }
 
@@ -208,7 +221,11 @@ void MainMenu::refreshModVersionLabel()
         return;
     }
     lastShownModName = activeModName;
-    modVersionLabel.setText(modDisplayName + "\nv" + std::string(VERSION));
+    try {
+        modVersionLabel.setText(modDisplayName + "\nv" + std::string(VERSION));
+    } catch (const std::exception& e) {
+        SDL_Log("MainMenu: setText failed: %s", e.what());
+    }
 }
 
 MainMenu::~MainMenu() = default;

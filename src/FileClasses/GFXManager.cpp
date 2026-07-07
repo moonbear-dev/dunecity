@@ -1229,12 +1229,71 @@ GFXManager::GFXManager() {
     objPic[ObjPic_Star][HOUSE_HARKONNEN][0] = LoadPNG_RW(pFileManager->openFile("Star5x5.png").get());
     objPic[ObjPic_Star][HOUSE_HARKONNEN][1] = LoadPNG_RW(pFileManager->openFile("Star7x7.png").get());
     objPic[ObjPic_Star][HOUSE_HARKONNEN][2] = LoadPNG_RW(pFileManager->openFile("Star11x11.png").get());
-    // Tornie: dedicated unit sprites. Wrap each load in try/catch so a missing
-    // PNG on a partial install logs a warning and leaves objPic=null rather than
-    // crashing the GFXManager constructor (which runs on an async future and
-    // would silently kill the whole game on startup).
-    try { objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][0] = LoadPNG_RW(pFileManager->openFile("RocketTrike.png").get()); }
-    catch(std::exception& e) { SDL_Log("GFXManager: %s — RocketTrike sprite missing, units will fall back to placeholder", e.what()); }
+
+    // DuneCity 1.0.503: Rocket Trike uses its own dedicated sprite (8-frame,
+    // 1-tile-tall strip, 128x16) with a separate RocketTrikeMask.png that holds
+    // the per-house colour tint via the benePalette remap path. Restored from
+    // v1.0.250 (commit 4265a5f in v1.0.251 dropped this; Tornie confirms the
+    // mask carries the intended red-tint variant).
+    //
+    // Preferred path: RocketTrikeMask.png (8-bit palette-indexed) — load into
+    // HOUSE_HARKONNEN only; getZoomedObjPic remaps indices 144-150 per house.
+    // Fallback: RocketTrike.png (RGBA) — pre-build all zoom/house slots.
+    // Final fallback: vanilla Trike sprite.
+    objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][0] = units->getPictureArray(8,1,GROUNDUNIT_ROW(5));
+    {
+        bool usedPaletteIndexed = false;
+        try {
+            if(pFileManager->exists("RocketTrikeMask.png")) {
+                auto rtMask = LoadPNG_RW(pFileManager->openFile("RocketTrikeMask.png").get());
+                if(rtMask && rtMask->format->BitsPerPixel == 8 && rtMask->format->palette) {
+                    benePalette.applyToSurface(rtMask.get());
+                    objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][0] = std::move(rtMask);
+                    usedPaletteIndexed = true;
+                    SDL_Log("GFXManager: Loaded RocketTrikeMask.png (palette-indexed, per-house remap)");
+                } else if(rtMask) {
+                    SDL_Log("GFXManager: RocketTrikeMask.png is not 8-bit palette-indexed (%d bpp), falling back to RGBA path",
+                            rtMask->format->BitsPerPixel);
+                }
+            }
+            if(!usedPaletteIndexed && pFileManager->exists("RocketTrike.png")) {
+                auto rtRaw = LoadPNG_RW(pFileManager->openFile("RocketTrike.png").get());
+                if(rtRaw) {
+                    sdl2::surface_ptr rtSurf{ SDL_ConvertSurfaceFormat(rtRaw.get(), SCREEN_FORMAT, 0) };
+                    if(rtSurf) {
+                        auto scaleRT = [](SDL_Surface* src, int factor) -> sdl2::surface_ptr {
+                            sdl2::surface_ptr dst{ SDL_CreateRGBSurface(0,
+                                src->w * factor, src->h * factor,
+                                src->format->BitsPerPixel,
+                                src->format->Rmask, src->format->Gmask,
+                                src->format->Bmask, src->format->Amask) };
+                            if(dst) SDL_BlitScaled(src, nullptr, dst.get(), nullptr);
+                            return dst;
+                        };
+                        objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][0] = std::move(rtSurf);
+                        objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][1] = scaleRT(objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][0].get(), 2);
+                        objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][2] = scaleRT(objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][0].get(), 3);
+                        for(int h = 1; h < (int)NUM_HOUSES; h++) {
+                            for(int z = 0; z < NUM_ZOOMLEVEL; z++) {
+                                if(objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][z]) {
+                                    objPic[ObjPic_RocketTrike][h][z] = sdl2::surface_ptr{
+                                        SDL_ConvertSurface(objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][z].get(),
+                                                           objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][z]->format, 0) };
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch(const std::exception& e) {
+            SDL_Log("GFXManager: RocketTrike sprite load failed (%s) — falling back to vanilla Trike", e.what());
+        }
+    }
+
+    // DuneCity 1.0.503: Flame Tank + Elite Siege Tank — dedicated 1-tile-tall
+    // 128x16 strips (8 frames, anti-clockwise from East). No dedicated mask;
+    // house tinting goes through the existing getZoomedObjPic palette-remap
+    // path (Tank_Base fallback if the PNG is missing).
     try { objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][0] = LoadPNG_RW(pFileManager->openFile("FlameTank.png").get()); }
     catch(std::exception& e) { SDL_Log("GFXManager: %s — FlameTank sprite missing, units will fall back to placeholder", e.what()); }
     try { objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][0] = LoadPNG_RW(pFileManager->openFile("EliteSiegeTank.png").get()); }

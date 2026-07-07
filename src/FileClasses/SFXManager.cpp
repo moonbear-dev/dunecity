@@ -89,110 +89,101 @@ void SFXManager::loadEnglishVoice() {
     for(auto house = 0; house < NUM_HOUSES; house++) {
         sdl2::mix_chunk_ptr HouseNameChunk;
 
-        std::string HouseString;
         const int VoiceNum = house;
         switch(house) {
             case HOUSE_HARKONNEN:
-                HouseString = "H";
-                HouseNameChunk = getChunkFromFile(HouseString + "HARK.VOC");
+                HouseNameChunk = getChunkFromFile("HARK.VOC");
                 break;
             case HOUSE_ATREIDES:
-                HouseString = "A";
-                HouseNameChunk = getChunkFromFile(HouseString + "ATRE.VOC");
+                HouseNameChunk = getChunkFromFile("ATRE.VOC");
                 break;
             case HOUSE_ORDOS:
-                HouseString = "O";
-                HouseNameChunk = getChunkFromFile(HouseString + "ORDOS.VOC");
+                HouseNameChunk = getChunkFromFile("ORDOS.VOC");
                 break;
             case HOUSE_FREMEN:
-                HouseString = "A";
-                HouseNameChunk = getChunkFromFile(HouseString + "FREMEN.VOC");
+                HouseNameChunk = getChunkFromFile("FREMEN.VOC");
                 break;
             case HOUSE_SARDAUKAR:
-                HouseString = "H";
-                HouseNameChunk = getChunkFromFile(HouseString + "SARD.VOC");
+                HouseNameChunk = getChunkFromFile("SARD.VOC");
                 break;
             case HOUSE_MERCENARY:
-                HouseString = "O";
-                HouseNameChunk = getChunkFromFile(HouseString + "MERC.VOC");
+                HouseNameChunk = getChunkFromFile("MERC.VOC");
                 break;
             case HOUSE_NEUTRAL:
-                HouseString = "N";
-                HouseNameChunk = getChunkFromFile(HouseString + "NEUTRAL.VOC");
+                HouseNameChunk = getChunkFromFile("NEUTRAL.VOC");
                 break;
             case HOUSE_REBELS:
-                HouseString = "R";
-                HouseNameChunk = getChunkFromFile(HouseString + "RREBELS.VOC");
+                HouseNameChunk = getChunkFromFile("RREBELS.VOC");
                 break;
             default:
                 break;
         }
 
         { // Scope
-        // "... Harvester deployed", "... Unit deployed" and "... Unit launched"
-            auto Harvester = getChunkFromFile(HouseString + "HARVEST.VOC");
-            auto Unit = getChunkFromFile(HouseString + "UNIT.VOC");
-            auto Deployed = getChunkFromFile(HouseString + "DEPLOY.VOC");
-            auto Launched = getChunkFromFile(HouseString + "LAUNCH.VOC");
+        // " Harvester deployed", " Unit deployed" and " Unit launched"
+            auto Harvester = getChunkFromFile("HARVEST.VOC");
+            auto Unit = getChunkFromFile("UNIT.VOC");
+            auto Deployed = getChunkFromFile("DEPLOY.VOC");
+            auto Launched = getChunkFromFile("LAUNCH.VOC");
             lngVoice[HarvesterDeployed*NUM_HOUSES + VoiceNum] = concat3Chunks(HouseNameChunk.get(), Harvester.get(), Deployed.get());
             lngVoice[UnitDeployed*NUM_HOUSES + VoiceNum] = concat3Chunks(HouseNameChunk.get(), Unit.get(), Deployed.get());
             lngVoice[UnitLaunched*NUM_HOUSES + VoiceNum] = concat3Chunks(HouseNameChunk.get(), Unit.get(), Launched.get());
         }
 
         // "Contruction complete"
-        lngVoice[ConstructionComplete*NUM_HOUSES+VoiceNum] = getChunkFromFile(HouseString + "CONST.VOC");
+        lngVoice[ConstructionComplete*NUM_HOUSES+VoiceNum] = getChunkFromFile("CONST.VOC");
 
-        { // Scope
-          // "Vehicle repaired"
-            auto Vehicle = getChunkFromFile(HouseString + "VEHICLE.VOC");
-            auto Repaired = getChunkFromFile(HouseString + "REPAIR.VOC");
+        // "Vehicle repaired"
+        lngVoice[VehicleRepaired*NUM_HOUSES+VoiceNum] = getChunkFromFile("REPAIR.VOC");
+            auto Vehicle = getChunkFromFile("VEHICLE.VOC");
+            auto Repaired = getChunkFromFile("REPAIR.VOC");
             lngVoice[VehicleRepaired*NUM_HOUSES + VoiceNum] = concat2Chunks(Vehicle.get(), Repaired.get());
         }
 
         { // Scope
           // "Frigate has arrived"
-            auto FrigateChunk = getChunkFromFile(HouseString + "FRIGATE.VOC");
-            auto HasArrivedChunk = getChunkFromFile(HouseString + "ARRIVE.VOC");
+            auto FrigateChunk = getChunkFromFile("FRIGATE.VOC");
+            auto HasArrivedChunk = getChunkFromFile("ARRIVE.VOC");
             lngVoice[FrigateHasArrived*NUM_HOUSES + VoiceNum] = concat2Chunks(FrigateChunk.get(), HasArrivedChunk.get());
         }
 
         // "Your mission is complete"
-        lngVoice[YourMissionIsComplete*NUM_HOUSES+VoiceNum] = getChunkFromFile(HouseString + "WIN.VOC");
+        lngVoice[YourMissionIsComplete*NUM_HOUSES+VoiceNum] = getChunkFromFile("WIN.VOC");
 
         // "You have failed your mission"
-        lngVoice[YouHaveFailedYourMission*NUM_HOUSES+VoiceNum] = getChunkFromFile(HouseString + "LOSE.VOC");
+        lngVoice[YouHaveFailedYourMission*NUM_HOUSES+VoiceNum] = getChunkFromFile("LOSE.VOC");
 
         { // Scope
           // "Radar activated"/"Radar deactivated"
-            auto RadarChunk = getChunkFromFile(HouseString + "RADAR.VOC");
-            auto RadarActivatedChunk = getChunkFromFile(HouseString + "ON.VOC");
-            auto RadarDeactivatedChunk = getChunkFromFile(HouseString + "OFF.VOC");
+            auto RadarChunk = getChunkFromFile("RADAR.VOC");
+            auto RadarActivatedChunk = getChunkFromFile("ON.VOC");
+            auto RadarDeactivatedChunk = getChunkFromFile("OFF.VOC");
             lngVoice[RadarActivated*NUM_HOUSES + VoiceNum] = concat2Chunks(RadarChunk.get(), RadarActivatedChunk.get());
             lngVoice[RadarDeactivated*NUM_HOUSES + VoiceNum] = concat2Chunks(RadarChunk.get(), RadarDeactivatedChunk.get());
         }
 
         { // Scope
           // "Bloom located"
-            auto Bloom = getChunkFromFile(HouseString + "BLOOM.VOC");
-            auto Located = getChunkFromFile(HouseString + "LOCATED.VOC");
+            auto Bloom = getChunkFromFile("BLOOM.VOC");
+            auto Located = getChunkFromFile("LOCATED.VOC");
             lngVoice[BloomLocated*NUM_HOUSES + VoiceNum] = concat2Chunks(Bloom.get(), Located.get());
         }
 
         { // Scope
           // "Warning Wormsign"
-            auto WarningChunk = getChunkFromFile(HouseString + "WARNING.VOC");
-            auto WormSignChunk = getChunkFromFile(HouseString + "WORMY.VOC");
+            auto WarningChunk = getChunkFromFile("WARNING.VOC");
+            auto WormSignChunk = getChunkFromFile("WORMY.VOC");
             lngVoice[WarningWormSign*NUM_HOUSES + VoiceNum] = concat2Chunks(WarningChunk.get(), WormSignChunk.get());
         }
 
         // "Our base is under attack"
-        lngVoice[BaseIsUnderAttack*NUM_HOUSES+VoiceNum] = getChunkFromFile(HouseString + "ATTACK.VOC");
+        lngVoice[BaseIsUnderAttack*NUM_HOUSES+VoiceNum] = getChunkFromFile("ATTACK.VOC");
 
         { // Scope
           // "Saboteur approaching" and "Missile approaching"
-            auto SabotChunk = getChunkFromFile(HouseString + "SABOT.VOC");
-            auto MissileChunk = getChunkFromFile(HouseString + "MISSILE.VOC");
-            auto ApproachingChunk = getChunkFromFile(HouseString + "APPRCH.VOC");
+            auto SabotChunk = getChunkFromFile("SABOT.VOC");
+            auto MissileChunk = getChunkFromFile("MISSILE.VOC");
+            auto ApproachingChunk = getChunkFromFile("APPRCH.VOC");
             lngVoice[SaboteurApproaching*NUM_HOUSES + VoiceNum] = concat2Chunks(SabotChunk.get(), ApproachingChunk.get());
             lngVoice[MissileApproaching*NUM_HOUSES + VoiceNum] = concat2Chunks(MissileChunk.get(), ApproachingChunk.get());
         }

@@ -1290,14 +1290,73 @@ GFXManager::GFXManager() {
         }
     }
 
+    // Load ibmPalette for Tornie 8-bit palette-indexed sprites. Custom_IBM.PAL
+    // is the Tornie replacement of vanilla IBM.PAL; if neither is found, fall
+    // back to an empty 256-color palette (applyToSurface becomes a no-op).
+    Palette ibmPalette(256);
+    try {
+        if(pFileManager->exists("Custom_IBM.PAL")) {
+            ibmPalette = LoadPalette_RW(pFileManager->openFile("Custom_IBM.PAL").get());
+        } else if(pFileManager->exists("IBM.PAL")) {
+            ibmPalette = LoadPalette_RW(pFileManager->openFile("IBM.PAL").get());
+        }
+        SDL_Log("GFXManager: ibmPalette loaded (%d colors, source=%s)",
+                ibmPalette.getNumColors(),
+                pFileManager->exists("Custom_IBM.PAL") ? "Custom_IBM.PAL" : "IBM.PAL");
+    } catch(const std::exception& e) {
+        SDL_Log("GFXManager: ibmPalette load failed (%s) — Tornie sprite tinting disabled", e.what());
+    }
+
     SDL_Log("GFXManager: Loading FlameTank.png...");
-    try { objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][0] = LoadPNG_RW(pFileManager->openFile("FlameTank.png").get()); }
-    catch(std::exception& e) { SDL_Log("GFXManager: %s — FlameTank sprite missing, units will fall back to placeholder", e.what()); }
-    SDL_Log("GFXManager: FlameTank.png loaded (or skipped)");
+    try {
+        auto ftRaw = LoadPNG_RW(pFileManager->openFile("FlameTank.png").get());
+        if(ftRaw) {
+            // Apply palette: 8-bit palette-indexed sprites use ibmPalette (authored
+            // against IBM.PAL), not benePalette.
+            if(ftRaw->format->BitsPerPixel == 8 && ftRaw->format->palette) {
+                ibmPalette.applyToSurface(ftRaw.get());
+            }
+            objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][0] = std::move(ftRaw);
+            // Generate zoom levels 1 and 2 so getZoomedObjPic never throws on a
+            // null HOUSE_HARKONNEN[z>0] entry. Same pattern as v1.0.240 EliteSiegeTank fix.
+            if(objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][0]) {
+                objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][1] =
+                    Scaler::defaultDoubleSurface(objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][0].get());
+                if(objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][1]) {
+                    objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][2] =
+                        Scaler::defaultDoubleSurface(objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][1].get());
+                }
+            }
+            SDL_Log("GFXManager: FlameTank.png loaded (all zoom levels)");
+        }
+    } catch(std::exception& e) {
+        SDL_Log("GFXManager: %s — FlameTank sprite missing, units will fall back to placeholder", e.what());
+    }
+
     SDL_Log("GFXManager: Loading EliteSiegeTank.png...");
-    try { objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][0] = LoadPNG_RW(pFileManager->openFile("EliteSiegeTank.png").get()); }
-    catch(std::exception& e) { SDL_Log("GFXManager: %s — EliteSiegeTank sprite missing, units will fall back to placeholder", e.what()); }
-    SDL_Log("GFXManager: EliteSiegeTank.png loaded (or skipped)");
+    try {
+        auto estRaw = LoadPNG_RW(pFileManager->openFile("EliteSiegeTank.png").get());
+        if(estRaw) {
+            // Use ibmPalette (not benePalette) — sprite is authored against IBM.PAL.
+            if(estRaw->format->BitsPerPixel == 8 && estRaw->format->palette) {
+                ibmPalette.applyToSurface(estRaw.get());
+            }
+            objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][0] = std::move(estRaw);
+            // Generate zoom levels 1 and 2 so getZoomedObjPic never throws on a
+            // null HOUSE_HARKONNEN[z>0] entry. Fix from v1.0.240 EliteSiegeTank crash.
+            if(objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][0]) {
+                objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][1] =
+                    Scaler::defaultDoubleSurface(objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][0].get());
+                if(objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][1]) {
+                    objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][2] =
+                        Scaler::defaultDoubleSurface(objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][1].get());
+                }
+            }
+            SDL_Log("GFXManager: EliteSiegeTank.png loaded (all zoom levels)");
+        }
+    } catch(std::exception& e) {
+        SDL_Log("GFXManager: %s — EliteSiegeTank sprite missing, units will fall back to placeholder", e.what());
+    }
 
     SDL_Color fogTransparent = { 0, 0, 0, 96};
     SDL_SetPaletteColors(objPic[ObjPic_Terrain_HiddenFog][HOUSE_HARKONNEN][0]->format->palette, &fogTransparent, PALCOLOR_BLACK, 1);

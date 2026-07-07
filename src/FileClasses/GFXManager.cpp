@@ -1309,25 +1309,38 @@ GFXManager::GFXManager() {
 
     SDL_Log("GFXManager: Loading FlameTank.png...");
     try {
+        SDL_Log("GFXManager: FlameTank step 1: openFile");
         auto ftRaw = LoadPNG_RW(pFileManager->openFile("FlameTank.png").get());
+        SDL_Log("GFXManager: FlameTank step 2: LoadPNG_RW returned (%s)",
+                ftRaw ? "valid surface" : "null surface");
         if(ftRaw) {
+            SDL_Log("GFXManager: FlameTank step 3: BitsPerPixel=%d palette=%s",
+                    ftRaw->format->BitsPerPixel,
+                    ftRaw->format->palette ? "yes" : "no");
             // Apply palette: 8-bit palette-indexed sprites use ibmPalette (authored
             // against IBM.PAL), not benePalette.
             if(ftRaw->format->BitsPerPixel == 8 && ftRaw->format->palette) {
+                SDL_Log("GFXManager: FlameTank step 3a: apply ibmPalette");
                 ibmPalette.applyToSurface(ftRaw.get());
+                SDL_Log("GFXManager: FlameTank step 3b: ibmPalette applied");
             }
+            SDL_Log("GFXManager: FlameTank step 4: std::move to objPic");
             objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][0] = std::move(ftRaw);
             // Generate zoom levels 1 and 2 so getZoomedObjPic never throws on a
             // null HOUSE_HARKONNEN[z>0] entry. Same pattern as v1.0.240 EliteSiegeTank fix.
+            SDL_Log("GFXManager: FlameTank step 5: generate zoom 1");
             if(objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][0]) {
                 objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][1] =
                     Scaler::defaultDoubleSurface(objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][0].get());
+                SDL_Log("GFXManager: FlameTank step 6: generate zoom 2");
                 if(objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][1]) {
                     objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][2] =
                         Scaler::defaultDoubleSurface(objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][1].get());
                 }
             }
             SDL_Log("GFXManager: FlameTank.png loaded (all zoom levels)");
+        } else {
+            SDL_Log("GFXManager: FlameTank.png: surface is null, skipping");
         }
     } catch(std::exception& e) {
         SDL_Log("GFXManager: %s — FlameTank sprite missing, units will fall back to placeholder", e.what());

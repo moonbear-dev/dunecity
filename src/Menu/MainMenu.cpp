@@ -232,24 +232,34 @@ MainMenu::~MainMenu() = default;
 
 int MainMenu::showMenu()
 {
-    musicPlayer->changeMusic(MUSIC_MENU);
+    int menuResult = -1;
+    try {
+        musicPlayer->changeMusic(MUSIC_MENU);
 
-    // Start version check in background (only once)
-    if(!bVersionCheckStarted) {
-        bVersionCheckStarted = true;
+        // Start version check in background (only once)
+        if(!bVersionCheckStarted) {
+            bVersionCheckStarted = true;
 
-        pVersionChecker = std::make_unique<VersionChecker>(settings.network.metaServer);
-        pVersionChecker->setOnVersionCheckComplete([this](const VersionInfo& info) {
-            if(info.updateAvailable && !bUpdateDialogShown) {
-                latestVersion = info.latestVersion;
-                downloadURL = info.downloadURL;
-                // Show dialog in update() when safe (not during callback)
-            }
-        });
-        pVersionChecker->checkForUpdates();
+            pVersionChecker = std::make_unique<VersionChecker>(settings.network.metaServer);
+            pVersionChecker->setOnVersionCheckComplete([this](const VersionInfo& info) {
+                if(info.updateAvailable && !bUpdateDialogShown) {
+                    latestVersion = info.latestVersion;
+                    downloadURL = info.downloadURL;
+                    // Show dialog in update() when safe (not during callback)
+                }
+            });
+            pVersionChecker->checkForUpdates();
+        }
+
+        menuResult = MenuBase::showMenu();
+    } catch(const std::exception& e) {
+        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION,
+            "MainMenu::showMenu failed: %s — returning to caller with code -1", e.what());
+    } catch(...) {
+        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION,
+            "MainMenu::showMenu failed: unknown exception — returning to caller with code -1");
     }
-
-    return MenuBase::showMenu();
+    return menuResult;
 }
 
 void MainMenu::update()

@@ -254,6 +254,8 @@ target_sources(dunecity
         structures/Wall.cpp
         structures/WindTrap.cpp
         structures/AdvancedWindTrap.cpp
+        structures/Worfinery.cpp
+        structures/TechCenter.cpp
         structures/WOR.cpp
         structures/NuclearPlant.cpp
         structures/PoliceStation.cpp
@@ -273,6 +275,7 @@ target_sources(dunecity
         units/Deviator.cpp
         units/Frigate.cpp
         units/Harvester.cpp
+        units/RebelHarvester.cpp
         units/Launcher.cpp
         units/MCV.cpp
         units/Ornithopter.cpp

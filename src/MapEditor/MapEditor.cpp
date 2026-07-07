@@ -1602,6 +1602,9 @@ void MapEditor::drawMap(ScreenBorder* pScreenborder, bool bCompleteMap) {
                 case Structure_ZoneIndustrial:      objectPic = ObjPic_ZoneIndustrial;      break;
                 case Structure_NuclearPlant:        objectPic = ObjPic_NuclearPlant;        break;
                 case Structure_AdvancedWindTrap:    objectPic = ObjPic_Windtrap;            break;
+                case Structure_AdvancedWindTrapMK2: objectPic = ObjPic_Windtrap;            break;  // Tornie: same sprite as AdvWindtrap
+                case Structure_Worfinery:           objectPic = ObjPic_WOR;                 break;  // Tornie: WOR + Refinery combo
+                case Structure_TechCenter:         objectPic = ObjPic_Palace;              break;  // Tornie: Palace-equivalent, vanilla sprite
                 default:                            objectPic = 0;                          break;
             }
 
@@ -1723,6 +1726,7 @@ void MapEditor::drawMap(ScreenBorder* pScreenborder, bool bCompleteMap) {
             case Unit_Deviator:         objectPicBase = ObjPic_Tank_Base;       objectPicGun = ObjPic_Launcher_Gun;     gunOffset = launcherTurretOffset;       break;
             case Unit_Frigate:          objectPicBase = ObjPic_Frigate;                                                                                         break;
             case Unit_Harvester:        objectPicBase = ObjPic_Harvester;                                                                                       break;
+            case Unit_RebelHarvester:   objectPicBase = ObjPic_Harvester;  // same sprite, Siege Tank gun overlay drawn in RebelHarvester::blitToScreen                          break;
             case Unit_Soldier:          objectPicBase = ObjPic_Soldier;         framesX = 4;    framesY = 3;                                                    break;
             case Unit_Launcher:         objectPicBase = ObjPic_Tank_Base;       objectPicGun = ObjPic_Launcher_Gun;     gunOffset = launcherTurretOffset;       break;
             case Unit_MCV:              objectPicBase = ObjPic_MCV;                                                                                             break;

@@ -208,6 +208,7 @@ private:
     SymbolButton        editorModeStructs_ConstructionYard;
     SymbolButton        editorModeStructs_Windtrap;
     SymbolButton        editorModeStructs_AdvancedWindTrap;   ///< Tornie: 3x3 high-output power building
+    SymbolButton        editorModeStructs_AdvancedWindTrapMK2; ///< Tornie: variant of AdvWindtrap (no Rebels)
     HBox                editorModeStructs_HBox2;
     SymbolButton        editorModeStructs_Radar;
     SymbolButton        editorModeStructs_Silo;
@@ -215,6 +216,7 @@ private:
     HBox                editorModeStructs_HBox3;
     SymbolButton        editorModeStructs_Barracks;
     SymbolButton        editorModeStructs_WOR;
+    SymbolButton        editorModeStructs_Worfinery;            ///< Tornie: WOR + Refinery combo
     SymbolButton        editorModeStructs_LightFactory;
     HBox                editorModeStructs_HBox4;
     SymbolButton        editorModeStructs_Refinery;
@@ -225,6 +227,7 @@ private:
     HBox                editorModeStructs_HBox6;
     SymbolButton        editorModeStructs_Starport;
     SymbolButton        editorModeStructs_Palace;
+    SymbolButton        editorModeStructs_TechCenter;   ///< Tornie: Palace-equivalent that spawns vehicles
     // DuneCity: SimCity-style buildings, only added to the picker when the
     // dune city mod is active. Buttons are always declared so the shared
     // setHouse symbol-wiring and onStructButton toggle reset can address
@@ -249,6 +252,7 @@ private:
     SymbolButton        editorModeUnits_Soldier;
     SymbolButton        editorModeUnits_Trooper;
     SymbolButton        editorModeUnits_Harvester;
+    SymbolButton        editorModeUnits_RebelHarvester;   ///< Tornie: Rebel-only Harvester
     HBox                editorModeUnits_HBox2;
     SymbolButton        editorModeUnits_Infantry;
     SymbolButton        editorModeUnits_Troopers;

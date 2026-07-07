@@ -49,6 +49,8 @@
 #include <structures/Wall.h>
 #include <structures/WindTrap.h>
 #include <structures/AdvancedWindTrap.h>
+#include <structures/Worfinery.h>
+#include <structures/TechCenter.h>
 #include <structures/NuclearPlant.h>
 #include <structures/PoliceStation.h>
 #include <structures/Stadium.h>
@@ -62,6 +64,7 @@
 #include <units/Deviator.h>
 #include <units/Frigate.h>
 #include <units/Harvester.h>
+#include <units/RebelHarvester.h>
 #include <units/Launcher.h>
 #include <units/MCV.h>
 #include <units/Ornithopter.h>
@@ -826,6 +829,9 @@ ObjectBase* ObjectBase::createObject(int itemID, House* Owner, bool byScenario) 
         case Structure_Wall:                newObject = new Wall(Owner); break;
         case Structure_WindTrap:            newObject = new WindTrap(Owner); break;
         case Structure_AdvancedWindTrap:    newObject = new AdvancedWindTrap(Owner); break;
+        case Structure_AdvancedWindTrapMK2: newObject = new AdvancedWindTrap(Owner); break;  // same class, different ItemID
+        case Structure_Worfinery:          newObject = new Worfinery(Owner); break;
+        case Structure_TechCenter:        newObject = new TechCenter(Owner); break;
         case Structure_WOR:                 newObject = new WOR(Owner); break;
         case Structure_NuclearPlant:        newObject = new NuclearPlant(Owner); break;
         case Structure_PoliceStation:       newObject = new PoliceStation(Owner); break;
@@ -840,6 +846,7 @@ ObjectBase* ObjectBase::createObject(int itemID, House* Owner, bool byScenario) 
         case Unit_Deviator:                 newObject = new Deviator(Owner); break;
         case Unit_Frigate:                  newObject = new Frigate(Owner); break;
         case Unit_Harvester:                newObject = new Harvester(Owner); break;
+        case Unit_RebelHarvester:           newObject = new RebelHarvester(Owner); break;
         case Unit_Soldier:                  newObject = new Soldier(Owner); break;
         case Unit_Launcher:                 newObject = new Launcher(Owner); break;
         case Unit_MCV:                      newObject = new MCV(Owner); break;

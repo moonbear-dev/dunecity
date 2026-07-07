@@ -116,6 +116,7 @@ typedef enum {
     ObjPic_Terrain_HiddenFog,
     ObjPic_Terrain_Tracks,
     ObjPic_Star,
+    ObjPic_RebelHarvester,        ///< Tornie: dedicated sprite for Rebel-only Harvester
     ObjPic_ZoneResidential,
     ObjPic_ZoneCommercial,
     ObjPic_ZoneIndustrial,
@@ -429,6 +430,7 @@ typedef enum {
     UI_MapEditor_Soldier,
     UI_MapEditor_Trooper,
     UI_MapEditor_Harvester,
+    UI_MapEditor_RebelHarvester,         ///< Tornie: Rebel-only Harvester
     UI_MapEditor_Infantry,
     UI_MapEditor_Troopers,
     UI_MapEditor_MCV,

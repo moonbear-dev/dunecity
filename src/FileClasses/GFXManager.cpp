@@ -2057,6 +2057,13 @@ GFXManager::GFXManager() {
     uiGraphic[UI_MapEditor_Soldier][HOUSE_HARKONNEN] = getSubFrame(objPic[ObjPic_Soldier][HOUSE_HARKONNEN][0].get(),0,0,4,3);
     uiGraphic[UI_MapEditor_Trooper][HOUSE_HARKONNEN] = getSubFrame(objPic[ObjPic_Trooper][HOUSE_HARKONNEN][0].get(),0,0,4,3);
     uiGraphic[UI_MapEditor_Harvester][HOUSE_HARKONNEN] = getSubFrame(objPic[ObjPic_Harvester][HOUSE_HARKONNEN][0].get(),0,0,8,1);
+    // Tornie: Rebel Harvester = vanilla Harvester sprite with Siege Tank gun
+    // composited on top (per Tornie OOB). Use vanilla ObjPic_Siegetank_Gun which
+    // has the same 8-frame layout as the Harvester.
+    uiGraphic[UI_MapEditor_RebelHarvester][HOUSE_HARKONNEN] = combinePictures(
+        getSubFrame(objPic[ObjPic_Harvester][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(),
+        getSubFrame(objPic[ObjPic_Siegetank_Gun][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(),
+        2, -4);
     uiGraphic[UI_MapEditor_Infantry][HOUSE_HARKONNEN] = getSubFrame(objPic[ObjPic_Infantry][HOUSE_HARKONNEN][0].get(),0,0,4,4);
     uiGraphic[UI_MapEditor_Troopers][HOUSE_HARKONNEN] = getSubFrame(objPic[ObjPic_Troopers][HOUSE_HARKONNEN][0].get(),0,0,4,4);
     uiGraphic[UI_MapEditor_MCV][HOUSE_HARKONNEN] = getSubFrame(objPic[ObjPic_MCV][HOUSE_HARKONNEN][0].get(),0,0,8,1);
@@ -2277,7 +2284,8 @@ SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned in
             // their vanilla Tank_Base when the dedicated PNG wasn't shipped
             // (e.g. partial install without the mod bundle).
             static const unsigned int tornieModSpriteIds[] = {
-                ObjPic_RocketTrike, ObjPic_FlameTank, ObjPic_EliteSiegeTankCustom
+                ObjPic_RocketTrike, ObjPic_FlameTank, ObjPic_EliteSiegeTankCustom,
+                ObjPic_RebelHarvester  // falls back to vanilla Harvester + Siege Tank gun overlay
             };
             bool isDuneCityCivic = false;
             for(auto cid : duneCityCivicIds) {

@@ -104,7 +104,7 @@ ObjectInterface* Refinery::getInterfaceContainer() {
     }
 }
 
-void Refinery::assignHarvester(Harvester* newHarvester) {
+void Refinery::assignHarvester(TrackedUnit* newHarvester) {
     extractingSpice = true;
     harvester.pointTo(newHarvester);
     drawnAngle = 1;

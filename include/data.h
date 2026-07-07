@@ -126,8 +126,17 @@ typedef enum {
 
     // Additional extended structures after units (isStructure handles non-contiguous range)
     Structure_AdvancedWindTrap = 56,  ///< DuneCity: Advanced Windtrap (500 credits, -300 power, 3x3)
+    Structure_Worfinery = 57,        ///< Tornie: WOR + Refinery combo, can produce Troopers
+    Structure_AdvancedWindTrapMK2 = 58, ///< Tornie: variant of Advanced Windtrap, restricted house set (Builder=Invalid for Rebels per Tornie OOB)
 
-    ItemID_LastID = 56,
+    // Tornie mod unit — distinct from vanilla Harvester with a dedicated sprite.
+    Unit_RebelHarvester = 59,
+
+    // Tornie mod building — Palace-equivalent that spawns 1-3 random vehicles
+    // when House IX is unlocked. Area Guard behavior. TechLevel 9 (last building).
+    Structure_TechCenter = 60,
+
+    ItemID_LastID = 60,
 
     Num_ItemID
 } ItemID_enum;

@@ -23,6 +23,7 @@
 
 // forward declarations
 class Harvester;
+class TrackedUnit;
 class Carryall;
 
 class Refinery final : public StructureBase
@@ -37,7 +38,7 @@ public:
 
     ObjectInterface* getInterfaceContainer() override;
 
-    void assignHarvester(Harvester* newHarvester);
+    void assignHarvester(TrackedUnit* newHarvester);
     void deployHarvester(Carryall* pCarryall = nullptr);
     void startAnimate();
     void stopAnimate();

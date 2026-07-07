@@ -405,6 +405,14 @@ MapEditorInterface::MapEditorInterface(MapEditor* pMapEditor)
     editorModeStructs_AdvancedWindTrap.setOnClick(std::bind(&MapEditorInterface::onStructButton, this, Structure_AdvancedWindTrap));
     editorModeStructs_HBox1.addWidget(&editorModeStructs_AdvancedWindTrap);
 
+    editorModeStructs_HBox1.addWidget(HSpacer::create(2));
+
+    // Tornie: Adv Windtrap MK2 variant — restricted house set (Builder=Invalid for Rebels per OOB)
+    editorModeStructs_AdvancedWindTrapMK2.setToggleButton(true);
+    editorModeStructs_AdvancedWindTrapMK2.setTooltipText(resolveItemName(Structure_AdvancedWindTrapMK2));
+    editorModeStructs_AdvancedWindTrapMK2.setOnClick(std::bind(&MapEditorInterface::onStructButton, this, Structure_AdvancedWindTrapMK2));
+    editorModeStructs_HBox1.addWidget(&editorModeStructs_AdvancedWindTrapMK2);
+
 
     editorModeStructs_VBox.addWidget(&editorModeStructs_HBox2, 2*D2_TILESIZE + 4);
 
@@ -441,6 +449,14 @@ MapEditorInterface::MapEditorInterface(MapEditor* pMapEditor)
     editorModeStructs_WOR.setTooltipText(resolveItemName(Structure_WOR));
     editorModeStructs_WOR.setOnClick(std::bind(&MapEditorInterface::onStructButton, this, Structure_WOR));
     editorModeStructs_HBox3.addWidget(&editorModeStructs_WOR);
+
+    editorModeStructs_HBox3.addWidget(HSpacer::create(2));
+
+    // Tornie: Worfinery — WOR + Refinery combo that produces Troopers
+    editorModeStructs_Worfinery.setToggleButton(true);
+    editorModeStructs_Worfinery.setTooltipText(resolveItemName(Structure_Worfinery));
+    editorModeStructs_Worfinery.setOnClick(std::bind(&MapEditorInterface::onStructButton, this, Structure_Worfinery));
+    editorModeStructs_HBox3.addWidget(&editorModeStructs_Worfinery);
 
     editorModeStructs_HBox3.addWidget(HSpacer::create(2));
 
@@ -493,6 +509,15 @@ MapEditorInterface::MapEditorInterface(MapEditor* pMapEditor)
     editorModeStructs_Palace.setTooltipText(resolveItemName(Structure_Palace));
     editorModeStructs_Palace.setOnClick(std::bind(&MapEditorInterface::onStructButton, this, Structure_Palace));
     editorModeStructs_HBox6.addWidget(&editorModeStructs_Palace);
+
+    editorModeStructs_HBox6.addWidget(HSpacer::create(2));
+
+    // Tornie: Tech Center — Palace-equivalent that spawns 1-3 random vehicles
+    // when House IX is unlocked for the owning house. TechLevel 9 (last building).
+    editorModeStructs_TechCenter.setToggleButton(true);
+    editorModeStructs_TechCenter.setTooltipText(resolveItemName(Structure_TechCenter));
+    editorModeStructs_TechCenter.setOnClick(std::bind(&MapEditorInterface::onStructButton, this, Structure_TechCenter));
+    editorModeStructs_HBox6.addWidget(&editorModeStructs_TechCenter);
 
 
     // DuneCity: expose SimCity-style buildings (R/C/I zones, Road, nuclear
@@ -565,6 +590,14 @@ MapEditorInterface::MapEditorInterface(MapEditor* pMapEditor)
     editorModeUnits_Harvester.setTooltipText(resolveItemName(Unit_Harvester));
     editorModeUnits_Harvester.setOnClick(std::bind(&MapEditorInterface::onUnitButton, this, Unit_Harvester));
     editorModeUnits_HBox1.addWidget(&editorModeUnits_Harvester);
+
+    editorModeUnits_HBox1.addWidget(HSpacer::create(2));
+
+    // Tornie: Rebel Harvester (Harvester + Siege Tank gun overlay). Rebel-only.
+    editorModeUnits_RebelHarvester.setToggleButton(true);
+    editorModeUnits_RebelHarvester.setTooltipText(resolveItemName(Unit_RebelHarvester));
+    editorModeUnits_RebelHarvester.setOnClick(std::bind(&MapEditorInterface::onUnitButton, this, Unit_RebelHarvester));
+    editorModeUnits_HBox1.addWidget(&editorModeUnits_RebelHarvester);
 
     editorModeUnits_VBox.addWidget(VSpacer::create(2));
 
@@ -1138,11 +1171,13 @@ void MapEditorInterface::onStructButton(int structType) {
     editorModeStructs_ConstructionYard.setToggleState( (structType == Structure_ConstructionYard) );
     editorModeStructs_Windtrap.setToggleState( (structType == Structure_WindTrap) );
     editorModeStructs_AdvancedWindTrap.setToggleState( (structType == Structure_AdvancedWindTrap) );
+    editorModeStructs_AdvancedWindTrapMK2.setToggleState( (structType == Structure_AdvancedWindTrapMK2) );
     editorModeStructs_Radar.setToggleState( (structType == Structure_Radar) );
     editorModeStructs_Silo.setToggleState( (structType == Structure_Silo) );
     editorModeStructs_IX.setToggleState( (structType == Structure_IX) );
     editorModeStructs_Barracks.setToggleState( (structType == Structure_Barracks) );
     editorModeStructs_WOR.setToggleState( (structType == Structure_WOR) );
+    editorModeStructs_Worfinery.setToggleState( (structType == Structure_Worfinery) );
     editorModeStructs_LightFactory.setToggleState( (structType == Structure_LightFactory) );
     editorModeStructs_Refinery.setToggleState( (structType == Structure_Refinery) );
     editorModeStructs_HighTechFactory.setToggleState( (structType == Structure_HighTechFactory) );
@@ -1150,6 +1185,7 @@ void MapEditorInterface::onStructButton(int structType) {
     editorModeStructs_RepairYard.setToggleState( (structType == Structure_RepairYard) );
     editorModeStructs_Starport.setToggleState( (structType == Structure_StarPort) );
     editorModeStructs_Palace.setToggleState( (structType == Structure_Palace) );
+    editorModeStructs_TechCenter.setToggleState( (structType == Structure_TechCenter) );
 
     editorModeStructs_ZoneResidential.setToggleState( (structType == Structure_ZoneResidential) );
     editorModeStructs_ZoneCommercial.setToggleState( (structType == Structure_ZoneCommercial) );
@@ -1167,6 +1203,7 @@ void MapEditorInterface::onUnitButton(int unitType) {
     editorModeUnits_Soldier.setToggleState( (unitType == Unit_Soldier) );
     editorModeUnits_Trooper.setToggleState( (unitType == Unit_Trooper) );
     editorModeUnits_Harvester.setToggleState( (unitType == Unit_Harvester) );
+    editorModeUnits_RebelHarvester.setToggleState( (unitType == Unit_RebelHarvester) );
     editorModeUnits_Infantry.setToggleState( (unitType == Unit_Infantry) );
     editorModeUnits_Troopers.setToggleState( (unitType == Unit_Troopers) );
     editorModeUnits_MCV.setToggleState( (unitType == Unit_MCV) );
@@ -1389,11 +1426,13 @@ void MapEditorInterface::changeInterfaceColor(HOUSETYPE newHouse) {
     editorModeStructs_ConstructionYard.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_ConstructionYard, newHouse));
     editorModeStructs_Windtrap.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Windtrap, newHouse));
     editorModeStructs_AdvancedWindTrap.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_AdvancedWindTrap, newHouse));
+    editorModeStructs_AdvancedWindTrapMK2.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_AdvancedWindTrap, newHouse));
     editorModeStructs_Radar.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Radar, newHouse));
     editorModeStructs_Silo.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Silo, newHouse));
     editorModeStructs_IX.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_IX, newHouse));
     editorModeStructs_Barracks.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Barracks, newHouse));
     editorModeStructs_WOR.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_WOR, newHouse));
+    editorModeStructs_Worfinery.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_WOR, newHouse));
     editorModeStructs_LightFactory.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_LightFactory, newHouse));
     editorModeStructs_Refinery.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Refinery, newHouse));
     editorModeStructs_HighTechFactory.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_HighTechFactory, newHouse));
@@ -1401,6 +1440,9 @@ void MapEditorInterface::changeInterfaceColor(HOUSETYPE newHouse) {
     editorModeStructs_RepairYard.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_RepairYard, newHouse));
     editorModeStructs_Starport.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Starport, newHouse));
     editorModeStructs_Palace.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Palace, newHouse));
+    // Tornie: Tech Center uses the Sardaukar portrait as its ability icon
+    // (per Tornie OOB). UI_MapEditor_Palace is the same generic Palace icon.
+    editorModeStructs_TechCenter.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Palace, newHouse));
 
     editorModeStructs_ZoneResidential.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_ZoneResidential, newHouse));
     editorModeStructs_ZoneCommercial.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_ZoneCommercial, newHouse));
@@ -1411,6 +1453,7 @@ void MapEditorInterface::changeInterfaceColor(HOUSETYPE newHouse) {
     editorModeUnits_Soldier.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Soldier, newHouse));
     editorModeUnits_Trooper.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Trooper, newHouse));
     editorModeUnits_Harvester.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Harvester, newHouse));
+    editorModeUnits_RebelHarvester.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_RebelHarvester, newHouse));
     editorModeUnits_Infantry.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Infantry, newHouse));
     editorModeUnits_Troopers.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_Troopers, newHouse));
     editorModeUnits_MCV.setSymbol(pGFXManager->getUIGraphicSurface(UI_MapEditor_MCV, newHouse));

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 # Project name and version
-project(DuneCity VERSION 1.0.515 LANGUAGES C CXX)
+project(DuneCity VERSION 1.0.516 LANGUAGES C CXX)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -93,7 +93,7 @@ endif()
 
 # Global compile options
 if(MSVC)
-    add_compile_options(/W4)
+    add_compile_options(/W4 /WX-)
     # v1.0.515: silence C4100 (unreferenced parameter) globally for the
     # Scaler::tripleTiledSurfaceNN wrapper and other tiny plumbing that
     # uses intentional (void)param discards but still trips MSVC /W4.

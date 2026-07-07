@@ -1229,9 +1229,16 @@ GFXManager::GFXManager() {
     objPic[ObjPic_Star][HOUSE_HARKONNEN][0] = LoadPNG_RW(pFileManager->openFile("Star5x5.png").get());
     objPic[ObjPic_Star][HOUSE_HARKONNEN][1] = LoadPNG_RW(pFileManager->openFile("Star7x7.png").get());
     objPic[ObjPic_Star][HOUSE_HARKONNEN][2] = LoadPNG_RW(pFileManager->openFile("Star11x11.png").get());
-    objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][0] = LoadPNG_RW(pFileManager->openFile("RocketTrike.png").get());
-    objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][0] = LoadPNG_RW(pFileManager->openFile("FlameTank.png").get());
-    objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][0] = LoadPNG_RW(pFileManager->openFile("EliteSiegeTank.png").get());
+    // Tornie: dedicated unit sprites. Wrap each load in try/catch so a missing
+    // PNG on a partial install logs a warning and leaves objPic=null rather than
+    // crashing the GFXManager constructor (which runs on an async future and
+    // would silently kill the whole game on startup).
+    try { objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][0] = LoadPNG_RW(pFileManager->openFile("RocketTrike.png").get()); }
+    catch(std::exception& e) { SDL_Log("GFXManager: %s — RocketTrike sprite missing, units will fall back to placeholder", e.what()); }
+    try { objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][0] = LoadPNG_RW(pFileManager->openFile("FlameTank.png").get()); }
+    catch(std::exception& e) { SDL_Log("GFXManager: %s — FlameTank sprite missing, units will fall back to placeholder", e.what()); }
+    try { objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][0] = LoadPNG_RW(pFileManager->openFile("EliteSiegeTank.png").get()); }
+    catch(std::exception& e) { SDL_Log("GFXManager: %s — EliteSiegeTank sprite missing, units will fall back to placeholder", e.what()); }
 
     SDL_Color fogTransparent = { 0, 0, 0, 96};
     SDL_SetPaletteColors(objPic[ObjPic_Terrain_HiddenFog][HOUSE_HARKONNEN][0]->format->palette, &fogTransparent, PALCOLOR_BLACK, 1);
@@ -1906,14 +1913,23 @@ GFXManager::GFXManager() {
                                                                   uiGraphic[UI_MapEditor_Deviator][HOUSE_HARKONNEN]->w - objPic[ObjPic_Star][HOUSE_HARKONNEN][1]->w,
                                                                   uiGraphic[UI_MapEditor_Deviator][HOUSE_HARKONNEN]->h - objPic[ObjPic_Star][HOUSE_HARKONNEN][1]->h);
     // Tornie: dedicated sprites for the 3 mod units with their own .png sheets.
-    uiGraphic[UI_MapEditor_RocketTrike][HOUSE_HARKONNEN] = getSubFrame(objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][0].get(),0,0,8,1);
-    uiGraphic[UI_MapEditor_FlameTank][HOUSE_HARKONNEN] = getSubFrame(objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][0].get(),0,0,8,1);
+// Each is null-guarded so a missing PNG on a partial install doesn't crash
+    // the sidebar init — the unit's button just won't have a custom icon (it
+    // falls back to whatever the framework draws for an uninitialized SymbolButton).
+    if (objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][0]) {
+        uiGraphic[UI_MapEditor_RocketTrike][HOUSE_HARKONNEN] = getSubFrame(objPic[ObjPic_RocketTrike][HOUSE_HARKONNEN][0].get(),0,0,8,1);
+    }
+    if (objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][0]) {
+        uiGraphic[UI_MapEditor_FlameTank][HOUSE_HARKONNEN] = getSubFrame(objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][0].get(),0,0,8,1);
+    }
     // EliteLauncher has no dedicated sprite — compose Tank_Base + Launcher_Gun + Star (same recipe as Deviator).
     uiGraphic[UI_MapEditor_EliteLauncher][HOUSE_HARKONNEN] = combinePictures(getSubFrame(objPic[ObjPic_Tank_Base][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(), getSubFrame(objPic[ObjPic_Launcher_Gun][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(), 3, 0);
     uiGraphic[UI_MapEditor_EliteLauncher][HOUSE_HARKONNEN] = combinePictures(uiGraphic[UI_MapEditor_EliteLauncher][HOUSE_HARKONNEN].get(), objPic[ObjPic_Star][HOUSE_HARKONNEN][1].get(),
                                                                      uiGraphic[UI_MapEditor_EliteLauncher][HOUSE_HARKONNEN]->w - objPic[ObjPic_Star][HOUSE_HARKONNEN][1]->w,
                                                                      uiGraphic[UI_MapEditor_EliteLauncher][HOUSE_HARKONNEN]->h - objPic[ObjPic_Star][HOUSE_HARKONNEN][1]->h);
-    uiGraphic[UI_MapEditor_EliteSiegeTank][HOUSE_HARKONNEN] = getSubFrame(objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][0].get(),0,0,8,1);
+    if (objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][0]) {
+        uiGraphic[UI_MapEditor_EliteSiegeTank][HOUSE_HARKONNEN] = getSubFrame(objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][0].get(),0,0,8,1);
+    }
     uiGraphic[UI_MapEditor_Saboteur][HOUSE_HARKONNEN] = getSubFrame(objPic[ObjPic_Saboteur][HOUSE_HARKONNEN][0].get(),0,0,4,3);
     uiGraphic[UI_MapEditor_Sandworm][HOUSE_HARKONNEN] = getSubFrame(objPic[ObjPic_Sandworm][HOUSE_HARKONNEN][0].get(),0,5,1,9);
     uiGraphic[UI_MapEditor_SpecialUnit][HOUSE_HARKONNEN] = combinePictures(getSubFrame(objPic[ObjPic_Devastator_Base][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(), getSubFrame(objPic[ObjPic_Devastator_Gun][HOUSE_HARKONNEN][0].get(),0,0,8,1).get(), 2, -4);
@@ -2094,15 +2110,31 @@ SDL_Texture* GFXManager::getZoomedObjPic(unsigned int id, int house, unsigned in
                 ObjPic_NuclearPlant, ObjPic_PoliceStation, ObjPic_Stadium,
                 ObjPic_Airport, ObjPic_Hospital, ObjPic_Church
             };
+            // Tornie mod units with optional dedicated sprites: fall back to
+            // their vanilla Tank_Base when the dedicated PNG wasn't shipped
+            // (e.g. partial install without the mod bundle).
+            static const unsigned int tornieModSpriteIds[] = {
+                ObjPic_RocketTrike, ObjPic_FlameTank, ObjPic_EliteSiegeTankCustom
+            };
             bool isDuneCityCivic = false;
             for(auto cid : duneCityCivicIds) {
                 if(id == cid) { isDuneCityCivic = true; break; }
+            }
+            bool isTornieModSprite = false;
+            for(auto tid : tornieModSpriteIds) {
+                if(id == tid) { isTornieModSprite = true; break; }
             }
             if(isDuneCityCivic && objPic[ObjPic_ConstructionYard][HOUSE_HARKONNEN][z]) {
                 SDL_Log("GFXManager::getZoomedObjPic(): DuneCity civic sprite ID %u not loaded, falling back to ConstructionYard", id);
                 objPic[id][HOUSE_HARKONNEN][z] = sdl2::surface_ptr{
                     SDL_ConvertSurface(objPic[ObjPic_ConstructionYard][HOUSE_HARKONNEN][z].get(),
                                        objPic[ObjPic_ConstructionYard][HOUSE_HARKONNEN][z]->format, 0)
+                };
+            } else if(isTornieModSprite && objPic[ObjPic_Tank_Base][HOUSE_HARKONNEN][z]) {
+                SDL_Log("GFXManager::getZoomedObjPic(): Tornie sprite ID %u not loaded, falling back to Tank_Base", id);
+                objPic[id][HOUSE_HARKONNEN][z] = sdl2::surface_ptr{
+                    SDL_ConvertSurface(objPic[ObjPic_Tank_Base][HOUSE_HARKONNEN][z].get(),
+                                       objPic[ObjPic_Tank_Base][HOUSE_HARKONNEN][z]->format, 0)
                 };
             } else {
                 THROW(std::runtime_error, "GFXManager::getZoomedObjPic(): Unit Picture with ID %u is not loaded!", id);

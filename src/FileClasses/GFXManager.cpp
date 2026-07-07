@@ -1290,14 +1290,14 @@ GFXManager::GFXManager() {
         }
     }
 
-    // DuneCity 1.0.503: Flame Tank + Elite Siege Tank — dedicated 1-tile-tall
-    // 128x16 strips (8 frames, anti-clockwise from East). No dedicated mask;
-    // house tinting goes through the existing getZoomedObjPic palette-remap
-    // path (Tank_Base fallback if the PNG is missing).
+    SDL_Log("GFXManager: Loading FlameTank.png...");
     try { objPic[ObjPic_FlameTank][HOUSE_HARKONNEN][0] = LoadPNG_RW(pFileManager->openFile("FlameTank.png").get()); }
     catch(std::exception& e) { SDL_Log("GFXManager: %s — FlameTank sprite missing, units will fall back to placeholder", e.what()); }
+    SDL_Log("GFXManager: FlameTank.png loaded (or skipped)");
+    SDL_Log("GFXManager: Loading EliteSiegeTank.png...");
     try { objPic[ObjPic_EliteSiegeTankCustom][HOUSE_HARKONNEN][0] = LoadPNG_RW(pFileManager->openFile("EliteSiegeTank.png").get()); }
     catch(std::exception& e) { SDL_Log("GFXManager: %s — EliteSiegeTank sprite missing, units will fall back to placeholder", e.what()); }
+    SDL_Log("GFXManager: EliteSiegeTank.png loaded (or skipped)");
 
     SDL_Color fogTransparent = { 0, 0, 0, 96};
     SDL_SetPaletteColors(objPic[ObjPic_Terrain_HiddenFog][HOUSE_HARKONNEN][0]->format->palette, &fogTransparent, PALCOLOR_BLACK, 1);

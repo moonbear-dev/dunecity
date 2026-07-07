@@ -116,6 +116,14 @@ void SFXManager::loadEnglishVoice() {
                 HouseString = "O";
                 HouseNameChunk = getChunkFromFile(HouseString + "MERC.VOC");
                 break;
+            case HOUSE_NEUTRAL:
+                HouseString = "N";
+                HouseNameChunk = getChunkFromFile(HouseString + "NEUTRAL.VOC");
+                break;
+            case HOUSE_REBELS:
+                HouseString = "R";
+                HouseNameChunk = getChunkFromFile(HouseString + "RREBELS.VOC");
+                break;
             default:
                 break;
         }

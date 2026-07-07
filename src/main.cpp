@@ -694,6 +694,11 @@ int main(int argc, char *argv[]) {
 
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
 
+    // v1.0.512: build-stamp log so Stefan can verify the binary on disk
+    // actually contains the v1.0.5xx fixes. If this line is missing from
+    // the run log, the .exe is stale.
+    SDL_Log("DuneCity v%s — build stamp active", std::string(VERSION).c_str());
+
     // global try/catch around everything
     try {
 
